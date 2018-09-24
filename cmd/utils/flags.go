@@ -47,8 +47,8 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/metrics/exp"
 	"github.com/XinFinOrg/XDPoSChain/node"
 	"github.com/XinFinOrg/XDPoSChain/p2p"
-	"github.com/XinFinOrg/XDPoSChain/p2p/discover"
 	"github.com/XinFinOrg/XDPoSChain/p2p/discv5"
+	"github.com/XinFinOrg/XDPoSChain/p2p/enode"
 	"github.com/XinFinOrg/XDPoSChain/p2p/nat"
 	"github.com/XinFinOrg/XDPoSChain/p2p/netutil"
 	"github.com/XinFinOrg/XDPoSChain/params"
@@ -118,7 +118,7 @@ var (
 	Enable0xPrefixFlag = cli.BoolFlag{
 		Name:  "enable-0x-prefix",
 		Usage: "Addres use 0x-prefix (Deprecated: this is on by default, to use xdc prefix use --enable-xdc-prefix)",
-	}	
+	}
 	EnableXDCPrefixFlag = cli.BoolFlag{
 		Name:  "enable-xdc-prefix",
 		Usage: "Addres use xdc-prefix (default = false)",
@@ -661,9 +661,10 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 	case ctx.GlobalBool(XDCTestnetFlag.Name):
 		urls = params.TestnetBootnodes
 	}
-	cfg.BootstrapNodes = make([]*discover.Node, 0, len(urls))
+
+	cfg.BootstrapNodes = make([]*enode.Node, 0, len(urls))
 	for _, url := range urls {
-		node, err := discover.ParseNode(url)
+		node, err := enode.ParseV4(url)
 		if err != nil {
 			log.Error("Bootstrap URL invalid", "enode", url, "err", err)
 			continue
