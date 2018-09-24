@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/XinFinOrg/XDPoSChain/p2p/discover"
+	"github.com/XinFinOrg/XDPoSChain/p2p/enode"
 )
 
 func TestMocker(t *testing.T) {
@@ -80,10 +80,10 @@ func TestMocker(t *testing.T) {
 	var opts SubscribeOpts
 	sub, err := client.SubscribeNetwork(events, opts)
 	defer sub.Unsubscribe()
-
-	// wait until all nodes are started and connected
-	// store every node up event in a map (value is irrelevant, mimic Set datatype)
-	nodemap := make(map[discover.NodeID]bool)
+	//wait until all nodes are started and connected
+	//store every node up event in a map (value is irrelevant, mimic Set datatype)
+	nodemap := make(map[enode.ID]bool)
+	wg.Add(1)
 	nodesComplete := false
 	connCount := 0
 	wg.Add(1)
