@@ -376,6 +376,9 @@ func TestDialStateDynDialFromTable(t *testing.T) {
 					&dialTask{flags: dynDialedConn, dest: newNode(uintID(11), nil)},
 					&dialTask{flags: dynDialedConn, dest: newNode(uintID(12), nil)},
 				},
+				new: []task{
+					&discoverTask{},
+				},
 			},
 			// Waiting for expiry. No waitExpireTask is launched because the
 			// discovery query is still running.
@@ -564,6 +567,7 @@ func TestDialStaticAfterReset(t *testing.T) {
 	for _, n := range wantStatic {
 		dTest.init.removeStatic(n)
 		dTest.init.addStatic(n)
+		delete(dTest.init.dialing, n.ID())
 	}
 	// without removing peers they will be considered recently dialed
 	runDialTest(t, dTest)
