@@ -43,16 +43,12 @@ var DefaultConfig = Config{
 		DatasetsInMem:  1,
 		DatasetsOnDisk: 2,
 	},
-	NetworkId:      1,
-	LightPeers:     100,
-	DatabaseCache:  512,
-	TrieCleanCache: 256,
-	TrieDirtyCache: 256,
-	TrieTimeout:    60 * time.Minute,
-	MinerGasFloor:  8000000,
-	MinerGasCeil:   8000000,
-	MinerGasPrice:  big.NewInt(params.GWei),
-	MinerRecommit:  3 * time.Second,
+	NetworkId:     1,
+	LightPeers:    100,
+	DatabaseCache: 768,
+	TrieCache:     256,
+	TrieTimeout:   5 * time.Minute,
+	GasPrice:      big.NewInt(18 * params.Shannon),
 
 	TxPool: core.DefaultTxPoolConfig,
 	GPO: gasprice.Config{
@@ -87,34 +83,22 @@ type Config struct {
 	SyncMode  downloader.SyncMode
 	NoPruning bool
 
-	// Whitelist of required block number -> hash values to accept
-	Whitelist map[uint64]common.Hash `toml:"-"`
-
 	// Light client options
-	LightServ    int  `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
-	LightPeers   int  `toml:",omitempty"` // Maximum number of LES client peers
-	OnlyAnnounce bool // Maximum number of LES client peers
-
-	// Ultra Light client options
-	ULC *ULCConfig `toml:",omitempty"`
+	LightServ  int `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
+	LightPeers int `toml:",omitempty"` // Maximum number of LES client peers
 
 	// Database options
 	SkipBcVersionCheck bool `toml:"-"`
 	DatabaseHandles    int  `toml:"-"`
 	DatabaseCache      int
-	TrieCleanCache     int
-	TrieDirtyCache     int
+	TrieCache          int
 	TrieTimeout        time.Duration
 
 	// Mining-related options
-	Etherbase      common.Address `toml:",omitempty"`
-	MinerNotify    []string       `toml:",omitempty"`
-	MinerExtraData []byte         `toml:",omitempty"`
-	MinerGasFloor  uint64
-	MinerGasCeil   uint64
-	MinerGasPrice  *big.Int
-	MinerRecommit  time.Duration
-	MinerNoverify  bool
+	Etherbase    common.Address `toml:",omitempty"`
+	MinerThreads int            `toml:",omitempty"`
+	ExtraData    []byte         `toml:",omitempty"`
+	GasPrice     *big.Int
 
 	// Ethash options
 	Ethash ethash.Config
@@ -130,17 +114,8 @@ type Config struct {
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
-
-	// Type of the EWASM interpreter ("" for default)
-	EWASMInterpreter string
-
-	// Type of the EVM interpreter ("" for default)
-	EVMInterpreter string
-
-	// Constantinople block override (TODO: remove after the fork)
-	ConstantinopleOverride *big.Int
 }
 
 type configMarshaling struct {
-	MinerExtraData hexutil.Bytes
+	ExtraData hexutil.Bytes
 }
