@@ -5,7 +5,9 @@ import "./libs/SafeMath.sol";
 
 contract xdcValidator is IValidator {
     using SafeMath for uint256;
-
+ event Vote(address _candidate, uint256 _cap);
+    event Unvote(address _candidate, uint256 _cap);
+    
     struct ValidatorState {
         bool isCandidate;
         uint256 cap;
@@ -16,6 +18,10 @@ contract xdcValidator is IValidator {
     address[] public candidates;
     uint256 candidateCount = 0;
 
+uint256 public constant minCandidateCap = 10000 ether;
+    uint256 public constant maxCandidateNumber = 500;
+    uint256 public constant maxValidatorNumber = 99;
+    
        function xdcValidator(address[] _candidates, uint256[] _caps) public {
         candidates = _candidates;
         
@@ -29,23 +35,24 @@ contract xdcValidator is IValidator {
 
     }
 
-    function propose(address _candidate) external payable {
-       // xdc: only validator can propose a candidate
-         if (!validatorsState[_candidate].isCandidate) {
-            candidates.push(_candidate);
-        }
-        validatorsState[_candidate] = ValidatorState({
+   function propose() external payable {
+        // anyone can deposit 10000 TOMO to become a candidate
+        require(msg.value >= minCandidateCap);
+        require(!validatorsState[msg.sender].isCandidate);
+        require(candidateCount <= maxCandidateNumber);
+        candidates.push(msg.sender);
+        validatorsState[msg.sender] = ValidatorState({
             isCandidate: true,
             cap: msg.value
         });
           candidateCount = candidateCount + 1;
     }
 
-    function vote(address _candidate) public payable {
-        // only vote for candidate proposed by a validator
+    function vote(address _candidate) external payable {
         require(validatorsState[_candidate].isCandidate);
         validatorsState[_candidate].cap = validatorsState[_candidate].cap.add(msg.value);
         validatorsState[_candidate].voters[msg.sender] = validatorsState[_candidate].voters[msg.sender].add(msg.value);
+        emit Vote(_candidate,msg.value);
     }
 
     function getCandidates() public view returns(address[]) {
@@ -71,5 +78,6 @@ contract xdcValidator is IValidator {
         validatorsState[_candidate].voters[msg.sender] = validatorsState[_candidate].voters[msg.sender].sub(_cap);
         // refunding to user after unvoting
         msg.sender.transfer(_cap);
+        emit Unvote(_candidate, _cap);
     }
 }
