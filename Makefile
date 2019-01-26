@@ -9,7 +9,12 @@
 .PHONY: xdc-windows xdc-windows-386 xdc-windows-amd64
 
 GOBIN = $(shell pwd)/build/bin
+GOFMT = gofmt
 GO ?= latest
+GO_PACKAGES = .
+GO_FILES := $(shell find $(shell go list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
+
+GIT = git
 
 xdc:
 	build/env.sh go run build/ci.go install ./cmd/xdc
@@ -143,4 +148,8 @@ xdc-windows-386:
 xdc-windows-amd64:
 	build/env.sh go run build/ci.go xgo -- --go=$(GO) --targets=windows/amd64 -v ./cmd/xdc
 	@echo "Windows amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/xdc-windows-* | grep amd64
+	@ls -ld $(GOBIN)/geth-windows-* | grep amd64
+
+gofmt:
+	$(GOFMT) -s -w $(GO_FILES)
+	$(GIT) checkout vendor
