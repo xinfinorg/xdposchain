@@ -3,11 +3,12 @@ package validator
 import (
 	"math/big"
 	"testing"
-
+	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -19,14 +20,16 @@ func TestENS(t *testing.T) {
 	contractBackend := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}})
 	transactOpts := bind.NewKeyedTransactor(key)
 
-	_, validator, err := DeployValidator(transactOpts, contractBackend)
+	_, validator, err := DeployValidator(transactOpts, contractBackend, []common.Address{addr}, []*big.Int{big.NewInt(0)})
 	if err != nil {
 		t.Fatalf("can't deploy root registry: %v", err)
 	}
 	contractBackend.Commit()
 
-	if _, err := validator.GetValidators(); err != nil {
-		t.Fatalf("can't get validators: %v", err)
+		candidates, err := validator.GetCandidates()
+	if err != nil {
+		t.Fatalf("can't get candidates: %v", err)
 	}
+	fmt.Println("candidates", candidates)
 	contractBackend.Commit()
 }
