@@ -36,7 +36,7 @@ uint256 public constant minCandidateCap = 10000 ether;
     }
 
    function propose() external payable {
-        // anyone can deposit 10000 TOMO to become a candidate
+        // anyone can deposit 10000 xdc to become a candidate
         require(msg.value >= minCandidateCap);
         require(!validatorsState[msg.sender].isCandidate);
         require(candidateCount <= maxCandidateNumber);
