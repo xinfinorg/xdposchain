@@ -3,7 +3,7 @@ package validator
 import (
 	"math/big"
 	"testing"
-	"fmt"
+	
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 	"github.com/ethereum/go-ethereum/core"
@@ -16,7 +16,7 @@ var (
 	addr   = crypto.PubkeyToAddress(key.PublicKey)
 )
 
-func TestENS(t *testing.T) {
+func TestValidator(t *testing.T) {
 	contractBackend := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}})
 	transactOpts := bind.NewKeyedTransactor(key)
 
@@ -30,6 +30,10 @@ func TestENS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get candidates: %v", err)
 	}
-	fmt.Println("candidates", candidates)
+	t.Log("candidates", candidates)
+	for _, it := range candidates {
+		cap, _ := validator.GetCandidateCap(it)
+		t.Log("candidate", it.String(), "cap", cap)
+	}
 	contractBackend.Commit()
 }
