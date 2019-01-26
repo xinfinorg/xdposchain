@@ -356,123 +356,123 @@ func (_SafeMath *SafeMathTransactorRaw) Transact(opts *bind.TransactOpts, method
 	return _SafeMath.Contract.contract.Transact(opts, method, params...)
 }
 
-// TomoValidatorABI is the input ABI used to generate the binding from.
-const TomoValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_validators\",\"type\":\"address[]\"},{\"name\":\"_caps\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}]"
+// xdcValidatorABI is the input ABI used to generate the binding from.
+const xdcValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"unvote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCandidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"getVoterCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"validators\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getValidators\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"isCandidate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_validators\",\"type\":\"address[]\"},{\"name\":\"_caps\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}]"
 
-// TomoValidatorBin is the compiled bytecode used for deploying new contracts.
-const TomoValidatorBin = `0x6060604052683635c9adc5dea00000600155341561001c57600080fd5b6040516102ed3803806102ed83398101604052808051820191906020018051909101905060005b82518110156100eb576060604051908101604090815260018083526020830152810183838151811061007157fe5b90602001906020020151905260008085848151811061008c57fe5b90602001906020020151600160a060020a0316815260208101919091526040016000208151815460ff1916901515178155602082015181549015156101000261ff00199091161781556040820151600191820155919091019050610043565b5050506101f0806100fd6000396000f30060606040526004361061004b5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416630126795181146100505780636dd7d8ea14610066575b600080fd5b610064600160a060020a036004351661007a565b005b610064600160a060020a0360043516610108565b600160a060020a03331660009081526020819052604090205460ff1615156100a157600080fd5b60606040519081016040908152600080835260016020808501919091523483850152600160a060020a0385168252819052208151815460ff1916901515178155602082015181549015156101000261ff001990911617815560408201516001909101555050565b600160a060020a038116600090815260208190526040902054610100900460ff16151561013457600080fd5b600160a060020a038116600090815260208190526040902060010154610160903463ffffffff6101ae16565b600160a060020a038216600090815260208190526040902060019081018290555490106101ab57600160a060020a0381166000908152602081905260409020805460ff191660011790555b50565b6000828201838110156101bd57fe5b93925050505600a165627a7a7230582022f965615b62147c104c686c2a37c0d96bf4b82497507420007f36a8c04a2a400029`
+// xdcValidatorBin is the compiled bytecode used for deploying new contracts.
+const xdcValidatorBin = `0x6060604052683635c9adc5dea00000600355341561001c57600080fd5b604051610a06380380610a068339810160405280805182019190602001805190910190506000600183805161005592916020019061011f565b50600283805161006992916020019061011f565b50600090505b8251811015610117576060604051908101604090815260018083526020830152810183838151811061009d57fe5b9060200190602002015190526000808584815181106100b857fe5b90602001906020020151600160a060020a0316815260208101919091526040016000208151815460ff1916901515178155602082015181549015156101000261ff0019909116178155604082015160019182015591909101905061006f565b5050506101ad565b828054828255906000526020600020908101928215610176579160200282015b828111156101765782518254600160a060020a031916600160a060020a03919091161782556020929092019160019091019061013f565b50610182929150610186565b5090565b6101aa91905b80821115610182578054600160a060020a031916815560010161018c565b90565b61084a806101bc6000396000f3006060604052600436106100ae5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416630126795181146100b357806302aa9be2146100c957806306a49fce146100eb578063302b6872146101515780633477ee2e1461018857806335aa2e44146101ba57806358e7525f146101d05780636dd7d8ea146101ef578063b7ab4db514610203578063d51b9e9314610216578063facd743b14610249575b600080fd5b6100c7600160a060020a0360043516610268565b005b34156100d457600080fd5b6100c7600160a060020a0360043516602435610362565b34156100f657600080fd5b6100fe6104b6565b60405160208082528190810183818151815260200191508051906020019060200280838360005b8381101561013d578082015183820152602001610125565b505050509050019250505060405180910390f35b341561015c57600080fd5b610176600160a060020a036004358116906024351661051f565b60405190815260200160405180910390f35b341561019357600080fd5b61019e60043561054c565b604051600160a060020a03909116815260200160405180910390f35b34156101c557600080fd5b61019e600435610574565b34156101db57600080fd5b610176600160a060020a0360043516610582565b6100c7600160a060020a03600435166105a0565b341561020e57600080fd5b6100fe6106f6565b341561022157600080fd5b610235600160a060020a036004351661075c565b604051901515815260200160405180910390f35b341561025457600080fd5b610235600160a060020a036004351661077f565b600160a060020a03331660009081526020819052604090205460ff16151561028f57600080fd5b600160a060020a038116600090815260208190526040902054610100900460ff1615156102fb5760028054600181016102c883826107c5565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a0383161790555b60606040519081016040908152600080835260016020808501919091523483850152600160a060020a0385168252819052208151815460ff1916901515178155602082015181549015156101000261ff001990911617815560408201516001909101555050565b600160a060020a03821660009081526020819052604090205460ff161561038857600080fd5b600160a060020a038216600090815260208190526040902054610100900460ff1615156103b457600080fd5b600160a060020a03808316600090815260208181526040808320339094168352600290930190522054819010156103ea57600080fd5b600160a060020a038216600090815260208190526040902060010154610416908263ffffffff61079d16565b600160a060020a0380841660009081526020818152604080832060018101959095553390931682526002909301909252902054610459908263ffffffff61079d16565b600160a060020a0380841660009081526020818152604080832033909416808452600290940190915290819020929092559082156108fc0290839051600060405180830381858888f1935050505015156104b257600080fd5b5050565b6104be6107ee565b600280548060200260200160405190810160405280929190818152602001828054801561051457602002820191906000526020600020905b8154600160a060020a031681526001909101906020018083116104f6575b505050505090505b90565b600160a060020a039182166000908152602081815260408083209390941682526002909201909152205490565b600280548290811061055a57fe5b600091825260209091200154600160a060020a0316905081565b600180548290811061055a57fe5b600160a060020a031660009081526020819052604090206001015490565b600160a060020a038116600090815260208190526040902054610100900460ff1615156105cc57600080fd5b600160a060020a0381166000908152602081905260409020600101546105f8903463ffffffff6107af16565b600160a060020a038216600090815260208190526040902060010181905560035490106106f357600160a060020a03811660009081526020819052604090205460ff161515610685576001805480820161065283826107c5565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a0383161790555b600160a060020a03808216600090815260208181526040808320805460ff191660011781553390941683526002909301905220546106c9903463ffffffff6107af16565b600160a060020a038083166000908152602081815260408083203390941683526002909301905220555b50565b6106fe6107ee565b600180548060200260200160405190810160405280929190818152602001828054801561051457602002820191906000526020600020908154600160a060020a031681526001909101906020018083116104f6575050505050905090565b600160a060020a0316600090815260208190526040902054610100900460ff1690565b600160a060020a031660009081526020819052604090205460ff1690565b6000828211156107a957fe5b50900390565b6000828201838110156107be57fe5b9392505050565b8154818355818115116107e9576000838152602090206107e9918101908301610800565b505050565b60206040519081016040526000815290565b61051c91905b8082111561081a5760008155600101610806565b50905600a165627a7a723058202ad1e9fda0e95a1d0040266c6438e7a86b19a47ec3debbaaf3a2ce2608178ff50029`
 
-// DeployTomoValidator deploys a new Ethereum contract, binding an instance of TomoValidator to it.
-func DeployTomoValidator(auth *bind.TransactOpts, backend bind.ContractBackend, _validators []common.Address, _caps []*big.Int) (common.Address, *types.Transaction, *TomoValidator, error) {
-	parsed, err := abi.JSON(strings.NewReader(TomoValidatorABI))
+// DeployxdcValidator deploys a new Ethereum contract, binding an instance of xdcValidator to it.
+func DeployxdcValidator(auth *bind.TransactOpts, backend bind.ContractBackend, _validators []common.Address, _caps []*big.Int) (common.Address, *types.Transaction, *xdcValidator, error) {
+	parsed, err := abi.JSON(strings.NewReader(xdcValidatorABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(TomoValidatorBin), backend, _validators, _caps)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(xdcValidatorBin), backend, _validators, _caps)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	return address, tx, &TomoValidator{TomoValidatorCaller: TomoValidatorCaller{contract: contract}, TomoValidatorTransactor: TomoValidatorTransactor{contract: contract}, TomoValidatorFilterer: TomoValidatorFilterer{contract: contract}}, nil
+	return address, tx, &xdcValidator{xdcValidatorCaller: xdcValidatorCaller{contract: contract}, xdcValidatorTransactor: xdcValidatorTransactor{contract: contract}, xdcValidatorFilterer: xdcValidatorFilterer{contract: contract}}, nil
 }
 
-// TomoValidator is an auto generated Go binding around an Ethereum contract.
-type TomoValidator struct {
-	TomoValidatorCaller     // Read-only binding to the contract
-	TomoValidatorTransactor // Write-only binding to the contract
-	TomoValidatorFilterer   // Log filterer for contract events
+// xdcValidator is an auto generated Go binding around an Ethereum contract.
+type xdcValidator struct {
+	xdcValidatorCaller     // Read-only binding to the contract
+	xdcValidatorTransactor // Write-only binding to the contract
+	xdcValidatorFilterer   // Log filterer for contract events
 }
 
-// TomoValidatorCaller is an auto generated read-only Go binding around an Ethereum contract.
-type TomoValidatorCaller struct {
+// xdcValidatorCaller is an auto generated read-only Go binding around an Ethereum contract.
+type xdcValidatorCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TomoValidatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type TomoValidatorTransactor struct {
+// xdcValidatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type xdcValidatorTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TomoValidatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type TomoValidatorFilterer struct {
+// xdcValidatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type xdcValidatorFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TomoValidatorSession is an auto generated Go binding around an Ethereum contract,
+// xdcValidatorSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type TomoValidatorSession struct {
-	Contract     *TomoValidator    // Generic contract binding to set the session for
+type xdcValidatorSession struct {
+	Contract     *xdcValidator    // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// TomoValidatorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// xdcValidatorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type TomoValidatorCallerSession struct {
-	Contract *TomoValidatorCaller // Generic contract caller binding to set the session for
+type xdcValidatorCallerSession struct {
+	Contract *xdcValidatorCaller // Generic contract caller binding to set the session for
 	CallOpts bind.CallOpts        // Call options to use throughout this session
 }
 
-// TomoValidatorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// xdcValidatorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type TomoValidatorTransactorSession struct {
-	Contract     *TomoValidatorTransactor // Generic contract transactor binding to set the session for
+type xdcValidatorTransactorSession struct {
+	Contract     *xdcValidatorTransactor // Generic contract transactor binding to set the session for
 	TransactOpts bind.TransactOpts        // Transaction auth options to use throughout this session
 }
 
-// TomoValidatorRaw is an auto generated low-level Go binding around an Ethereum contract.
-type TomoValidatorRaw struct {
-	Contract *TomoValidator // Generic contract binding to access the raw methods on
+// xdcValidatorRaw is an auto generated low-level Go binding around an Ethereum contract.
+type xdcValidatorRaw struct {
+	Contract *xdcValidator // Generic contract binding to access the raw methods on
 }
 
-// TomoValidatorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type TomoValidatorCallerRaw struct {
-	Contract *TomoValidatorCaller // Generic read-only contract binding to access the raw methods on
+// xdcValidatorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type xdcValidatorCallerRaw struct {
+	Contract *xdcValidatorCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// TomoValidatorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type TomoValidatorTransactorRaw struct {
-	Contract *TomoValidatorTransactor // Generic write-only contract binding to access the raw methods on
+// xdcValidatorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type xdcValidatorTransactorRaw struct {
+	Contract *xdcValidatorTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewTomoValidator creates a new instance of TomoValidator, bound to a specific deployed contract.
-func NewTomoValidator(address common.Address, backend bind.ContractBackend) (*TomoValidator, error) {
-	contract, err := bindTomoValidator(address, backend, backend, backend)
+// NewxdcValidator creates a new instance of xdcValidator, bound to a specific deployed contract.
+func NewxdcValidator(address common.Address, backend bind.ContractBackend) (*xdcValidator, error) {
+	contract, err := bindxdcValidator(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &TomoValidator{TomoValidatorCaller: TomoValidatorCaller{contract: contract}, TomoValidatorTransactor: TomoValidatorTransactor{contract: contract}, TomoValidatorFilterer: TomoValidatorFilterer{contract: contract}}, nil
+	return &xdcValidator{xdcValidatorCaller: xdcValidatorCaller{contract: contract}, xdcValidatorTransactor: xdcValidatorTransactor{contract: contract}, xdcValidatorFilterer: xdcValidatorFilterer{contract: contract}}, nil
 }
 
-// NewTomoValidatorCaller creates a new read-only instance of TomoValidator, bound to a specific deployed contract.
-func NewTomoValidatorCaller(address common.Address, caller bind.ContractCaller) (*TomoValidatorCaller, error) {
-	contract, err := bindTomoValidator(address, caller, nil, nil)
+// NewxdcValidatorCaller creates a new read-only instance of xdcValidator, bound to a specific deployed contract.
+func NewxdcValidatorCaller(address common.Address, caller bind.ContractCaller) (*xdcValidatorCaller, error) {
+	contract, err := bindxdcValidator(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TomoValidatorCaller{contract: contract}, nil
+	return &xdcValidatorCaller{contract: contract}, nil
 }
 
-// NewTomoValidatorTransactor creates a new write-only instance of TomoValidator, bound to a specific deployed contract.
-func NewTomoValidatorTransactor(address common.Address, transactor bind.ContractTransactor) (*TomoValidatorTransactor, error) {
-	contract, err := bindTomoValidator(address, nil, transactor, nil)
+// NewxdcValidatorTransactor creates a new write-only instance of xdcValidator, bound to a specific deployed contract.
+func NewxdcValidatorTransactor(address common.Address, transactor bind.ContractTransactor) (*xdcValidatorTransactor, error) {
+	contract, err := bindxdcValidator(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TomoValidatorTransactor{contract: contract}, nil
+	return &xdcValidatorTransactor{contract: contract}, nil
 }
 
-// NewTomoValidatorFilterer creates a new log filterer instance of TomoValidator, bound to a specific deployed contract.
-func NewTomoValidatorFilterer(address common.Address, filterer bind.ContractFilterer) (*TomoValidatorFilterer, error) {
-	contract, err := bindTomoValidator(address, nil, nil, filterer)
+// NewxdcValidatorFilterer creates a new log filterer instance of xdcValidator, bound to a specific deployed contract.
+func NewxdcValidatorFilterer(address common.Address, filterer bind.ContractFilterer) (*xdcValidatorFilterer, error) {
+	contract, err := bindxdcValidator(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &TomoValidatorFilterer{contract: contract}, nil
+	return &xdcValidatorFilterer{contract: contract}, nil
 }
 
-// bindTomoValidator binds a generic wrapper to an already deployed contract.
-func bindTomoValidator(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(TomoValidatorABI))
+// bindxdcValidator binds a generic wrapper to an already deployed contract.
+func bindxdcValidator(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(xdcValidatorABI))
 	if err != nil {
 		return nil, err
 	}
@@ -483,79 +483,309 @@ func bindTomoValidator(address common.Address, caller bind.ContractCaller, trans
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TomoValidator *TomoValidatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _TomoValidator.Contract.TomoValidatorCaller.contract.Call(opts, result, method, params...)
+func (_xdcValidator *xdcValidatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _xdcValidator.Contract.xdcValidatorCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TomoValidator *TomoValidatorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TomoValidator.Contract.TomoValidatorTransactor.contract.Transfer(opts)
+func (_xdcValidator *xdcValidatorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _xdcValidator.Contract.xdcValidatorTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TomoValidator *TomoValidatorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TomoValidator.Contract.TomoValidatorTransactor.contract.Transact(opts, method, params...)
+func (_xdcValidator *xdcValidatorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _xdcValidator.Contract.xdcValidatorTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TomoValidator *TomoValidatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _TomoValidator.Contract.contract.Call(opts, result, method, params...)
+func (_xdcValidator *xdcValidatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _xdcValidator.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TomoValidator *TomoValidatorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TomoValidator.Contract.contract.Transfer(opts)
+func (_xdcValidator *xdcValidatorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _xdcValidator.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TomoValidator *TomoValidatorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TomoValidator.Contract.contract.Transact(opts, method, params...)
+func (_xdcValidator *xdcValidatorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _xdcValidator.Contract.contract.Transact(opts, method, params...)
+}
+
+// Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
+//
+// Solidity: function candidates( uint256) constant returns(address)
+func (_xdcValidator *xdcValidatorCaller) Candidates(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "candidates", arg0)
+	return *ret0, err
+}
+
+// Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
+//
+// Solidity: function candidates( uint256) constant returns(address)
+func (_xdcValidator *xdcValidatorSession) Candidates(arg0 *big.Int) (common.Address, error) {
+	return _xdcValidator.Contract.Candidates(&_xdcValidator.CallOpts, arg0)
+}
+
+// Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
+//
+// Solidity: function candidates( uint256) constant returns(address)
+func (_xdcValidator *xdcValidatorCallerSession) Candidates(arg0 *big.Int) (common.Address, error) {
+	return _xdcValidator.Contract.Candidates(&_xdcValidator.CallOpts, arg0)
+}
+
+// GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
+//
+// Solidity: function getCandidateCap(_candidate address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorCaller) GetCandidateCap(opts *bind.CallOpts, _candidate common.Address) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getCandidateCap", _candidate)
+	return *ret0, err
+}
+
+// GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
+//
+// Solidity: function getCandidateCap(_candidate address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorSession) GetCandidateCap(_candidate common.Address) (*big.Int, error) {
+	return _xdcValidator.Contract.GetCandidateCap(&_xdcValidator.CallOpts, _candidate)
+}
+
+// GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
+//
+// Solidity: function getCandidateCap(_candidate address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorCallerSession) GetCandidateCap(_candidate common.Address) (*big.Int, error) {
+	return _xdcValidator.Contract.GetCandidateCap(&_xdcValidator.CallOpts, _candidate)
+}
+
+// GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
+//
+// Solidity: function getCandidates() constant returns(address[])
+func (_xdcValidator *xdcValidatorCaller) GetCandidates(opts *bind.CallOpts) ([]common.Address, error) {
+	var (
+		ret0 = new([]common.Address)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getCandidates")
+	return *ret0, err
+}
+
+// GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
+//
+// Solidity: function getCandidates() constant returns(address[])
+func (_xdcValidator *xdcValidatorSession) GetCandidates() ([]common.Address, error) {
+	return _xdcValidator.Contract.GetCandidates(&_xdcValidator.CallOpts)
+}
+
+// GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
+//
+// Solidity: function getCandidates() constant returns(address[])
+func (_xdcValidator *xdcValidatorCallerSession) GetCandidates() ([]common.Address, error) {
+	return _xdcValidator.Contract.GetCandidates(&_xdcValidator.CallOpts)
+}
+
+// GetValidators is a free data retrieval call binding the contract method 0xb7ab4db5.
+//
+// Solidity: function getValidators() constant returns(address[])
+func (_xdcValidator *xdcValidatorCaller) GetValidators(opts *bind.CallOpts) ([]common.Address, error) {
+	var (
+		ret0 = new([]common.Address)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getValidators")
+	return *ret0, err
+}
+
+// GetValidators is a free data retrieval call binding the contract method 0xb7ab4db5.
+//
+// Solidity: function getValidators() constant returns(address[])
+func (_xdcValidator *xdcValidatorSession) GetValidators() ([]common.Address, error) {
+	return _xdcValidator.Contract.GetValidators(&_xdcValidator.CallOpts)
+}
+
+// GetValidators is a free data retrieval call binding the contract method 0xb7ab4db5.
+//
+// Solidity: function getValidators() constant returns(address[])
+func (_xdcValidator *xdcValidatorCallerSession) GetValidators() ([]common.Address, error) {
+	return _xdcValidator.Contract.GetValidators(&_xdcValidator.CallOpts)
+}
+
+// GetVoterCap is a free data retrieval call binding the contract method 0x302b6872.
+//
+// Solidity: function getVoterCap(_candidate address, _voter address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorCaller) GetVoterCap(opts *bind.CallOpts, _candidate common.Address, _voter common.Address) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getVoterCap", _candidate, _voter)
+	return *ret0, err
+}
+
+// GetVoterCap is a free data retrieval call binding the contract method 0x302b6872.
+//
+// Solidity: function getVoterCap(_candidate address, _voter address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorSession) GetVoterCap(_candidate common.Address, _voter common.Address) (*big.Int, error) {
+	return _xdcValidator.Contract.GetVoterCap(&_xdcValidator.CallOpts, _candidate, _voter)
+}
+
+// GetVoterCap is a free data retrieval call binding the contract method 0x302b6872.
+//
+// Solidity: function getVoterCap(_candidate address, _voter address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorCallerSession) GetVoterCap(_candidate common.Address, _voter common.Address) (*big.Int, error) {
+	return _xdcValidator.Contract.GetVoterCap(&_xdcValidator.CallOpts, _candidate, _voter)
+}
+
+// IsCandidate is a free data retrieval call binding the contract method 0xd51b9e93.
+//
+// Solidity: function isCandidate(_candidate address) constant returns(bool)
+func (_xdcValidator *xdcValidatorCaller) IsCandidate(opts *bind.CallOpts, _candidate common.Address) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "isCandidate", _candidate)
+	return *ret0, err
+}
+
+// IsCandidate is a free data retrieval call binding the contract method 0xd51b9e93.
+//
+// Solidity: function isCandidate(_candidate address) constant returns(bool)
+func (_xdcValidator *xdcValidatorSession) IsCandidate(_candidate common.Address) (bool, error) {
+	return _xdcValidator.Contract.IsCandidate(&_xdcValidator.CallOpts, _candidate)
+}
+
+// IsCandidate is a free data retrieval call binding the contract method 0xd51b9e93.
+//
+// Solidity: function isCandidate(_candidate address) constant returns(bool)
+func (_xdcValidator *xdcValidatorCallerSession) IsCandidate(_candidate common.Address) (bool, error) {
+	return _xdcValidator.Contract.IsCandidate(&_xdcValidator.CallOpts, _candidate)
+}
+
+// IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
+//
+// Solidity: function isValidator(_candidate address) constant returns(bool)
+func (_xdcValidator *xdcValidatorCaller) IsValidator(opts *bind.CallOpts, _candidate common.Address) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "isValidator", _candidate)
+	return *ret0, err
+}
+
+// IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
+//
+// Solidity: function isValidator(_candidate address) constant returns(bool)
+func (_xdcValidator *xdcValidatorSession) IsValidator(_candidate common.Address) (bool, error) {
+	return _xdcValidator.Contract.IsValidator(&_xdcValidator.CallOpts, _candidate)
+}
+
+// IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
+//
+// Solidity: function isValidator(_candidate address) constant returns(bool)
+func (_xdcValidator *xdcValidatorCallerSession) IsValidator(_candidate common.Address) (bool, error) {
+	return _xdcValidator.Contract.IsValidator(&_xdcValidator.CallOpts, _candidate)
+}
+
+// Validators is a free data retrieval call binding the contract method 0x35aa2e44.
+//
+// Solidity: function validators( uint256) constant returns(address)
+func (_xdcValidator *xdcValidatorCaller) Validators(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "validators", arg0)
+	return *ret0, err
+}
+
+// Validators is a free data retrieval call binding the contract method 0x35aa2e44.
+//
+// Solidity: function validators( uint256) constant returns(address)
+func (_xdcValidator *xdcValidatorSession) Validators(arg0 *big.Int) (common.Address, error) {
+	return _xdcValidator.Contract.Validators(&_xdcValidator.CallOpts, arg0)
+}
+
+// Validators is a free data retrieval call binding the contract method 0x35aa2e44.
+//
+// Solidity: function validators( uint256) constant returns(address)
+func (_xdcValidator *xdcValidatorCallerSession) Validators(arg0 *big.Int) (common.Address, error) {
+	return _xdcValidator.Contract.Validators(&_xdcValidator.CallOpts, arg0)
 }
 
 // Propose is a paid mutator transaction binding the contract method 0x01267951.
 //
 // Solidity: function propose(_candidate address) returns()
-func (_TomoValidator *TomoValidatorTransactor) Propose(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
-	return _TomoValidator.contract.Transact(opts, "propose", _candidate)
+func (_xdcValidator *xdcValidatorTransactor) Propose(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "propose", _candidate)
 }
 
 // Propose is a paid mutator transaction binding the contract method 0x01267951.
 //
 // Solidity: function propose(_candidate address) returns()
-func (_TomoValidator *TomoValidatorSession) Propose(_candidate common.Address) (*types.Transaction, error) {
-	return _TomoValidator.Contract.Propose(&_TomoValidator.TransactOpts, _candidate)
+func (_xdcValidator *xdcValidatorSession) Propose(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts, _candidate)
 }
 
 // Propose is a paid mutator transaction binding the contract method 0x01267951.
 //
 // Solidity: function propose(_candidate address) returns()
-func (_TomoValidator *TomoValidatorTransactorSession) Propose(_candidate common.Address) (*types.Transaction, error) {
-	return _TomoValidator.Contract.Propose(&_TomoValidator.TransactOpts, _candidate)
+func (_xdcValidator *xdcValidatorTransactorSession) Propose(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts, _candidate)
+}
+
+// Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
+//
+// Solidity: function unvote(_candidate address, _cap uint256) returns()
+func (_xdcValidator *xdcValidatorTransactor) Unvote(opts *bind.TransactOpts, _candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "unvote", _candidate, _cap)
+}
+
+// Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
+//
+// Solidity: function unvote(_candidate address, _cap uint256) returns()
+func (_xdcValidator *xdcValidatorSession) Unvote(_candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Unvote(&_xdcValidator.TransactOpts, _candidate, _cap)
+}
+
+// Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
+//
+// Solidity: function unvote(_candidate address, _cap uint256) returns()
+func (_xdcValidator *xdcValidatorTransactorSession) Unvote(_candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Unvote(&_xdcValidator.TransactOpts, _candidate, _cap)
+}
+
+
+// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
+//
+// Solidity: function vote(_candidate address) returns()
+func (_xdcValidator *xdcValidatorTransactor) Vote(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "vote", _candidate)
 }
 
 // Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
 //
 // Solidity: function vote(_candidate address) returns()
-func (_TomoValidator *TomoValidatorTransactor) Vote(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
-	return _TomoValidator.contract.Transact(opts, "vote", _candidate)
+func (_xdcValidator *xdcValidatorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Vote(&_xdcValidator.TransactOpts, _candidate)
 }
 
 // Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
 //
 // Solidity: function vote(_candidate address) returns()
-func (_TomoValidator *TomoValidatorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
-	return _TomoValidator.Contract.Vote(&_TomoValidator.TransactOpts, _candidate)
-}
-
-// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
-//
-// Solidity: function vote(_candidate address) returns()
-func (_TomoValidator *TomoValidatorTransactorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
-	return _TomoValidator.Contract.Vote(&_TomoValidator.TransactOpts, _candidate)
+func (_xdcValidator *xdcValidatorTransactorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Vote(&_xdcValidator.TransactOpts, _candidate)
 }
 
