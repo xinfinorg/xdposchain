@@ -26,9 +26,9 @@ contract xdcValidator is IValidator {
     
     address[] public candidates;
     uint256 candidateCount = 0;
-    uint256 public constant minCandidateCap = 50000 ether;
-    uint256 public constant maxValidatorNumber = 99;
-    uint256 public constant candidateWithdrawDelay = 100; // blocks
+    uint256 public minCandidateCap;
+    uint256 public maxValidatorNumber;
+    uint256 public candidateWithdrawDelay; // blocks
     
     modifier onlyValidCandidateCap {
         // anyone can deposit X xdc to become a candidate
@@ -69,7 +69,12 @@ contract xdcValidator is IValidator {
 
 
     
-       function xdcValidator(address[] _candidates, uint256[] _caps) public {
+       function xdcValidator (address[] _candidates, uint256[] _caps, uint256 _minCandidateCap, uint256 _maxValidatorNumber, uint256 _candidateWithdrawDelay
+    ) public {
+        minCandidateCap = _minCandidateCap * 10 ** 18;
+        maxValidatorNumber = _maxValidatorNumber;
+        candidateWithdrawDelay = _candidateWithdrawDelay;
+
         candidates = _candidates;
         
         for (uint256 i = 0; i < _candidates.length; i++) {
