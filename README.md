@@ -16,9 +16,9 @@ Visit: [XinFin.org](https://xinfin.org)
 
 - Customer Centric and consortium driven Governance to equally benefit the validators as well as providing comfort for large scale enterprise applications to be hosted on the Network. This achieves
 
-- Rapid Upgradability
+  - Rapid Upgradability
 
-- DApps Standardisation for rapid commercialisation
+  - DApps Standardisation for rapid commercialisation
 
-- Compliance with major global jurisdictions.
+  - Compliance with major global jurisdictions.
 
