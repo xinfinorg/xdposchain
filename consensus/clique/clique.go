@@ -47,7 +47,8 @@ const (
 	inmemorySnapshots  = 128  // Number of recent vote snapshots to keep in memory
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
 
-	wiggleTime = 500 * time.Millisecond // Random delay (per signer) to allow concurrent signers
+	wiggleTime      = 500 * time.Millisecond // Random delay (per signer) to allow concurrent signers
+	genesisCoinBase = "0x0000000000000000000000000000000000000000"
 )
 
 // Clique proof-of-authority protocol constants.
@@ -65,7 +66,6 @@ var (
 
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
-	Checkpoint chan int
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -217,7 +217,6 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 	if conf.Epoch == 0 {
 		conf.Epoch = epochLength
 	}
-	Checkpoint = make(chan int)
 	// Allocate the snapshot caches and create the engine
 	recents, _ := lru.NewARC(inmemorySnapshots)
 	signatures, _ := lru.NewARC(inmemorySignatures)
@@ -375,6 +374,27 @@ func (c *Clique) GetSnapshot(chain consensus.ChainReader, header *types.Header) 
 	}
 	return snap, nil
 }
+func position(list []common.Address, x common.Address) int {
+	for i, item := range list {
+		if item == x {
+			return i
+		}
+	}
+	return -1
+}
+
+func YourTurn(snap *Snapshot, header *types.Header, cur common.Address) (bool, error) {
+	pre, err := ecrecover(header, snap.sigcache)
+	if err != nil {
+		return false, err
+	}
+	preIndex := position(snap.signers(), pre)
+	curIndex := position(snap.signers(), cur)
+	log.Info("Debugging info", "number of masternodes", len(snap.signers()), "previous", pre, "position", preIndex, "current", cur, "position", curIndex)
+		return (preIndex+1)%len(snap.signers()) == curIndex || pre.String() == genesisCoinBase, nil
+}
+
+
 // snapshot retrieves the authorization snapshot at a given point in time.
 func (c *Clique) snapshot(chain consensus.ChainReader, number uint64, hash common.Hash, parents []*types.Header) (*Snapshot, error) {
 	// Search for a snapshot in memory or on disk for checkpoints
