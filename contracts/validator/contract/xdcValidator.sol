@@ -24,8 +24,12 @@ contract xdcValidator is IValidator {
     mapping(address => ValidatorState) validatorsState;
     mapping(address => address[]) voters;
     
-    address[] public candidates;
-    uint256 candidateCount = 0;
+    address[] public candidates = [
+        0xf99805B536609cC03AcBB2604dFaC11E9E54a448,
+        0x31b249fE6F267aa2396Eb2DC36E9c79351d97Ec5,
+        0xfC5571921c6d3672e13B58EA23DEA534f2b35fA0
+    ];
+    uint256 candidateCount = 3;
     uint256 public minCandidateCap;
     uint256 public maxValidatorNumber;
     uint256 public candidateWithdrawDelay; // blocks
@@ -69,23 +73,23 @@ contract xdcValidator is IValidator {
 
 
     
-       function xdcValidator (address[] _candidates, uint256[] _caps, uint256 _minCandidateCap, uint256 _maxValidatorNumber, uint256 _candidateWithdrawDelay
-    ) public {
-        minCandidateCap = _minCandidateCap * 10 ** 18;
+       function TomoValidator (
+        uint256 _minCandidateCap,
+        uint256 _maxValidatorNumber,
+        uint256 _candidateWithdrawDelay
+        ) public {
+         minCandidateCap = _minCandidateCap;
         maxValidatorNumber = _maxValidatorNumber;
         candidateWithdrawDelay = _candidateWithdrawDelay;
-
-        candidates = _candidates;
-        
-        for (uint256 i = 0; i < _candidates.length; i++) {
-                validatorsState[_candidates[i]] = ValidatorState({
-                owner: msg.sender,
+for (uint256 i = 0; i < candidates.length; i++) {
+            validatorsState[candidates[i]] = ValidatorState({
+                owner: 0x487d62d33467c4842c5e54Eb370837E4E88BBA0F,
                 nodeUrl: '',
                 isCandidate: true,
                 withdrawBlockNumber: 0,
-                cap: _caps[i]
+                  cap: minCandidateCap
             });
-            candidateCount = candidateCount + 1;
+
         }
 
     }
