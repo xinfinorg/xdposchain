@@ -760,7 +760,7 @@ func (f *Fetcher) CreateTransactionSign(chainConfig *params.ChainConfig, pool *c
 			// Get block signer.
 			signer, err := c.RecoverSigner(block.Header())
 			if err != nil {
-				log.Error("TOMO - Fail to get signer", "error", err)
+				log.Error("xdc - Fail to get signer", "error", err)
 				return
 			}
 
@@ -774,7 +774,7 @@ func (f *Fetcher) CreateTransactionSign(chainConfig *params.ChainConfig, pool *c
 				tx := types.NewTransaction(nonce, common.HexToAddress(common.BlockSigners), big.NewInt(0), 100000, big.NewInt(0), inputData)
 				txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainId)
 				if err != nil {
-					log.Error("TOMO - Fail to create tx sign", "error", err)
+					log.Error("xdc - Fail to create tx sign", "error", err)
 					return
 				}
 
