@@ -107,10 +107,10 @@ var (
 type TxStatus uint
 
 const (
-	TxStatusUnknown TxStatus = iota
-	TxStatusQueued
-	TxStatusPending
-	TxStatusIncluded
+	TxStatusUnknown  TxStatus = iota
+	TxStatusQueued   
+	TxStatusPending  
+	TxStatusIncluded 
 )
 
 // blockChain provides the state of blockchain and current gas limit to do
@@ -586,13 +586,17 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if pool.currentState.GetBalance(from).Cmp(tx.Cost()) < 0 {
 		return ErrInsufficientFunds
 	}
-	intrGas, err := IntrinsicGas(tx.Data(), tx.To() == nil, pool.homestead)
-	if err != nil {
-		return err
+	if tx.To().String() != common.BlockSigners {
+		intrGas, err := IntrinsicGas(tx.Data(), tx.To() == nil, pool.homestead)
+		if err != nil {
+			return err
+		}
+		// Exclude check smart contract sign address.
+		if tx.Gas() < intrGas {
+			return ErrIntrinsicGas
+		}
 	}
-	if tx.Gas() < intrGas {
-		return ErrIntrinsicGas
-	}
+	
 	return nil
 }
 
