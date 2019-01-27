@@ -30,7 +30,7 @@ contract xdcValidator is IValidator {
     uint256 public constant maxValidatorNumber = 99;
     
     modifier onlyValidCandidateCap {
-        // anyone can deposit 10000 TOMO to become a candidate
+        // anyone can deposit 10000 xdc to become a candidate
         require(msg.value >= minCandidateCap);
         _;
     }
