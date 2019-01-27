@@ -22,7 +22,6 @@ type rewardLog struct {
 	Reward *big.Int `json:"reward"`
 }
 
-
 // Send tx sign for block number to smart contract blockSigner.
 func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, manager *accounts.Manager, block *types.Block) error {
 	if chainConfig.Clique != nil {
