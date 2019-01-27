@@ -391,6 +391,16 @@ func position(list []common.Address, x common.Address) int {
 	return -1
 }
 
+func (c *Clique) GetMasternodes(chain consensus.ChainReader, header *types.Header) []common.Address {
+	lastCheckpointNumber := header.Number.Uint64() - (header.Number.Uint64() % c.config.Epoch)
+	preCheckpointHeader := chain.GetHeaderByNumber(lastCheckpointNumber)
+	masternodes := make([]common.Address, (len(preCheckpointHeader.Extra)-extraVanity-extraSeal)/common.AddressLength)
+	for i := 0; i < len(masternodes); i++ {
+		copy(masternodes[i][:], preCheckpointHeader.Extra[extraVanity+i*common.AddressLength:])
+	}
+	return masternodes
+}
+
 func YourTurn(masternodes []common.Address, snap *Snapshot, header *types.Header, cur common.Address) (bool, error) {
 	if header.Number.Uint64() == 0 {
 		// Not check signer for genesis block.
@@ -409,14 +419,6 @@ func YourTurn(masternodes []common.Address, snap *Snapshot, header *types.Header
 		fmt.Printf("%d - %s\n", i, s.String())
 	}
 	return (preIndex+1)%len(masternodes) == curIndex, nil
-}
-
-func GetExtraVanity() int {
-	return extraVanity
-}
-
-func GetExtraSeal() int {
-	return extraSeal
 }
 
 // snapshot retrieves the authorization snapshot at a given point in time.
@@ -533,7 +535,17 @@ func (c *Clique) verifySeal(chain consensus.ChainReader, header *types.Header, p
 		return err
 	}
 	if _, ok := snap.Signers[signer]; !ok {
-		return errUnauthorized
+		valid := false
+		masternodes := c.GetMasternodes(chain, header)
+		for _, m := range masternodes {
+			if m == signer {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return errUnauthorized
+		}
 	}
 	for seen, recent := range snap.Recents {
 		if recent == signer {
@@ -697,7 +709,17 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 		return nil, err
 	}
 	if _, authorized := snap.Signers[signer]; !authorized {
-		return nil, errUnauthorized
+		valid := false
+		masternodes := c.GetMasternodes(chain, header)
+		for _, m := range masternodes {
+			if m == signer {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return nil, errUnauthorized
+		}
 	}
 	// If we're amongst the recent signers, wait for the next block
 	for seen, recent := range snap.Recents {
