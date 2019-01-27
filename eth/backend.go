@@ -183,7 +183,9 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	}
 	eth.ApiBackend.gpo = gasprice.NewOracle(eth.ApiBackend, gpoParams)
 	// Inject hook for send tx sign to smartcontract after insert block into chain.
-	eth.protocolManager.fetcher.CreateTransactionSign(eth.chainConfig, eth.txPool, eth.accountManager, eth.engine)
+	if eth.chainConfig.Clique != nil {
+		eth.protocolManager.fetcher.HookCreateTxSign(eth.chainConfig, eth.TxPool(), eth.AccountManager())
+	}
 	
 		if eth.chainConfig.Clique != nil {
 		c := eth.engine.(*clique.Clique)
@@ -200,7 +202,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 			config := ctx.GetConfig()
 			client, err := ethclient.Dial(config.IPCEndpoint())
 			if err != nil {
-				log.Error("XDC - Fail to connect RPC", "error", err)
+				log.Error("Fail to connect RPC", "error", err)
 				return err
 			}
 			addr := common.HexToAddress(common.BlockSigners)
@@ -221,34 +223,27 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 				totalSigner := uint64(0)
 
 				for i := startBlockNumber; i <= endBlockNumber; i++ {
-					blockHeader := chain.GetHeaderByNumber(i)
-					if signer, err := c.RecoverSigner(blockHeader); err != nil {
-						log.Error("xdc - Fail recover block signer", "error", err)
-						
-						return err
-					} else {
-						_, exist := signers[signer]
-						if exist {
-							signers[signer].Sign++
-						} else {
-							signers[signer] = &rewardLog{1, 0}
-						}
-						totalSigner++
-					}
-
-					// Get validator in blockSigner smartcontract.
+		// Get signers in blockSigner smartcontract.
 					addrs, err := blockSigner.GetSigners(opts, new(big.Int).SetUint64(i))
 					if err != nil {
-						log.Error("xdc - Fail to get signers from smartcontract.", "error", err)
+						log.Error("Fail to get signers from smartcontract.", "error", err)
 						return err
 					}
+					// Filter duplicate address.
 					if len(addrs) > 0 {
-						for j := 0; j < len(addrs); j++ {
-							_, exist := signers[addrs[j]]
-							if exist {
-								signers[addrs[j]].Sign++
+						addrSigners := make(map[common.Address]bool)
+						for _, addr := range addrs {
+							if _, ok := addrSigners[addr]; ok {
 							} else {
-								signers[addrs[j]] = &rewardLog{1, 0}
+								addrSigners[addr] = true
+							}
+						}
+						for addr := range addrSigners {
+							_, exist := signers[addr]
+							if exist {
+								signers[addr].Sign++
+							} else {
+								signers[addrs] = &rewardLog{1, 0}
 							}
 							totalSigner++
 						}
@@ -258,7 +253,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 				chainReward := new(big.Int).SetUint64(chain.Config().Clique.Reward * params.Ether)
 				// Add reward for signer.
 				calcReward := new(big.Int)
-				// Add reward for validators.
+				// Add reward for signers.
 				for signer, rLog := range signers {
 					calcReward.Mul(chainReward, new(big.Int).SetUint64(rLog.Sign))
 					calcReward.Div(calcReward, new(big.Int).SetUint64(totalSigner))
@@ -269,11 +264,11 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 				
 				jsonSigners, err := json.Marshal(signers)
 				if err != nil {
-					log.Error("xdc - Fail to parse json signers", "error", err)
+					log.Error("Fail to parse json signers", "error", err)
 					return err
 				}
 
-				log.Info("xdc - Calculate reward at checkpoint", "startBlock", startBlockNumber, "endBlock", endBlockNumber, "signers", string(jsonSigners), "totalSigner", totalSigner, "totalReward", chainReward)
+				log.Info("Calculate reward at checkpoint", "startBlock", startBlockNumber, "endBlock", endBlockNumber, "signers", string(jsonSigners), "totalSigner", totalSigner, "totalReward", chainReward)
 			}
 
 			return nil
