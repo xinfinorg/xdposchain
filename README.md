@@ -3,6 +3,7 @@
 XinFin Hybrid Blockchain is an Enterprise ready Blockchain for global trade and finance
 
 Visit: [XinFin.org](https://xinfin.org)
+Contribute: [Developer Docs](https://docs.xinfin.org)
 
 ## XinFin Network Apothem testnet is community driven project to achieve the following 
 
