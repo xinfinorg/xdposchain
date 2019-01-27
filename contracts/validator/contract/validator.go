@@ -15,7 +15,7 @@ import (
 )
 
 // IValidatorABI is the input ABI used to generate the binding from.
-const IValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}]"
+const IValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"string\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}]"
 
 // IValidatorBin is the compiled bytecode used for deploying new contracts.
 const IValidatorBin = `0x`
@@ -175,26 +175,25 @@ func (_IValidator *IValidatorTransactorRaw) Transact(opts *bind.TransactOpts, me
 	return _IValidator.Contract.contract.Transact(opts, method, params...)
 }
 
-// Propose is a paid mutator transaction binding the contract method 0xc198f8ba.
+// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
 //
-// Solidity: function propose() returns()
-func (_IValidator *IValidatorTransactor) Propose(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IValidator.contract.Transact(opts, "propose")
-}
+// Solidity: function propose(address,  string) returns()
+func (_IValidator *IValidatorTransactor) Propose(opts *bind.TransactOpts, arg0 common.Address, arg1 string) (*types.Transaction, error) {
+	return _IValidator.contract.Transact(opts, "propose", arg0, arg1)
 
-// Propose is a paid mutator transaction binding the contract method  0xc198f8ba.
+// Propose is a paid mutator transaction binding the contract method  0xd6f0948c.
 //
-// Solidity: function propose() returns()
-func (_IValidator *IValidatorSession) Propose() (*types.Transaction, error) {
-	return _IValidator.Contract.Propose(&_IValidator.TransactOpts)
-}
+// Solidity: function propose( address,  string) returns()
+func (_IValidator *IValidatorSession) Propose(arg0 common.Address, arg1 string) (*types.Transaction, error) {
+	return _IValidator.Contract.Propose(&_IValidator.TransactOpts, arg0, arg1)
 
-// Propose is a paid mutator transaction binding the contract method  0xc198f8ba.
+
+// Propose is a paid mutator transaction binding the contract method  0xd6f0948c.
 //
-// Solidity: function propose() returns()
-func (_IValidator *IValidatorTransactorSession) Propose() (*types.Transaction, error) {
-	return _IValidator.Contract.Propose(&_IValidator.TransactOpts)
-}
+// Solidity: function propose( address,  string) returns()
+func (_IValidator *IValidatorTransactorSession) Propose(arg0 common.Address, arg1 string) (*types.Transaction, error) {
+	return _IValidator.Contract.Propose(&_IValidator.TransactOpts, arg0, arg1)
+
 
 // Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
 //
@@ -379,10 +378,11 @@ func (_SafeMath *SafeMathTransactorRaw) Transact(opts *bind.TransactOpts, method
 }
 
 // xdcValidatorABI is the input ABI used to generate the binding from.
-const xdcValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"unvote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCandidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getVoters\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"getVoterCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"maxCandidateNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"retire\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"maxValidatorNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"isCandidate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"minCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_candidates\",\"type\":\"address[]\"},{\"name\":\"_caps\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Vote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Unvote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Propose\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Retire\",\"type\":\"event\"}]"
+const xdcValidatorABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateBacker\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"unvote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCandidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateWithdrawBlockNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getVoters\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"getVoterCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"withdraw\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_nodeUrl\",\"type\":\"string\"}],\"name\":\"setNodeUrl\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"resign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"maxValidatorNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"isCandidate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"minCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_nodeUrl\",\"type\":\"string\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateNodeUrl\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_candidates\",\"type\":\"address[]\"},{\"name\":\"_caps\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Vote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Unvote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_backer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Propose\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_backer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"Resign\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_backer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_nodeUrl\",\"type\":\"string\"}],\"name\":\"SetNodeUrl\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_backer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"}]"
 
 // xdcValidatorBin is the compiled bytecode used for deploying new contracts
-const xdcValidatorBin = `0x60606040526000600355341561001457600080fd5b604051610c00380380610c008339810160405280805182019190602001805190910190506000600283805161004d9291602001906100ec565b50600090505b82518110156100e45760408051908101604052600181526020810183838151811061007a57fe5b90602001906020020151905260008085848151811061009557fe5b90602001906020020151600160a060020a0316815260208101919091526040016000208151815460ff191690151517815560208201516001918201556003805482019055919091019050610053565b50505061017a565b828054828255906000526020600020908101928215610143579160200282015b828111156101435782518254600160a060020a031916600160a060020a03919091161782556020929092019160019091019061010c565b5061014f929150610153565b5090565b61017791905b8082111561014f578054600160a060020a0319168155600101610159565b90565b610a77806101896000396000f3006060604052600436106100c45763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166302aa9be281146100c957806306a49fce146100ed5780632d15cc0414610153578063302b6872146101725780633477ee2e146101a957806358e7525f146101db5780636dd7d8ea146101fa5780638198a8dc1461020e578063a4874d7714610221578063c198f8ba14610234578063d09f1ab41461023c578063d51b9e931461024f578063d55b7dff14610282575b600080fd5b34156100d457600080fd5b6100eb600160a060020a0360043516602435610295565b005b34156100f857600080fd5b6101006103db565b60405160208082528190810183818151815260200191508051906020019060200280838360005b8381101561013f578082015183820152602001610127565b505050509050019250505060405180910390f35b341561015e57600080fd5b610100600160a060020a0360043516610444565b341561017d57600080fd5b610197600160a060020a03600435811690602435166104d1565b60405190815260200160405180910390f35b34156101b457600080fd5b6101bf6004356104fe565b604051600160a060020a03909116815260200160405180910390f35b34156101e657600080fd5b610197600160a060020a0360043516610526565b6100eb600160a060020a0360043516610544565b341561021957600080fd5b61019761069b565b341561022c57600080fd5b6100eb6106a1565b6100eb610845565b341561024757600080fd5b610197610999565b341561025a57600080fd5b61026e600160a060020a036004351661099e565b604051901515815260200160405180910390f35b341561028d57600080fd5b6101976109bc565b600160a060020a03808316600090815260208181526040808320339094168352600290930190522054819010156102cb57600080fd5b600160a060020a0382166000908152602081905260409020600101546102f7908263ffffffff6109ca16565b600160a060020a038084166000908152602081815260408083206001810195909555339093168252600290930190925290205461033a908263ffffffff6109ca16565b600160a060020a0380841660009081526020818152604080832033909416808452600290940190915290819020929092559082156108fc0290839051600060405180830381858888f19350505050151561039357600080fd5b7f23ae40ca85f8a7c921ebb4269dc9a81e8a6de8dba614752927e0ff39341392fc8282604051600160a060020a03909216825260208201526040908101905180910390a15050565b6103e36109f2565b600280548060200260200160405190810160405280929190818152602001828054801561043957602002820191906000526020600020905b8154600160a060020a0316815260019091019060200180831161041b575b505050505090505b90565b61044c6109f2565b6001600083600160a060020a0316600160a060020a031681526020019081526020016000208054806020026020016040519081016040528092919081815260200182805480156104c557602002820191906000526020600020905b8154600160a060020a031681526001909101906020018083116104a7575b50505050509050919050565b600160a060020a039182166000908152602081815260408083209390941682526002909201909152205490565b600280548290811061050c57fe5b600091825260209091200154600160a060020a0316905081565b600160a060020a031660009081526020819052604090206001015490565b600160a060020a03811660009081526020819052604090205460ff16151561056b57600080fd5b600160a060020a038116600090815260208190526040902060010154610597903463ffffffff6109dc16565b600160a060020a03808316600090815260208181526040808320600181019590955533909316825260029093019092529020546105da903463ffffffff6109dc16565b600160a060020a038083166000818152602081815260408083203390951683526002909401815283822094909455908152600192839052208054909181016106228382610a04565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191633600160a060020a03161790557ff668ead05c744b9178e571d2edb452e72baf6529c8d72160e64e59b50d865bd08134604051600160a060020a03909216825260208201526040908101905180910390a150565b6101f481565b600160a060020a033316600090815260208190526040812054819060ff1615156106ca57600080fd5b600160a060020a033316600090815260208181526040808320600281018352908320549290915260010154909250610708908363ffffffff6109ca16565b600160a060020a03331660009081526020818152604080832060018101949094556002840182528220829055819052815460ff19169091556003805460001901905590505b6002548110156107cc5733600160a060020a031660028281548110151561077057fe5b600091825260209091200154600160a060020a031614156107c457600280548290811061079957fe5b6000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191690556107cc565b60010161074d565b600160a060020a03331682156108fc0283604051600060405180830381858888f1935050505015156107fd57600080fd5b7f82b89ed824b293574a2cca050e6e27837b60436d911352f8dca203a9cd35241c3383604051600160a060020a03909216825260208201526040908101905180910390a15050565b69021e19e0c9bab240000034101561085c57600080fd5b600160a060020a03331660009081526020819052604090205460ff161561088257600080fd5b6003546101f490111561089457600080fd5b60028054600181016108a68382610a04565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191633600160a060020a03161790556040805190810160409081526001825234602080840191909152600160a060020a033316600090815290819052208151815460ff1916901515178155602082015160019182015533600160a060020a038116600090815260208181526040808320600201909152908190203490819055600380549094019093557f42681fc159c671d489c99c06f4693d03a705a21df2fbb2b84eedda79e0db4cff935090919051600160a060020a03909216825260208201526040908101905180910390a1565b606381565b600160a060020a031660009081526020819052604090205460ff1690565b69021e19e0c9bab240000081565b6000828211156109d657fe5b50900390565b6000828201838110156109eb57fe5b9392505050565b60206040519081016040526000815290565b815481835581811511610a2857600083815260209020610a28918101908301610a2d565b505050565b61044191905b80821115610a475760008155600101610a33565b50905600a165627a7a7230582080c308e459c6cbc6e91ffb692f7e77a6ff3985db345631c572a5e453588bc56c0029`
+const xdcValidatorBin = `0x6060604052600060035534156200001557600080fd5b6040516200142838038062001428833981016040528080518201919060200180519091019050600060028380516200005292916020019062000171565b50600090505b8251811015620001685760a06040519081016040528033600160a060020a0316815260200160206040519081016040908152600082529082526001602083015201838381518110620000a657fe5b9060200190602002015181526020016000815250600080858481518110620000ca57fe5b90602001906020020151600160a060020a03168152602081019190915260400160002081518154600160a060020a031916600160a060020a039190911617815560208201518160010190805162000126929160200190620001dd565b50604082015160028201805460ff1916911515919091179055606082015181600301556080820151600490910155506003805460019081019091550162000058565b505050620002a5565b828054828255906000526020600020908101928215620001cb579160200282015b82811115620001cb5782518254600160a060020a031916600160a060020a03919091161782556020929092019160019091019062000192565b50620001d99291506200025e565b5090565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106200022057805160ff191683800117855562000250565b8280016001018555821562000250579182015b828111156200025057825182559160200191906001019062000233565b50620001d992915062000288565b6200028591905b80821115620001d9578054600160a060020a031916815560010162000265565b90565b6200028591905b80821115620001d957600081556001016200028f565b61117380620002b56000396000f3006060604052600436106100ef5763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041662a9550181146100f457806302aa9be21461012f57806306a49fce1461015357806328265294146101b95780632d15cc04146101ea578063302b6872146102095780633477ee2e1461022e57806351cff8d91461024457806358e7525f146102635780636dd7d8ea14610282578063a3ec796514610296578063ae6e43f5146102f5578063d09f1ab414610314578063d51b9e9314610327578063d55b7dff1461035a578063d6f0948c1461036d578063da67b5991461038d575b600080fd5b34156100ff57600080fd5b610113600160a060020a0360043516610423565b604051600160a060020a03909116815260200160405180910390f35b341561013a57600080fd5b610151600160a060020a0360043516602435610441565b005b341561015e57600080fd5b610166610599565b60405160208082528190810183818151815260200191508051906020019060200280838360005b838110156101a557808201518382015260200161018d565b505050509050019250505060405180910390f35b34156101c457600080fd5b6101d8600160a060020a0360043516610602565b60405190815260200160405180910390f35b34156101f557600080fd5b610166600160a060020a0360043516610620565b341561021457600080fd5b6101d8600160a060020a03600435811690602435166106ad565b341561023957600080fd5b6101136004356106da565b341561024f57600080fd5b610151600160a060020a0360043516610702565b341561026e57600080fd5b6101d8600160a060020a03600435166108b3565b610151600160a060020a03600435166108d1565b34156102a157600080fd5b61015160048035600160a060020a03169060446024803590810190830135806020601f82018190048102016040519081016040528181529291906020840183838082843750949650610a7b95505050505050565b341561030057600080fd5b610151600160a060020a0360043516610b8b565b341561031f57600080fd5b6101d8610d4c565b341561033257600080fd5b610346600160a060020a0360043516610d51565b604051901515815260200160405180910390f35b341561036557600080fd5b6101d8610d72565b61015160048035600160a060020a03169060248035908101910135610d80565b341561039857600080fd5b6103ac600160a060020a0360043516610f87565b60405160208082528190810183818151815260200191508051906020019080838360005b838110156103e85780820151838201526020016103d0565b50505050905090810190601f1680156104155780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b600160a060020a039081166000908152602081905260409020541690565b600160a060020a03808316600090815260208181526040808320339094168352600590930190522054829082908190101561047b57600080fd5b600160a060020a0384166000908152602081905260409020600301546104a7908463ffffffff61104c16565b600160a060020a03808616600090815260208181526040808320600381019590955533909316825260059093019092529020546104ea908463ffffffff61104c16565b600160a060020a0380861660009081526020818152604080832033909416808452600590940190915290819020929092559084156108fc0290859051600060405180830381858888f19350505050151561054357600080fd5b7faa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2338585604051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a150505050565b6105a1611074565b60028054806020026020016040519081016040528092919081815260200182805480156105f757602002820191906000526020600020905b8154600160a060020a031681526001909101906020018083116105d9575b505050505090505b90565b600160a060020a031660009081526020819052604090206004015490565b610628611074565b6001600083600160a060020a0316600160a060020a031681526020019081526020016000208054806020026020016040519081016040528092919081815260200182805480156106a157602002820191906000526020600020905b8154600160a060020a03168152600190910190602001808311610683575b50505050509050919050565b600160a060020a039182166000908152602081815260408083209390941682526005909201909152205490565b60028054829081106106e857fe5b600091825260209091200154600160a060020a0316905081565b600160a060020a038181166000908152602081905260408120549091839133821691161461072f57600080fd5b600160a060020a038316600090815260208190526040902060020154839060ff161561075a57600080fd5b600160a060020a0384166000908152602081905260408120600401548591901161078357600080fd5b600160a060020a0381166000908152602081905260409020600401544310156107ab57600080fd5b600160a060020a03808616600081815260208181526040808320339095168352600585018252822054928252526003909101549094506107f1908563ffffffff61104c16565b600160a060020a0380871660008181526020818152604080832060038101969096553390941680835260058601825284832083905592825281905260049093019290925585156108fc0290869051600060405180830381858888f19350505050151561085c57600080fd5b7f9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f6447c714cad8eb338686604051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a15050505050565b600160a060020a031660009081526020819052604090206003015490565b600160a060020a038116600090815260208190526040902060020154819060ff1615156108fd57600080fd5b600160a060020a038216600090815260208190526040902060030154610929903463ffffffff61105e16565b600160a060020a038084166000908152602081815260408083206003810195909555339093168252600590930190925290205415156109c057600160a060020a038216600090815260016020819052604090912080549091810161098d8382611086565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191633600160a060020a03161790555b600160a060020a038083166000908152602081815260408083203390941683526005909301905220546109f9903463ffffffff61105e16565b600160a060020a0380841660009081526020818152604080832033948516845260050190915290819020929092557f66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc918490349051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a15050565b600160a060020a038281166000908152602081905260409020548391338116911614610aa657600080fd5b600160a060020a0383166000908152602081905260409020600101828051610ad29291602001906110af565b507f63f303264cd4b7a198f0163f96e0b6b1f972f9b73359a70c44241b862879d8a4338484604051600160a060020a0380851682528316602082015260606040820181815290820183818151815260200191508051906020019080838360005b83811015610b4a578082015183820152602001610b32565b50505050905090810190601f168015610b775780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a1505050565b600160a060020a0381811660009081526020819052604081205490918391338216911614610bb857600080fd5b600160a060020a038316600090815260208190526040902060020154839060ff161515610be457600080fd5b600160a060020a0384166000908152602081905260408120600201805460ff191690556003805460001901905592505b600254831015610c965783600160a060020a0316600284815481101515610c3757fe5b600091825260209091200154600160a060020a03161415610c8b576002805484908110610c6057fe5b6000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff19169055610c96565b600190920191610c14565b600160a060020a038416600090815260208190526040902060040154610cd590606490610cc9904363ffffffff61105e16565b9063ffffffff61105e16565b60008086600160a060020a0316600160a060020a03168152602001908152602001600020600401819055507f4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d33385604051600160a060020a039283168152911660208201526040908101905180910390a150505050565b606381565b600160a060020a031660009081526020819052604090206002015460ff1690565b690a968163f0a57b40000081565b690a968163f0a57b400000341015610d9757600080fd5b600160a060020a038316600090815260208190526040902060020154839060ff1615610dc257600080fd5b6002805460018101610dd48382611086565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03861617905560a06040519081016040528033600160a060020a0316815260200184848080601f0160208091040260200160405190810160405281815292919060208401838380828437505050928452505060016020808401919091523460408085019190915260006060909401849052600160a060020a03891684529083905290912090508151815473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a0391909116178155602082015181600101908051610eca9291602001906110af565b50604082015160028201805460ff191691151591909117905560608201518160030155608082015160049091015550600160a060020a038085166000908152602081815260408083203394851684526005019091529081902034908190556003805460010190557f7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1929187919051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a150505050565b610f8f611074565b60008083600160a060020a0316600160a060020a031681526020019081526020016000206001018054600181600116156101000203166002900480601f0160208091040260200160405190810160405280929190818152602001828054600181600116156101000203166002900480156106a15780601f1061101f576101008083540402835291602001916106a1565b820191906000526020600020905b81548152906001019060200180831161102d5750939695505050505050565b60008282111561105857fe5b50900390565b60008282018381101561106d57fe5b9392505050565b60206040519081016040526000815290565b8154818355818115116110aa576000838152602090206110aa91810190830161112d565b505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106110f057805160ff191683800117855561111d565b8280016001018555821561111d579182015b8281111561111d578251825591602001919060010190611102565b5061112992915061112d565b5090565b6105ff91905b8082111561112957600081556001016111335600a165627a7a72305820d2d4c6e641bc033beae9eb0c9fca10f5c9c68a746bc1b0099a8da4c99a3532d30029`
+
 // DeployxdcValidator deploys a new Ethereum contract, binding an instance of xdcValidator to it.
 func DeployxdcValidator(auth *bind.TransactOpts, backend bind.ContractBackend, _candidates []common.Address, _caps []*big.Int) (common.Address, *types.Transaction, *xdcValidator, error) {
 	parsed, err := abi.JSON(strings.NewReader(xdcValidatorABI))
@@ -563,6 +563,31 @@ func (_xdcValidator *xdcValidatorSession) Candidates(arg0 *big.Int) (common.Addr
 func (_xdcValidator *xdcValidatorCallerSession) Candidates(arg0 *big.Int) (common.Address, error) {
 	return _xdcValidator.Contract.Candidates(&_xdcValidator.CallOpts, arg0)
 }
+// GetCandidateBacker is a free data retrieval call binding the contract method 0x00a95501.
+//
+// Solidity: function getCandidateBacker(_candidate address) constant returns(address)
+func (_xdcValidator *xdcValidatorCaller) GetCandidateBacker(opts *bind.CallOpts, _candidate common.Address) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getCandidateBacker", _candidate)
+	return *ret0, err
+}
+
+// GetCandidateBacker is a free data retrieval call binding the contract method 0x00a95501.
+//
+// Solidity: function getCandidateBacker(_candidate address) constant returns(address)
+func (_xdcValidator *xdcValidatorSession) GetCandidateBacker(_candidate common.Address) (common.Address, error) {
+	return _xdcValidator.Contract.GetCandidateBacker(&_xdcValidator.CallOpts, _candidate)
+}
+
+// GetCandidateBacker is a free data retrieval call binding the contract method 0x00a95501.
+//
+// Solidity: function getCandidateBacker(_candidate address) constant returns(address)
+func (_xdcValidator *xdcValidatorCallerSession) GetCandidateBacker(_candidate common.Address) (common.Address, error) {
+	return _xdcValidator.Contract.GetCandidateBacker(&_xdcValidator.CallOpts, _candidate)
+}
 
 // GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
 //
@@ -590,6 +615,58 @@ func (_xdcValidator *xdcValidatorCallerSession) GetCandidateCap(_candidate commo
 	return _xdcValidator.Contract.GetCandidateCap(&_xdcValidator.CallOpts, _candidate)
 }
 
+// GetCandidateNodeUrl is a free data retrieval call binding the contract method 0xda67b599.
+//
+// Solidity: function getCandidateNodeUrl(_candidate address) constant returns(string)
+func (_xdcValidator *xdcValidatorCaller) GetCandidateNodeUrl(opts *bind.CallOpts, _candidate common.Address) (string, error) {
+	var (
+		ret0 = new(string)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getCandidateNodeUrl", _candidate)
+	return *ret0, err
+}
+
+// GetCandidateNodeUrl is a free data retrieval call binding the contract method 0xda67b599.
+//
+// Solidity: function getCandidateNodeUrl(_candidate address) constant returns(string)
+func (_xdcValidator *xdcValidatorSession) GetCandidateNodeUrl(_candidate common.Address) (string, error) {
+	return _xdcValidator.Contract.GetCandidateNodeUrl(&_xdcValidator.CallOpts, _candidate)
+}
+
+// GetCandidateNodeUrl is a free data retrieval call binding the contract method 0xda67b599.
+//
+// Solidity: function getCandidateNodeUrl(_candidate address) constant returns(string)
+func (_xdcValidator *xdcValidatorCallerSession) GetCandidateNodeUrl(_candidate common.Address) (string, error) {
+	return _xdcValidator.Contract.GetCandidateNodeUrl(&_xdcValidator.CallOpts, _candidate)
+}
+
+// GetCandidateWithdrawBlockNumber is a free data retrieval call binding the contract method 0x28265294.
+//
+// Solidity: function getCandidateWithdrawBlockNumber(_candidate address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorCaller) GetCandidateWithdrawBlockNumber(opts *bind.CallOpts, _candidate common.Address) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _xdcValidator.contract.Call(opts, out, "getCandidateWithdrawBlockNumber", _candidate)
+	return *ret0, err
+}
+
+// GetCandidateWithdrawBlockNumber is a free data retrieval call binding the contract method 0x28265294.
+//
+// Solidity: function getCandidateWithdrawBlockNumber(_candidate address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorSession) GetCandidateWithdrawBlockNumber(_candidate common.Address) (*big.Int, error) {
+	return _xdcValidator.Contract.GetCandidateWithdrawBlockNumber(&_xdcValidator.CallOpts, _candidate)
+}
+
+// GetCandidateWithdrawBlockNumber is a free data retrieval call binding the contract method 0x28265294.
+//
+// Solidity: function getCandidateWithdrawBlockNumber(_candidate address) constant returns(uint256)
+func (_xdcValidator *xdcValidatorCallerSession) GetCandidateWithdrawBlockNumber(_candidate common.Address) (*big.Int, error) {
+	return _xdcValidator.Contract.GetCandidateWithdrawBlockNumber(&_xdcValidator.CallOpts, _candidate)
+}
+	
 // GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
 //
 // Solidity: function getCandidates() constant returns(address[])
@@ -694,34 +771,6 @@ func (_xdcValidator *xdcValidatorCallerSession) IsCandidate(_candidate common.Ad
 }
 
 
-
-
-// MaxCandidateNumber is a free data retrieval call binding the contract method 0x8198a8dc.
-//
-// Solidity: function maxCandidateNumber() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) MaxCandidateNumber(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "maxCandidateNumber")
-	return *ret0, err
-}
-
-// MaxCandidateNumber is a free data retrieval call binding the contract method 0x8198a8dc.
-//
-// Solidity: function maxCandidateNumber() constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) MaxCandidateNumber() (*big.Int, error) {
-	return _xdcValidator.Contract.MaxCandidateNumber(&_xdcValidator.CallOpts)
-}
-
-// MaxCandidateNumber is a free data retrieval call binding the contract method 0x8198a8dc.
-//
-// Solidity: function maxCandidateNumber() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) MaxCandidateNumber() (*big.Int, error) {
-	return _xdcValidator.Contract.MaxCandidateNumber(&_xdcValidator.CallOpts)
-}
-
 // MaxValidatorNumber is a free data retrieval call binding the contract method 0xd09f1ab4.
 //
 // Solidity: function maxValidatorNumber() constant returns(uint256)
@@ -774,45 +823,67 @@ func (_xdcValidator *xdcValidatorCallerSession) MinCandidateCap() (*big.Int, err
 	return _xdcValidator.Contract.MinCandidateCap(&_xdcValidator.CallOpts)
 }
 
-// Propose is a paid mutator transaction binding the contract method 0xc198f8ba.
-// Solidity: function propose() returns()
-func (_xdcValidator *xdcValidatorTransactor) Propose(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "propose")
+// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
+//
+// Solidity: function propose(_candidate address, _nodeUrl string) returns()
+func (_xdcValidator *xdcValidatorTransactor) Propose(opts *bind.TransactOpts, _candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "propose", _candidate, _nodeUrl)
 }
 
-// Propose is a paid mutator transaction binding the contract method 0xc198f8ba.
-//
-// Solidity: function propose() returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Propose() (*types.Transaction, error) {
-	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts)
+// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
+// Solidity: function propose(_candidate address, _nodeUrl string) returns()
+func (_xdcValidator *xdcValidatorSession) Propose(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
 }
 
-// Propose is a paid mutator transaction binding the contract method 0xc198f8ba.
+// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
 //
-// Solidity: function propose() returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Propose() (*types.Transaction, error) {
-	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts)
-}
-// Retire is a paid mutator transaction binding the contract method 0xa4874d77.
-//
-// Solidity: function retire() returns()
-func (_xdcValidator *xdcValidatorTransactor) Retire(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "retire")
+// Solidity: function propose(_candidate address, _nodeUrl string) returns()
+func (_xdcValidator *xdcValidatorTransactorSession) Propose(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
 }
 
-// Retire is a paid mutator transaction binding the contract method 0xa4874d77.
+// Resign is a paid mutator transaction binding the contract method 0xae6e43f5.
 //
-// Solidity: function retire() returns()
-func (_xdcValidator *xdcValidatorSession) Retire() (*types.Transaction, error) {
-	return _xdcValidator.Contract.Retire(&_xdcValidator.TransactOpts)
+// Solidity: function resign(_candidate address) returns()
+func (_xdcValidator *xdcValidatorTransactor) Resign(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "resign", _candidate)
+}
+// Resign is a paid mutator transaction binding the contract method 0xae6e43f5.
+//
+// Solidity: function resign(_candidate address) returns()
+func (_xdcValidator *xdcValidatorSession) Resign(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Resign(&_xdcValidator.TransactOpts, _candidate)
 }
 
-// Retire is a paid mutator transaction binding the contract method 0xa4874d77.
+// Resign is a paid mutator transaction binding the contract method 0xae6e43f5
 //
-// Solidity: function retire() returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Retire() (*types.Transaction, error) {
-	return _xdcValidator.Contract.Retire(&_xdcValidator.TransactOpts)
+// Solidity: function resign(_candidate address) returns()
+func (_xdcValidator *xdcValidatorTransactorSession) Resign(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Resign(&_xdcValidator.TransactOpts, _candidate)
 }
+
+// SetNodeUrl is a paid mutator transaction binding the contract method 0xa3ec7965.
+//
+// Solidity: function setNodeUrl(_candidate address, _nodeUrl string) returns()
+func (_xdcValidator *xdcValidatorTransactor) SetNodeUrl(opts *bind.TransactOpts, _candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "setNodeUrl", _candidate, _nodeUrl)
+}
+
+// SetNodeUrl is a paid mutator transaction binding the contract method 0xa3ec7965.
+//
+// Solidity: function setNodeUrl(_candidate address, _nodeUrl string) returns()
+func (_xdcValidator *xdcValidatorSession) SetNodeUrl(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
+	return _xdcValidator.Contract.SetNodeUrl(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
+}
+
+// SetNodeUrl is a paid mutator transaction binding the contract method 0xa3ec7965.
+//
+// Solidity: function setNodeUrl(_candidate address, _nodeUrl string) returns()
+func (_xdcValidator *xdcValidatorTransactorSession) SetNodeUrl(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
+	return _xdcValidator.Contract.SetNodeUrl(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
+}
+
 // Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
 //
 // Solidity: function unvote(_candidate address, _cap uint256) returns()
@@ -855,6 +926,28 @@ func (_xdcValidator *xdcValidatorSession) Vote(_candidate common.Address) (*type
 func (_xdcValidator *xdcValidatorTransactorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
 	return _xdcValidator.Contract.Vote(&_xdcValidator.TransactOpts, _candidate)
 }
+
+// Withdraw is a paid mutator transaction binding the contract method 0x51cff8d9.
+//
+// Solidity: function withdraw(_candidate address) returns()
+func (_xdcValidator *xdcValidatorTransactor) Withdraw(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.contract.Transact(opts, "withdraw", _candidate)
+}
+
+// Withdraw is a paid mutator transaction binding the contract method 0x51cff8d9.
+//
+// Solidity: function withdraw(_candidate address) returns()
+func (_xdcValidator *xdcValidatorSession) Withdraw(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Withdraw(&_xdcValidator.TransactOpts, _candidate)
+}
+
+// Withdraw is a paid mutator transaction binding the contract method 0x51cff8d9.
+//
+// Solidity: function withdraw(_candidate address) returns()
+func (_xdcValidator *xdcValidatorTransactorSession) Withdraw(_candidate common.Address) (*types.Transaction, error) {
+	return _xdcValidator.Contract.Withdraw(&_xdcValidator.TransactOpts, _candidate)
+}
+
 // xdcValidatorProposeIterator is returned from FilterPropose and is used to iterate over the raw logs and unpacked data for Propose events raised by the xdcValidator contract.
 type xdcValidatorProposeIterator struct {
 	Event *xdcValidatorPropose // Event containing the contract specifics and raw log
@@ -924,14 +1017,14 @@ func (it *xdcValidatorProposeIterator) Close() error {
 
 // xdcValidatorPropose represents a Propose event raised by the xdcValidator contract.
 type xdcValidatorPropose struct {
+	Backer    common.Address
 	Candidate common.Address
 	Cap       *big.Int
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterPropose is a free log retrieval operation binding the contract event 0x42681fc159c671d489c99c06f4693d03a705a21df2fbb2b84eedda79e0db4cff.
-//
-// Solidity: event Propose(_candidate address, _cap uint256)
+// FilterPropose is a free log retrieval operation binding the contract event 0x7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1
+// Solidity: event Propose(_backer address, _candidate address, _cap uint256)
 func (_xdcValidator *xdcValidatorFilterer) FilterPropose(opts *bind.FilterOpts) (*xdcValidatorProposeIterator, error) {
 
 	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Propose")
@@ -941,9 +1034,8 @@ func (_xdcValidator *xdcValidatorFilterer) FilterPropose(opts *bind.FilterOpts) 
 	return &xdcValidatorProposeIterator{contract: _xdcValidator.contract, event: "Propose", logs: logs, sub: sub}, nil
 }
 
-// WatchPropose is a free log subscription operation binding the contract event 0x42681fc159c671d489c99c06f4693d03a705a21df2fbb2b84eedda79e0db4cff.
-//
-// Solidity: event Propose(_candidate address, _cap uint256)
+// WatchPropose is a free log subscription operation binding the contract event 0x7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1.
+// Solidity: event Propose(_backer address, _candidate address, _cap uint256)
 func (_xdcValidator *xdcValidatorFilterer) WatchPropose(opts *bind.WatchOpts, sink chan<- *xdcValidatorPropose) (event.Subscription, error) {
 
 	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Propose")
@@ -978,9 +1070,9 @@ func (_xdcValidator *xdcValidatorFilterer) WatchPropose(opts *bind.WatchOpts, si
 	}), nil
 }
 
-// xdcValidatorRetireIterator is returned from FilterRetire and is used to iterate over the raw logs and unpacked data for Retire events raised by the xdcValidator contract.
-type xdcValidatorRetireIterator struct {
-	Event *xdcValidatorRetire // Event containing the contract specifics and raw log
+// xdcValidatorResignIterator is returned from FilterResign and is used to iterate over the raw logs and unpacked data for Resign events raised by the xdcValidator contract.
+type xdcValidatorResignIterator struct {
+	Event *xdcValidatorResign // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -994,7 +1086,7 @@ type xdcValidatorRetireIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorRetireIterator) Next() bool {
+func (it *xdcValidatorResignIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1003,7 +1095,7 @@ func (it *xdcValidatorRetireIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(xdcValidatorRetire)
+			it.Event = new(xdcValidatorResign)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1018,7 +1110,7 @@ func (it *xdcValidatorRetireIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(xdcValidatorRetire)
+		it.Event = new(xdcValidatorResign)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1034,42 +1126,40 @@ func (it *xdcValidatorRetireIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorRetireIterator) Error() error {
+func (it *xdcValidatorResignIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *xdcValidatorRetireIterator) Close() error {
+func (it *xdcValidatorResignIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
-
-// xdcValidatorRetire represents a Retire event raised by the xdcValidator contract.
-type xdcValidatorRetire struct {
+// xdcValidatorResign represents a Resign event raised by the xdcValidator contract.
+type xdcValidatorResign struct {
+	Backer    common.Address
 	Candidate common.Address
-	Cap       *big.Int
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterRetire is a free log retrieval operation binding the contract event 0x82b89ed824b293574a2cca050e6e27837b60436d911352f8dca203a9cd35241c.
+// FilterResign is a free log retrieval operation binding the contract event 0x4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d3.
 //
-// Solidity: event Retire(_candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) FilterRetire(opts *bind.FilterOpts) (*xdcValidatorRetireIterator, error) {
+// Solidity: event Resign(_backer address, _candidate address)
+func (_xdcValidator *xdcValidatorFilterer) FilterResign(opts *bind.FilterOpts) (*xdcValidatorResignIterator, error) {
 
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Retire")
+	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Resign")
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorRetireIterator{contract: _xdcValidator.contract, event: "Retire", logs: logs, sub: sub}, nil
+	return &xdcValidatorResignIterator{contract: _xdcValidator.contract, event: "Resign", logs: logs, sub: sub}, nil
 }
 
-// WatchRetire is a free log subscription operation binding the contract event 0x82b89ed824b293574a2cca050e6e27837b60436d911352f8dca203a9cd35241c.
+// WatchResign is a free log subscription operation binding the contract event 0x4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d3.
 //
-// Solidity: event Retire(_candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) WatchRetire(opts *bind.WatchOpts, sink chan<- *xdcValidatorRetire) (event.Subscription, error) {
-
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Retire")
+// Solidity: event Resign(_backer address, _candidate address)
+func (_xdcValidator *xdcValidatorFilterer) WatchResign(opts *bind.WatchOpts, sink chan<- *xdcValidatorResign) (event.Subscription, error) {
+	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Resign")
 	if err != nil {
 		return nil, err
 	}
@@ -1079,8 +1169,132 @@ func (_xdcValidator *xdcValidatorFilterer) WatchRetire(opts *bind.WatchOpts, sin
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorRetire)
-				if err := _xdcValidator.contract.UnpackLog(event, "Retire", log); err != nil {
+				event := new(xdcValidatorResign)
+				if err := _xdcValidator.contract.UnpackLog(event, "Resign", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// xdcValidatorSetNodeUrlIterator is returned from FilterSetNodeUrl and is used to iterate over the raw logs and unpacked data for SetNodeUrl events raised by the xdcValidator contract.
+type xdcValidatorSetNodeUrlIterator struct {
+	Event *xdcValidatorSetNodeUrl // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *xdcValidatorSetNodeUrlIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(xdcValidatorSetNodeUrl)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(xdcValidatorSetNodeUrl)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *xdcValidatorSetNodeUrlIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *xdcValidatorSetNodeUrlIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// xdcValidatorSetNodeUrl represents a SetNodeUrl event raised by the xdcValidator contract.
+type xdcValidatorSetNodeUrl struct {
+	Backer    common.Address
+	Candidate common.Address
+	NodeUrl   string
+	Raw       types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetNodeUrl is a free log retrieval operation binding the contract event 0x63f303264cd4b7a198f0163f96e0b6b1f972f9b73359a70c44241b862879d8a4.
+//
+// Solidity: event SetNodeUrl(_backer address, _candidate address, _nodeUrl string)
+func (_xdcValidator *xdcValidatorFilterer) FilterSetNodeUrl(opts *bind.FilterOpts) (*xdcValidatorSetNodeUrlIterator, error) {
+
+	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "SetNodeUrl")
+	if err != nil {
+		return nil, err
+	}
+	return &xdcValidatorSetNodeUrlIterator{contract: _xdcValidator.contract, event: "SetNodeUrl", logs: logs, sub: sub}, nil
+}
+
+// WatchSetNodeUrl is a free log subscription operation binding the contract event 0x63f303264cd4b7a198f0163f96e0b6b1f972f9b73359a70c44241b862879d8a4.
+//
+// Solidity: event SetNodeUrl(_backer address, _candidate address, _nodeUrl string)
+func (_xdcValidator *xdcValidatorFilterer) WatchSetNodeUrl(opts *bind.WatchOpts, sink chan<- *xdcValidatorSetNodeUrl) (event.Subscription, error) {
+
+	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "SetNodeUrl")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(xdcValidatorSetNodeUrl)
+				if err := _xdcValidator.contract.UnpackLog(event, "SetNodeUrl", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1171,14 +1385,15 @@ func (it *xdcValidatorUnvoteIterator) Close() error {
 
 // xdcValidatorUnvote represents a Unvote event raised by the xdcValidator contract.
 type xdcValidatorUnvote struct {
+	Voter     common.Address
 	Candidate common.Address
 	Cap       *big.Int
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterUnvote is a free log retrieval operation binding the contract event 0x23ae40ca85f8a7c921ebb4269dc9a81e8a6de8dba614752927e0ff39341392fc.
+// FilterUnvote is a free log retrieval operation binding the contract event 0xaa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2.
 //
-// Solidity: event Unvote(_candidate address, _cap uint256)
+// Solidity: event Unvote(_voter address, _candidate address, _cap uint256)
 func (_xdcValidator *xdcValidatorFilterer) FilterUnvote(opts *bind.FilterOpts) (*xdcValidatorUnvoteIterator, error) {
 
 	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Unvote")
@@ -1188,9 +1403,9 @@ func (_xdcValidator *xdcValidatorFilterer) FilterUnvote(opts *bind.FilterOpts) (
 	return &xdcValidatorUnvoteIterator{contract: _xdcValidator.contract, event: "Unvote", logs: logs, sub: sub}, nil
 }
 
-// WatchUnvote is a free log subscription operation binding the contract event 0x23ae40ca85f8a7c921ebb4269dc9a81e8a6de8dba614752927e0ff39341392fc.
+// WatchUnvote is a free log subscription operation binding the contract event 0xaa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2.
 //
-// Solidity: event Unvote(_candidate address, _cap uint256)
+// Solidity: event Unvote(_voter address, _candidate address, _cap uint256)
 func (_xdcValidator *xdcValidatorFilterer) WatchUnvote(opts *bind.WatchOpts, sink chan<- *xdcValidatorUnvote) (event.Subscription, error) {
 
 	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Unvote")
@@ -1294,14 +1509,15 @@ func (it *xdcValidatorVoteIterator) Close() error {
 
 // xdcValidatorVote represents a Vote event raised by the xdcValidator contract.
 type xdcValidatorVote struct {
+	Voter     common.Address
 	Candidate common.Address
 	Cap       *big.Int
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterVote is a free log retrieval operation binding the contract event 0xf668ead05c744b9178e571d2edb452e72baf6529c8d72160e64e59b50d865bd0.
+// FilterVote is a free log retrieval operation binding the contract event 0x66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc.
 //
-// Solidity: event Vote(_candidate address, _cap uint256)
+// Solidity: event Vote(_voter address, _candidate address, _cap uint256)
 func (_xdcValidator *xdcValidatorFilterer) FilterVote(opts *bind.FilterOpts) (*xdcValidatorVoteIterator, error) {
 
 	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Vote")
@@ -1311,9 +1527,9 @@ func (_xdcValidator *xdcValidatorFilterer) FilterVote(opts *bind.FilterOpts) (*x
 	return &xdcValidatorVoteIterator{contract: _xdcValidator.contract, event: "Vote", logs: logs, sub: sub}, nil
 }
 
-// WatchVote is a free log subscription operation binding the contract event 0xf668ead05c744b9178e571d2edb452e72baf6529c8d72160e64e59b50d865bd0.
+// WatchVote is a free log subscription operation binding the contract event 0x66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc.
 //
-// Solidity: event Vote(_candidate address, _cap uint256)
+// Solidity: event Vote(_voter address, _candidate address, _cap uint256)
 func (_xdcValidator *xdcValidatorFilterer) WatchVote(opts *bind.WatchOpts, sink chan<- *xdcValidatorVote) (event.Subscription, error) {
 
 	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Vote")
@@ -1328,6 +1544,130 @@ func (_xdcValidator *xdcValidatorFilterer) WatchVote(opts *bind.WatchOpts, sink 
 				// New log arrived, parse the event and forward to the user
 				event := new(xdcValidatorVote)
 				if err := _xdcValidator.contract.UnpackLog(event, "Vote", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// xdcValidatorWithdrawIterator is returned from FilterWithdraw and is used to iterate over the raw logs and unpacked data for Withdraw events raised by the xdcValidator contract.
+type xdcValidatorWithdrawIterator struct {
+	Event *xdcValidatorWithdraw // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *xdcValidatorWithdrawIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(xdcValidatorWithdraw)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(xdcValidatorWithdraw)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *xdcValidatorWithdrawIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *xdcValidatorWithdrawIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// xdcValidatorWithdraw represents a Withdraw event raised by the xdcValidator contract.
+type xdcValidatorWithdraw struct {
+	Backer    common.Address
+	Candidate common.Address
+	Cap       *big.Int
+	Raw       types.Log // Blockchain specific contextual infos
+}
+
+// FilterWithdraw is a free log retrieval operation binding the contract event 0x9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f6447c714cad8eb.
+//
+// Solidity: event Withdraw(_backer address, _candidate address, _cap uint256)
+func (_xdcValidator *xdcValidatorFilterer) FilterWithdraw(opts *bind.FilterOpts) (*xdcValidatorWithdrawIterator, error) {
+
+	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Withdraw")
+	if err != nil {
+		return nil, err
+	}
+	return &xdcValidatorWithdrawIterator{contract: _xdcValidator.contract, event: "Withdraw", logs: logs, sub: sub}, nil
+}
+
+// WatchWithdraw is a free log subscription operation binding the contract event 0x9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f6447c714cad8eb.
+//
+// Solidity: event Withdraw(_backer address, _candidate address, _cap uint256)
+func (_xdcValidator *xdcValidatorFilterer) WatchWithdraw(opts *bind.WatchOpts, sink chan<- *xdcValidatorWithdraw) (event.Subscription, error) {
+
+	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Withdraw")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(xdcValidatorWithdraw)
+				if err := _xdcValidator.contract.UnpackLog(event, "Withdraw", log); err != nil {
 					return err
 				}
 				event.Raw = log
