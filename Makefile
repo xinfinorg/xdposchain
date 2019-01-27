@@ -120,7 +120,7 @@ xdc-linux-mips64:
 xdc-linux-mips64le:
 	build/env.sh go run build/ci.go xgo -- --go=$(GO) --targets=linux/mips64le --ldflags '-extldflags "-static"' -v ./cmd/xdc
 	@echo "Linux MIPS64le cross compilation done:"
-	@ls -ld $(GOBIN)/xdc-linux-* | grep mips64le 
+	@ls -ld $(GOBIN)/xdc-linux-* | grep mips64le
 
 xdc-darwin: xdc-darwin-386 xdc-darwin-amd64
 	@echo "Darwin cross compilation done:"
