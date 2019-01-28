@@ -6,6 +6,7 @@ package contract
 import (
 	"math/big"
 	"strings"
+
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,208 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 )
-
-// IValidatorABI is the input ABI used to generate the binding from.
-const IValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"string\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}]"
-
-// IValidatorBin is the compiled bytecode used for deploying new contracts.
-const IValidatorBin = `0x`
-
-// DeployIValidator deploys a new Ethereum contract, binding an instance of IValidator to it.
-func DeployIValidator(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *IValidator, error) {
-	parsed, err := abi.JSON(strings.NewReader(IValidatorABI))
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(IValidatorBin), backend)
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	return address, tx, &IValidator{IValidatorCaller: IValidatorCaller{contract: contract}, IValidatorTransactor: IValidatorTransactor{contract: contract}, IValidatorFilterer: IValidatorFilterer{contract: contract}}, nil
-}
-
-// IValidator is an auto generated Go binding around an Ethereum contract.
-type IValidator struct {
-	IValidatorCaller     // Read-only binding to the contract
-	IValidatorTransactor // Write-only binding to the contract
-	IValidatorFilterer   // Log filterer for contract events
-}
-
-// IValidatorCaller is an auto generated read-only Go binding around an Ethereum contract.
-type IValidatorCaller struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// IValidatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type IValidatorTransactor struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// IValidatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type IValidatorFilterer struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// IValidatorSession is an auto generated Go binding around an Ethereum contract,
-// with pre-set call and transact options.
-type IValidatorSession struct {
-	Contract     *IValidator       // Generic contract binding to set the session for
-	CallOpts     bind.CallOpts     // Call options to use throughout this session
-	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
-}
-
-// IValidatorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
-// with pre-set call options.
-type IValidatorCallerSession struct {
-	Contract *IValidatorCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts     // Call options to use throughout this session
-}
-
-// IValidatorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
-// with pre-set transact options.
-type IValidatorTransactorSession struct {
-	Contract     *IValidatorTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts     // Transaction auth options to use throughout this session
-}
-
-// IValidatorRaw is an auto generated low-level Go binding around an Ethereum contract.
-type IValidatorRaw struct {
-	Contract *IValidator // Generic contract binding to access the raw methods on
-}
-
-// IValidatorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type IValidatorCallerRaw struct {
-	Contract *IValidatorCaller // Generic read-only contract binding to access the raw methods on
-}
-
-// IValidatorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type IValidatorTransactorRaw struct {
-	Contract *IValidatorTransactor // Generic write-only contract binding to access the raw methods on
-}
-
-// NewIValidator creates a new instance of IValidator, bound to a specific deployed contract.
-func NewIValidator(address common.Address, backend bind.ContractBackend) (*IValidator, error) {
-	contract, err := bindIValidator(address, backend, backend, backend)
-	if err != nil {
-		return nil, err
-	}
-	return &IValidator{IValidatorCaller: IValidatorCaller{contract: contract}, IValidatorTransactor: IValidatorTransactor{contract: contract}, IValidatorFilterer: IValidatorFilterer{contract: contract}}, nil
-}
-
-// NewIValidatorCaller creates a new read-only instance of IValidator, bound to a specific deployed contract.
-func NewIValidatorCaller(address common.Address, caller bind.ContractCaller) (*IValidatorCaller, error) {
-	contract, err := bindIValidator(address, caller, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &IValidatorCaller{contract: contract}, nil
-}
-
-// NewIValidatorTransactor creates a new write-only instance of IValidator, bound to a specific deployed contract.
-func NewIValidatorTransactor(address common.Address, transactor bind.ContractTransactor) (*IValidatorTransactor, error) {
-	contract, err := bindIValidator(address, nil, transactor, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &IValidatorTransactor{contract: contract}, nil
-}
-
-// NewIValidatorFilterer creates a new log filterer instance of IValidator, bound to a specific deployed contract.
-func NewIValidatorFilterer(address common.Address, filterer bind.ContractFilterer) (*IValidatorFilterer, error) {
-	contract, err := bindIValidator(address, nil, nil, filterer)
-	if err != nil {
-		return nil, err
-	}
-	return &IValidatorFilterer{contract: contract}, nil
-}
-
-// bindIValidator binds a generic wrapper to an already deployed contract.
-func bindIValidator(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(IValidatorABI))
-	if err != nil {
-		return nil, err
-	}
-	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
-}
-
-// Call invokes the (constant) contract method with params as input values and
-// sets the output to result. The result type might be a single field for simple
-// returns, a slice of interfaces for anonymous returns and a struct for named
-// returns.
-func (_IValidator *IValidatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _IValidator.Contract.IValidatorCaller.contract.Call(opts, result, method, params...)
-}
-
-// Transfer initiates a plain transaction to move funds to the contract, calling
-// its default method if one is available.
-func (_IValidator *IValidatorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IValidator.Contract.IValidatorTransactor.contract.Transfer(opts)
-}
-
-// Transact invokes the (paid) contract method with params as input values.
-func (_IValidator *IValidatorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _IValidator.Contract.IValidatorTransactor.contract.Transact(opts, method, params...)
-}
-
-// Call invokes the (constant) contract method with params as input values and
-// sets the output to result. The result type might be a single field for simple
-// returns, a slice of interfaces for anonymous returns and a struct for named
-// returns.
-func (_IValidator *IValidatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _IValidator.Contract.contract.Call(opts, result, method, params...)
-}
-
-// Transfer initiates a plain transaction to move funds to the contract, calling
-// its default method if one is available.
-func (_IValidator *IValidatorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IValidator.Contract.contract.Transfer(opts)
-}
-
-// Transact invokes the (paid) contract method with params as input values.
-func (_IValidator *IValidatorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _IValidator.Contract.contract.Transact(opts, method, params...)
-}
-
-// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
-//
-// Solidity: function propose(address,  string) returns()
-func (_IValidator *IValidatorTransactor) Propose(opts *bind.TransactOpts, arg0 common.Address, arg1 string) (*types.Transaction, error) {
-	return _IValidator.contract.Transact(opts, "propose", arg0, arg1)
-
-// Propose is a paid mutator transaction binding the contract method  0xd6f0948c.
-//
-// Solidity: function propose( address,  string) returns()
-func (_IValidator *IValidatorSession) Propose(arg0 common.Address, arg1 string) (*types.Transaction, error) {
-	return _IValidator.Contract.Propose(&_IValidator.TransactOpts, arg0, arg1)
-
-
-// Propose is a paid mutator transaction binding the contract method  0xd6f0948c.
-//
-// Solidity: function propose( address,  string) returns()
-func (_IValidator *IValidatorTransactorSession) Propose(arg0 common.Address, arg1 string) (*types.Transaction, error) {
-	return _IValidator.Contract.Propose(&_IValidator.TransactOpts, arg0, arg1)
-
-
-// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
-//
-// Solidity: function vote( address) returns()
-func (_IValidator *IValidatorTransactor) Vote(opts *bind.TransactOpts, arg0 common.Address) (*types.Transaction, error) {
-	return _IValidator.contract.Transact(opts, "vote", arg0)
-}
-
-// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
-//
-// Solidity: function vote( address) returns()
-func (_IValidator *IValidatorSession) Vote(arg0 common.Address) (*types.Transaction, error) {
-	return _IValidator.Contract.Vote(&_IValidator.TransactOpts, arg0)
-}
-
-// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
-//
-// Solidity: function vote( address) returns()
-func (_IValidator *IValidatorTransactorSession) Vote(arg0 common.Address) (*types.Transaction, error) {
-	return _IValidator.Contract.Vote(&_IValidator.TransactOpts, arg0)
-}
 
 // SafeMathABI is the input ABI used to generate the binding from.
 const SafeMathABI = "[]"
@@ -377,123 +176,123 @@ func (_SafeMath *SafeMathTransactorRaw) Transact(opts *bind.TransactOpts, method
 	return _SafeMath.Contract.contract.Transact(opts, method, params...)
 }
 
-// xdcValidatorABI is the input ABI used to generate the binding from.
-const xdcValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"unvote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCandidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateWithdrawBlockNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getVoters\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"getVoterCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"withdraw\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_nodeUrl\",\"type\":\"string\"}],\"name\":\"setNodeUrl\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"resign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"maxValidatorNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"candidateWithdrawDelay\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"isCandidate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"minCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_nodeUrl\",\"type\":\"string\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateNodeUrl\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_candidates\",\"type\":\"address[]\"},{\"name\":\"_caps\",\"type\":\"uint256[]\"},{\"name\":\"_minCandidateCap\",\"type\":\"uint256\"},{\"name\":\"_maxValidatorNumber\",\"type\":\"uint256\"},{\"name\":\"_candidateWithdrawDelay\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Vote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Unvote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Propose\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"Resign\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_nodeUrl\",\"type\":\"string\"}],\"name\":\"SetNodeUrl\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"}]"
+// XDCValidatorABI is the input ABI used to generate the binding from.
+const XDCValidatorABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"propose\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"unvote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCandidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"getWithdrawCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getVoters\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getWithdrawBlockNumbers\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"},{\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"getVoterCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_blockNumber\",\"type\":\"uint256\"},{\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"vote\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"candidateCount\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"voterWithdrawDelay\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"resign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"getCandidateOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"maxValidatorNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"candidateWithdrawDelay\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"isCandidate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"minCandidateCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"minVoterCap\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_candidates\",\"type\":\"address[]\"},{\"name\":\"_caps\",\"type\":\"uint256[]\"},{\"name\":\"_firstOwner\",\"type\":\"address\"},{\"name\":\"_minCandidateCap\",\"type\":\"uint256\"},{\"name\":\"_minVoterCap\",\"type\":\"uint256\"},{\"name\":\"_maxValidatorNumber\",\"type\":\"uint256\"},{\"name\":\"_candidateWithdrawDelay\",\"type\":\"uint256\"},{\"name\":\"_voterWithdrawDelay\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Vote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Unvote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Propose\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_candidate\",\"type\":\"address\"}],\"name\":\"Resign\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"_owner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"_blockNumber\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"_cap\",\"type\":\"uint256\"}],\"name\":\"Withdraw\",\"type\":\"event\"}]"
 
-// xdcValidatorBin is the compiled bytecode used for deploying new contracts
-const xdcValidatorBin = `0x6060604052600060035534156200001557600080fd5b6040516200147038038062001470833981016040528080518201919060200180518201919060200180519190602001805191906020018051670de0b6b3a7640000850260045560058490556006819055915060009050600286805162000080929160200190620001a2565b50600090505b8551811015620001965760a06040519081016040528033600160a060020a0316815260200160206040519081016040908152600082529082526001602083015201868381518110620000d457fe5b9060200190602002015181526020016000815250600080888481518110620000f857fe5b90602001906020020151600160a060020a03168152602081019190915260400160002081518154600160a060020a031916600160a060020a0391909116178155602082015181600101908051620001549291602001906200020e565b50604082015160028201805460ff1916911515919091179055606082015181600301556080820151600490910155506003805460019081019091550162000086565b505050505050620002d6565b828054828255906000526020600020908101928215620001fc579160200282015b82811115620001fc5782518254600160a060020a031916600160a060020a039190911617825560209290920191600190910190620001c3565b506200020a9291506200028f565b5090565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106200025157805160ff191683800117855562000281565b8280016001018555821562000281579182015b828111156200028157825182559160200191906001019062000264565b506200020a929150620002b9565b620002b691905b808211156200020a578054600160a060020a031916815560010162000296565b90565b620002b691905b808211156200020a5760008155600101620002c0565b61118a80620002e66000396000f3006060604052600436106100fb5763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166302aa9be2811461010057806306a49fce14610124578063282652941461018a5780632d15cc04146101bb578063302b6872146101da5780633477ee2e146101ff57806351cff8d91461023157806358e7525f146102505780636dd7d8ea1461026f578063a3ec796514610283578063ae6e43f5146102e2578063b642facd14610301578063d09f1ab414610320578063d161c76714610333578063d51b9e9314610346578063d55b7dff14610379578063d6f0948c1461038c578063da67b599146103ac575b600080fd5b341561010b57600080fd5b610122600160a060020a0360043516602435610442565b005b341561012f57600080fd5b61013761059a565b60405160208082528190810183818151815260200191508051906020019060200280838360005b8381101561017657808201518382015260200161015e565b505050509050019250505060405180910390f35b341561019557600080fd5b6101a9600160a060020a0360043516610603565b60405190815260200160405180910390f35b34156101c657600080fd5b610137600160a060020a0360043516610621565b34156101e557600080fd5b6101a9600160a060020a03600435811690602435166106ae565b341561020a57600080fd5b6102156004356106db565b604051600160a060020a03909116815260200160405180910390f35b341561023c57600080fd5b610122600160a060020a0360043516610703565b341561025b57600080fd5b6101a9600160a060020a03600435166108b4565b610122600160a060020a03600435166108d2565b341561028e57600080fd5b61012260048035600160a060020a03169060446024803590810190830135806020601f82018190048102016040519081016040528181529291906020840183838082843750949650610a7c95505050505050565b34156102ed57600080fd5b610122600160a060020a0360043516610b8c565b341561030c57600080fd5b610215600160a060020a0360043516610d4e565b341561032b57600080fd5b6101a9610d6c565b341561033e57600080fd5b6101a9610d72565b341561035157600080fd5b610365600160a060020a0360043516610d78565b604051901515815260200160405180910390f35b341561038457600080fd5b6101a9610d99565b61012260048035600160a060020a03169060248035908101910135610d9f565b34156103b757600080fd5b6103cb600160a060020a0360043516610f9e565b60405160208082528190810183818151815260200191508051906020019080838360005b838110156104075780820151838201526020016103ef565b50505050905090810190601f1680156104345780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b600160a060020a03808316600090815260208181526040808320339094168352600590930190522054829082908190101561047c57600080fd5b600160a060020a0384166000908152602081905260409020600301546104a8908463ffffffff61106316565b600160a060020a03808616600090815260208181526040808320600381019590955533909316825260059093019092529020546104eb908463ffffffff61106316565b600160a060020a0380861660009081526020818152604080832033909416808452600590940190915290819020929092559084156108fc0290859051600060405180830381858888f19350505050151561054457600080fd5b7faa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2338585604051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a150505050565b6105a261108b565b60028054806020026020016040519081016040528092919081815260200182805480156105f857602002820191906000526020600020905b8154600160a060020a031681526001909101906020018083116105da575b505050505090505b90565b600160a060020a031660009081526020819052604090206004015490565b61062961108b565b6001600083600160a060020a0316600160a060020a031681526020019081526020016000208054806020026020016040519081016040528092919081815260200182805480156106a257602002820191906000526020600020905b8154600160a060020a03168152600190910190602001808311610684575b50505050509050919050565b600160a060020a039182166000908152602081815260408083209390941682526005909201909152205490565b60028054829081106106e957fe5b600091825260209091200154600160a060020a0316905081565b600160a060020a038181166000908152602081905260408120549091839133821691161461073057600080fd5b600160a060020a038316600090815260208190526040902060020154839060ff161561075b57600080fd5b600160a060020a0384166000908152602081905260408120600401548591901161078457600080fd5b600160a060020a0381166000908152602081905260409020600401544310156107ac57600080fd5b600160a060020a03808616600081815260208181526040808320339095168352600585018252822054928252526003909101549094506107f2908563ffffffff61106316565b600160a060020a0380871660008181526020818152604080832060038101969096553390941680835260058601825284832083905592825281905260049093019290925585156108fc0290869051600060405180830381858888f19350505050151561085d57600080fd5b7f9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f6447c714cad8eb338686604051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a15050505050565b600160a060020a031660009081526020819052604090206003015490565b600160a060020a038116600090815260208190526040902060020154819060ff1615156108fe57600080fd5b600160a060020a03821660009081526020819052604090206003015461092a903463ffffffff61107516565b600160a060020a038084166000908152602081815260408083206003810195909555339093168252600590930190925290205415156109c157600160a060020a038216600090815260016020819052604090912080549091810161098e838261109d565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191633600160a060020a03161790555b600160a060020a038083166000908152602081815260408083203390941683526005909301905220546109fa903463ffffffff61107516565b600160a060020a0380841660009081526020818152604080832033948516845260050190915290819020929092557f66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc918490349051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a15050565b600160a060020a038281166000908152602081905260409020548391338116911614610aa757600080fd5b600160a060020a0383166000908152602081905260409020600101828051610ad39291602001906110c6565b507f63f303264cd4b7a198f0163f96e0b6b1f972f9b73359a70c44241b862879d8a4338484604051600160a060020a0380851682528316602082015260606040820181815290820183818151815260200191508051906020019080838360005b83811015610b4b578082015183820152602001610b33565b50505050905090810190601f168015610b785780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a1505050565b600160a060020a0381811660009081526020819052604081205490918391338216911614610bb957600080fd5b600160a060020a038316600090815260208190526040902060020154839060ff161515610be557600080fd5b600160a060020a0384166000908152602081905260408120600201805460ff191690556003805460001901905592505b600254831015610c975783600160a060020a0316600284815481101515610c3857fe5b600091825260209091200154600160a060020a03161415610c8c576002805484908110610c6157fe5b6000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff19169055610c97565b600190920191610c15565b600654600160a060020a038516600090815260208190526040902060040154610cd79190610ccb904363ffffffff61107516565b9063ffffffff61107516565b60008086600160a060020a0316600160a060020a03168152602001908152602001600020600401819055507f4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d33385604051600160a060020a039283168152911660208201526040908101905180910390a150505050565b600160a060020a039081166000908152602081905260409020541690565b60055481565b60065481565b600160a060020a031660009081526020819052604090206002015460ff1690565b60045481565b600454341015610dae57600080fd5b600160a060020a038316600090815260208190526040902060020154839060ff1615610dd957600080fd5b6002805460018101610deb838261109d565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03861617905560a06040519081016040528033600160a060020a0316815260200184848080601f0160208091040260200160405190810160405281815292919060208401838380828437505050928452505060016020808401919091523460408085019190915260006060909401849052600160a060020a03891684529083905290912090508151815473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a0391909116178155602082015181600101908051610ee19291602001906110c6565b50604082015160028201805460ff191691151591909117905560608201518160030155608082015160049091015550600160a060020a038085166000908152602081815260408083203394851684526005019091529081902034908190556003805460010190557f7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1929187919051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a150505050565b610fa661108b565b60008083600160a060020a0316600160a060020a031681526020019081526020016000206001018054600181600116156101000203166002900480601f0160208091040260200160405190810160405280929190818152602001828054600181600116156101000203166002900480156106a25780601f10611036576101008083540402835291602001916106a2565b820191906000526020600020905b8154815290600101906020018083116110445750939695505050505050565b60008282111561106f57fe5b50900390565b60008282018381101561108457fe5b9392505050565b60206040519081016040526000815290565b8154818355818115116110c1576000838152602090206110c1918101908301611144565b505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f1061110757805160ff1916838001178555611134565b82800160010185558215611134579182015b82811115611134578251825591602001919060010190611119565b50611140929150611144565b5090565b61060091905b80821115611140576000815560010161114a5600a165627a7a723058208a448411591a9b4836f3ee4407b14cb5dfa70a2cfcf6f2706e383b87c9ff9a9b0029`
+// XDCValidatorBin is the compiled bytecode used for deploying new contracts.
+const XDCValidatorBin = `0x6060604052600060045534156200001557600080fd5b60405162001415380380620014158339810160405280805182019190602001805182019190602001805191906020018051919060200180519190602001805191906020018051919060200180516005879055600686905560078590556008849055600981905591506000905088516004555060005b88518110156200027c576003805460018101620000a883826200028b565b916000526020600020900160008b8481518110620000c257fe5b90602001906020020151909190916101000a815481600160a060020a030219169083600160a060020a031602179055505060606040519081016040908152600160a060020a03891682526001602083015281018983815181106200012257fe5b906020019060200201519052600160008b84815181106200013f57fe5b90602001906020020151600160a060020a03168152602081019190915260400160002081518154600160a060020a031916600160a060020a039190911617815560208201518154901515740100000000000000000000000000000000000000000260a060020a60ff0219909116178155604082015160019091015550600260008a8381518110620001cc57fe5b90602001906020020151600160a060020a0316815260208101919091526040016000208054600181016200020183826200028b565b50600091825260208220018054600160a060020a031916600160a060020a038a16179055600554906001908b84815181106200023957fe5b90602001906020020151600160a060020a03908116825260208083019390935260409182016000908120918c16815260029091019092529020556001016200008a565b505050505050505050620002db565b815481835581811511620002b257600083815260209020620002b2918101908301620002b7565b505050565b620002d891905b80821115620002d45760008155600101620002be565b5090565b90565b61112a80620002eb6000396000f3006060604052600436106101115763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166301267951811461011657806302aa9be21461012c57806306a49fce1461014e57806315febd68146101b45780632d15cc04146101dc5780632f9c4bba146101fb578063302b68721461020e5780633477ee2e14610233578063441a3e701461026557806358e7525f1461027e5780636dd7d8ea1461029d578063a9a981a3146102b1578063a9ff959e146102c4578063ae6e43f5146102d7578063b642facd146102f6578063d09f1ab414610315578063d161c76714610328578063d51b9e931461033b578063d55b7dff1461036e578063f8ac9dd514610381575b600080fd5b61012a600160a060020a0360043516610394565b005b341561013757600080fd5b61012a600160a060020a0360043516602435610616565b341561015957600080fd5b610161610849565b60405160208082528190810183818151815260200191508051906020019060200280838360005b838110156101a0578082015183820152602001610188565b505050509050019250505060405180910390f35b34156101bf57600080fd5b6101ca6004356108b2565b60405190815260200160405180910390f35b34156101e757600080fd5b610161600160a060020a03600435166108d6565b341561020657600080fd5b610161610963565b341561021957600080fd5b6101ca600160a060020a03600435811690602435166109e5565b341561023e57600080fd5b610249600435610a14565b604051600160a060020a03909116815260200160405180910390f35b341561027057600080fd5b61012a600435602435610a3c565b341561028957600080fd5b6101ca600160a060020a0360043516610ba3565b61012a600160a060020a0360043516610bc2565b34156102bc57600080fd5b6101ca610d7f565b34156102cf57600080fd5b6101ca610d85565b34156102e257600080fd5b61012a600160a060020a0360043516610d8b565b341561030157600080fd5b610249600160a060020a0360043516611022565b341561032057600080fd5b6101ca611040565b341561033357600080fd5b6101ca611046565b341561034657600080fd5b61035a600160a060020a036004351661104c565b604051901515815260200160405180910390f35b341561037957600080fd5b6101ca611071565b341561038c57600080fd5b6101ca611077565b6005546000903410156103a657600080fd5b600160a060020a038216600090815260016020526040902054829060a060020a900460ff16156103d557600080fd5b600160a060020a03831660009081526001602081905260409091200154610402903463ffffffff61107d16565b91506003805480600101828161041891906110a5565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03851617905560606040519081016040908152600160a060020a0333811683526001602080850182905283850187905291871660009081529152208151815473ffffffffffffffffffffffffffffffffffffffff1916600160a060020a03919091161781556020820151815490151560a060020a0274ff0000000000000000000000000000000000000000199091161781556040820151600191820155600160a060020a03808616600090815260209283526040808220339093168252600290920190925290205461051d91503463ffffffff61107d16565b600160a060020a038085166000908152600160208181526040808420339095168452600290940190529190209190915560045461055f9163ffffffff61107d16565b600455600160a060020a038316600090815260026020526040902080546001810161058a83826110a5565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191633600160a060020a038116919091179091557f7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1908434604051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a1505050565b600160a060020a0380831660009081526001602090815260408083203390941683526002909301905290812054839083908190101561065457600080fd5b600160a060020a03828116600090815260016020526040902054338216911614156106c257600554600160a060020a0380841660009081526001602090815260408083203390941683526002909301905220546106b7908363ffffffff61109316565b10156106c257600080fd5b600160a060020a038516600090815260016020819052604090912001546106ef908563ffffffff61109316565b600160a060020a038087166000908152600160208181526040808420928301959095553390931682526002019091522054610730908563ffffffff61109316565b600160a060020a03808716600090815260016020908152604080832033909416835260029093019052205560095461076e904363ffffffff61107d16565b600160a060020a0333166000908152602081815260408083208484529091529020549093506107a3908563ffffffff61107d16565b600160a060020a03331660008181526020818152604080832088845280835290832094909455918152905260019081018054909181016107e383826110a5565b5060009182526020909120018390557faa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2338686604051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a15050505050565b6108516110ce565b60038054806020026020016040519081016040528092919081815260200182805480156108a757602002820191906000526020600020905b8154600160a060020a03168152600190910190602001808311610889575b505050505090505b90565b33600160a060020a0316600090815260208181526040808320938352929052205490565b6108de6110ce565b6002600083600160a060020a0316600160a060020a0316815260200190815260200160002080548060200260200160405190810160405280929190818152602001828054801561095757602002820191906000526020600020905b8154600160a060020a03168152600190910190602001808311610939575b50505050509050919050565b61096b6110ce565b60008033600160a060020a0316600160a060020a031681526020019081526020016000206001018054806020026020016040519081016040528092919081815260200182805480156108a757602002820191906000526020600020905b8154815260200190600101908083116109c8575050505050905090565b600160a060020a0391821660009081526001602090815260408083209390941682526002909201909152205490565b6003805482908110610a2257fe5b600091825260209091200154600160a060020a0316905081565b60008282828211610a4c57600080fd5b4382901015610a5a57600080fd5b600160a060020a03331660009081526020818152604080832085845290915281205411610a8657600080fd5b600160a060020a0333166000908152602081905260409020600101805483919083908110610ab057fe5b60009182526020909120015414610ac657600080fd5b600160a060020a03331660008181526020818152604080832089845280835290832080549084905593835291905260010180549194509085908110610b0757fe5b6000918252602082200155600160a060020a03331683156108fc0284604051600060405180830381858888f193505050501515610b4357600080fd5b7ff279e6a1f5e320cca91135676d9cb6e44ca8a08c0b88342bcdb1144f6511b5683386856040518084600160a060020a0316600160a060020a03168152602001838152602001828152602001935050505060405180910390a15050505050565b600160a060020a03166000908152600160208190526040909120015490565b600654341015610bd157600080fd5b600160a060020a038116600090815260016020526040902054819060a060020a900460ff161515610c0157600080fd5b600160a060020a03821660009081526001602081905260409091200154610c2e903463ffffffff61107d16565b600160a060020a0380841660009081526001602081815260408084209283019590955533909316825260020190915220541515610cc057600160a060020a0382166000908152600260205260409020805460018101610c8d83826110a5565b506000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff191633600160a060020a03161790555b600160a060020a038083166000908152600160209081526040808320339094168352600290930190522054610cfb903463ffffffff61107d16565b600160a060020a03808416600090815260016020908152604080832033948516845260020190915290819020929092557f66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc918490349051600160a060020a039384168152919092166020820152604080820192909252606001905180910390a15050565b60045481565b60095481565b600160a060020a038181166000908152600160205260408120549091829182918591338216911614610dbc57600080fd5b600160a060020a038516600090815260016020526040902054859060a060020a900460ff161515610dec57600080fd5b600160a060020a0386166000908152600160208190526040909120805474ff000000000000000000000000000000000000000019169055600454610e359163ffffffff61109316565b600455600094505b600354851015610ebf5785600160a060020a0316600386815481101515610e6057fe5b600091825260209091200154600160a060020a03161415610eb4576003805486908110610e8957fe5b6000918252602090912001805473ffffffffffffffffffffffffffffffffffffffff19169055610ebf565b600190940193610e3d565b600160a060020a03808716600081815260016020818152604080842033909616845260028601825283205493909252908190529190910154909450610f0a908563ffffffff61109316565b600160a060020a0380881660009081526001602081815260408084209283019590955533909316825260020190915290812055600854610f50904363ffffffff61107d16565b600160a060020a033316600090815260208181526040808320848452909152902054909350610f85908563ffffffff61107d16565b600160a060020a0333166000818152602081815260408083208884528083529083209490945591815290526001908101805490918101610fc583826110a5565b5060009182526020909120018390557f4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d33387604051600160a060020a039283168152911660208201526040908101905180910390a1505050505050565b600160a060020a039081166000908152600160205260409020541690565b60075481565b60085481565b600160a060020a031660009081526001602052604090205460a060020a900460ff1690565b60055481565b60065481565b60008282018381101561108c57fe5b9392505050565b60008282111561109f57fe5b50900390565b8154818355818115116110c9576000838152602090206110c99181019083016110e0565b505050565b60206040519081016040526000815290565b6108af91905b808211156110fa57600081556001016110e6565b50905600a165627a7a72305820555de7c5131842a4fccb258fccd95ae1539019bb744b4253893b37fed1b3d8e90029`
 
-// DeployxdcValidator deploys a new Ethereum contract, binding an instance of xdcValidator to it.
-func DeployxdcValidator(auth *bind.TransactOpts, backend bind.ContractBackend, _candidates []common.Address, _caps []*big.Int, _minCandidateCap *big.Int, _maxValidatorNumber *big.Int, _candidateWithdrawDelay *big.Int) (common.Address, *types.Transaction, *xdcValidator, error) {
-	parsed, err := abi.JSON(strings.NewReader(xdcValidatorABI))
+// DeployXDCValidator deploys a new Ethereum contract, binding an instance of XDCValidator to it.
+func DeployXDCValidator(auth *bind.TransactOpts, backend bind.ContractBackend, _candidates []common.Address, _caps []*big.Int, _firstOwner common.Address, _minCandidateCap *big.Int, _minVoterCap *big.Int, _maxValidatorNumber *big.Int, _candidateWithdrawDelay *big.Int, _voterWithdrawDelay *big.Int) (common.Address, *types.Transaction, *XDCValidator, error) {
+	parsed, err := abi.JSON(strings.NewReader(XDCValidatorABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(xdcValidatorBin), backend, _candidates, _caps, _minCandidateCap, _maxValidatorNumber, _candidateWithdrawDelay)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(XDCValidatorBin), backend, _candidates, _caps, _firstOwner, _minCandidateCap, _minVoterCap, _maxValidatorNumber, _candidateWithdrawDelay, _voterWithdrawDelay)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	return address, tx, &xdcValidator{xdcValidatorCaller: xdcValidatorCaller{contract: contract}, xdcValidatorTransactor: xdcValidatorTransactor{contract: contract}, xdcValidatorFilterer: xdcValidatorFilterer{contract: contract}}, nil
+	return address, tx, &XDCValidator{XDCValidatorCaller: XDCValidatorCaller{contract: contract}, XDCValidatorTransactor: XDCValidatorTransactor{contract: contract}, XDCValidatorFilterer: XDCValidatorFilterer{contract: contract}}, nil
 }
 
-// xdcValidator is an auto generated Go binding around an Ethereum contract.
-type xdcValidator struct {
-	xdcValidatorCaller     // Read-only binding to the contract
-	xdcValidatorTransactor // Write-only binding to the contract
-	xdcValidatorFilterer   // Log filterer for contract events
+// XDCValidator is an auto generated Go binding around an Ethereum contract.
+type XDCValidator struct {
+	XDCValidatorCaller     // Read-only binding to the contract
+	XDCValidatorTransactor // Write-only binding to the contract
+	XDCValidatorFilterer   // Log filterer for contract events
 }
 
-// xdcValidatorCaller is an auto generated read-only Go binding around an Ethereum contract.
-type xdcValidatorCaller struct {
+// XDCValidatorCaller is an auto generated read-only Go binding around an Ethereum contract.
+type XDCValidatorCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// xdcValidatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type xdcValidatorTransactor struct {
+// XDCValidatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type XDCValidatorTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// xdcValidatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type xdcValidatorFilterer struct {
+// XDCValidatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type XDCValidatorFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// xdcValidatorSession is an auto generated Go binding around an Ethereum contract,
+// XDCValidatorSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type xdcValidatorSession struct {
-	Contract     *xdcValidator    // Generic contract binding to set the session for
+type XDCValidatorSession struct {
+	Contract     *XDCValidator    // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// xdcValidatorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// XDCValidatorCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type xdcValidatorCallerSession struct {
-	Contract *xdcValidatorCaller // Generic contract caller binding to set the session for
+type XDCValidatorCallerSession struct {
+	Contract *XDCValidatorCaller // Generic contract caller binding to set the session for
 	CallOpts bind.CallOpts        // Call options to use throughout this session
 }
 
-// xdcValidatorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// XDCValidatorTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type xdcValidatorTransactorSession struct {
-	Contract     *xdcValidatorTransactor // Generic contract transactor binding to set the session for
+type XDCValidatorTransactorSession struct {
+	Contract     *XDCValidatorTransactor // Generic contract transactor binding to set the session for
 	TransactOpts bind.TransactOpts        // Transaction auth options to use throughout this session
 }
 
-// xdcValidatorRaw is an auto generated low-level Go binding around an Ethereum contract.
-type xdcValidatorRaw struct {
-	Contract *xdcValidator // Generic contract binding to access the raw methods on
+// XDCValidatorRaw is an auto generated low-level Go binding around an Ethereum contract.
+type XDCValidatorRaw struct {
+	Contract *XDCValidator // Generic contract binding to access the raw methods on
 }
 
-// xdcValidatorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type xdcValidatorCallerRaw struct {
-	Contract *xdcValidatorCaller // Generic read-only contract binding to access the raw methods on
+// XDCValidatorCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type XDCValidatorCallerRaw struct {
+	Contract *XDCValidatorCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// xdcValidatorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type xdcValidatorTransactorRaw struct {
-	Contract *xdcValidatorTransactor // Generic write-only contract binding to access the raw methods on
+// XDCValidatorTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type XDCValidatorTransactorRaw struct {
+	Contract *XDCValidatorTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewxdcValidator creates a new instance of xdcValidator, bound to a specific deployed contract.
-func NewxdcValidator(address common.Address, backend bind.ContractBackend) (*xdcValidator, error) {
-	contract, err := bindxdcValidator(address, backend, backend, backend)
+// NewXDCValidator creates a new instance of XDCValidator, bound to a specific deployed contract.
+func NewXDCValidator(address common.Address, backend bind.ContractBackend) (*XDCValidator, error) {
+	contract, err := bindXDCValidator(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidator{xdcValidatorCaller: xdcValidatorCaller{contract: contract}, xdcValidatorTransactor: xdcValidatorTransactor{contract: contract}, xdcValidatorFilterer: xdcValidatorFilterer{contract: contract}}, nil
+	return &XDCValidator{XDCValidatorCaller: XDCValidatorCaller{contract: contract}, XDCValidatorTransactor: XDCValidatorTransactor{contract: contract}, XDCValidatorFilterer: XDCValidatorFilterer{contract: contract}}, nil
 }
 
-// NewxdcValidatorCaller creates a new read-only instance of xdcValidator, bound to a specific deployed contract.
-func NewxdcValidatorCaller(address common.Address, caller bind.ContractCaller) (*xdcValidatorCaller, error) {
-	contract, err := bindxdcValidator(address, caller, nil, nil)
+// NewXDCValidatorCaller creates a new read-only instance of XDCValidator, bound to a specific deployed contract.
+func NewXDCValidatorCaller(address common.Address, caller bind.ContractCaller) (*XDCValidatorCaller, error) {
+	contract, err := bindXDCValidator(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorCaller{contract: contract}, nil
+	return &XDCValidatorCaller{contract: contract}, nil
 }
 
-// NewxdcValidatorTransactor creates a new write-only instance of xdcValidator, bound to a specific deployed contract.
-func NewxdcValidatorTransactor(address common.Address, transactor bind.ContractTransactor) (*xdcValidatorTransactor, error) {
-	contract, err := bindxdcValidator(address, nil, transactor, nil)
+// NewXDCValidatorTransactor creates a new write-only instance of XDCValidator, bound to a specific deployed contract.
+func NewXDCValidatorTransactor(address common.Address, transactor bind.ContractTransactor) (*XDCValidatorTransactor, error) {
+	contract, err := bindXDCValidator(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorTransactor{contract: contract}, nil
+	return &XDCValidatorTransactor{contract: contract}, nil
 }
 
-// NewxdcValidatorFilterer creates a new log filterer instance of xdcValidator, bound to a specific deployed contract.
-func NewxdcValidatorFilterer(address common.Address, filterer bind.ContractFilterer) (*xdcValidatorFilterer, error) {
-	contract, err := bindxdcValidator(address, nil, nil, filterer)
+// NewXDCValidatorFilterer creates a new log filterer instance of XDCValidator, bound to a specific deployed contract.
+func NewXDCValidatorFilterer(address common.Address, filterer bind.ContractFilterer) (*XDCValidatorFilterer, error) {
+	contract, err := bindXDCValidator(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorFilterer{contract: contract}, nil
+	return &XDCValidatorFilterer{contract: contract}, nil
 }
 
-// bindxdcValidator binds a generic wrapper to an already deployed contract.
-func bindxdcValidator(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(xdcValidatorABI))
+// bindXDCValidator binds a generic wrapper to an already deployed contract.
+func bindXDCValidator(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(XDCValidatorABI))
 	if err != nil {
 		return nil, err
 	}
@@ -504,479 +303,538 @@ func bindxdcValidator(address common.Address, caller bind.ContractCaller, transa
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_xdcValidator *xdcValidatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _xdcValidator.Contract.xdcValidatorCaller.contract.Call(opts, result, method, params...)
+func (_XDCValidator *XDCValidatorRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _XDCValidator.Contract.XDCValidatorCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_xdcValidator *xdcValidatorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _xdcValidator.Contract.xdcValidatorTransactor.contract.Transfer(opts)
+func (_XDCValidator *XDCValidatorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _XDCValidator.Contract.XDCValidatorTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_xdcValidator *xdcValidatorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _xdcValidator.Contract.xdcValidatorTransactor.contract.Transact(opts, method, params...)
+func (_XDCValidator *XDCValidatorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _XDCValidator.Contract.XDCValidatorTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_xdcValidator *xdcValidatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _xdcValidator.Contract.contract.Call(opts, result, method, params...)
+func (_XDCValidator *XDCValidatorCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _XDCValidator.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_xdcValidator *xdcValidatorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _xdcValidator.Contract.contract.Transfer(opts)
+func (_XDCValidator *XDCValidatorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _XDCValidator.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_xdcValidator *xdcValidatorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _xdcValidator.Contract.contract.Transact(opts, method, params...)
+func (_XDCValidator *XDCValidatorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _XDCValidator.Contract.contract.Transact(opts, method, params...)
+}
+
+// CandidateCount is a free data retrieval call binding the contract method 0xa9a981a3.
+//
+// Solidity: function candidateCount() constant returns(uint256)
+func (_XDCValidator *XDCValidatorCaller) CandidateCount(opts *bind.CallOpts) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _XDCValidator.contract.Call(opts, out, "candidateCount")
+	return *ret0, err
+}
+
+// CandidateCount is a free data retrieval call binding the contract method 0xa9a981a3.
+//
+// Solidity: function candidateCount() constant returns(uint256)
+func (_XDCValidator *XDCValidatorSession) CandidateCount() (*big.Int, error) {
+	return _XDCValidator.Contract.CandidateCount(&_XDCValidator.CallOpts)
+}
+
+// CandidateCount is a free data retrieval call binding the contract method 0xa9a981a3.
+//
+// Solidity: function candidateCount() constant returns(uint256)
+func (_XDCValidator *XDCValidatorCallerSession) CandidateCount() (*big.Int, error) {
+	return _XDCValidator.Contract.CandidateCount(&_XDCValidator.CallOpts)
 }
 
 // CandidateWithdrawDelay is a free data retrieval call binding the contract method 0xd161c767.
 //
 // Solidity: function candidateWithdrawDelay() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) CandidateWithdrawDelay(opts *bind.CallOpts) (*big.Int, error) {
+func (_XDCValidator *XDCValidatorCaller) CandidateWithdrawDelay(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "candidateWithdrawDelay")
+	err := _XDCValidator.contract.Call(opts, out, "candidateWithdrawDelay")
 	return *ret0, err
 }
 
 // CandidateWithdrawDelay is a free data retrieval call binding the contract method 0xd161c767.
 //
 // Solidity: function candidateWithdrawDelay() constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) CandidateWithdrawDelay() (*big.Int, error) {
-	return _xdcValidator.Contract.CandidateWithdrawDelay(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorSession) CandidateWithdrawDelay() (*big.Int, error) {
+	return _XDCValidator.Contract.CandidateWithdrawDelay(&_XDCValidator.CallOpts)
 }
 
 // CandidateWithdrawDelay is a free data retrieval call binding the contract method 0xd161c767.
 //
 // Solidity: function candidateWithdrawDelay() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) CandidateWithdrawDelay() (*big.Int, error) {
-	return _xdcValidator.Contract.CandidateWithdrawDelay(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorCallerSession) CandidateWithdrawDelay() (*big.Int, error) {
+	return _XDCValidator.Contract.CandidateWithdrawDelay(&_XDCValidator.CallOpts)
 }
+
 // Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
 //
 // Solidity: function candidates( uint256) constant returns(address)
-func (_xdcValidator *xdcValidatorCaller) Candidates(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error){
+func (_XDCValidator *XDCValidatorCaller) Candidates(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "candidates", arg0)
+	err := _XDCValidator.contract.Call(opts, out, "candidates", arg0)
 	return *ret0, err
-}
-
-/// Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
-//
-// Solidity: function candidates( uint256) constant returns(address)
-func (_xdcValidator *xdcValidatorSession) Candidates(arg0 *big.Int) (common.Address, error) {
-	return _xdcValidator.Contract.Candidates(&_xdcValidator.CallOpts, arg0)
 }
 
 // Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
 //
 // Solidity: function candidates( uint256) constant returns(address)
-func (_xdcValidator *xdcValidatorCallerSession) Candidates(arg0 *big.Int) (common.Address, error) {
-	return _xdcValidator.Contract.Candidates(&_xdcValidator.CallOpts, arg0)
+func (_XDCValidator *XDCValidatorSession) Candidates(arg0 *big.Int) (common.Address, error) {
+	return _XDCValidator.Contract.Candidates(&_XDCValidator.CallOpts, arg0)
+}
+
+// Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
+//
+// Solidity: function candidates( uint256) constant returns(address)
+func (_XDCValidator *XDCValidatorCallerSession) Candidates(arg0 *big.Int) (common.Address, error) {
+	return _XDCValidator.Contract.Candidates(&_XDCValidator.CallOpts, arg0)
 }
 
 // GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
 //
 // Solidity: function getCandidateCap(_candidate address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) GetCandidateCap(opts *bind.CallOpts, _candidate common.Address) (*big.Int, error) {
+func (_XDCValidator *XDCValidatorCaller) GetCandidateCap(opts *bind.CallOpts, _candidate common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getCandidateCap", _candidate)
+	err := _XDCValidator.contract.Call(opts, out, "getCandidateCap", _candidate)
 	return *ret0, err
 }
 
 // GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
 //
 // Solidity: function getCandidateCap(_candidate address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) GetCandidateCap(_candidate common.Address) (*big.Int, error) {
-	return _xdcValidator.Contract.GetCandidateCap(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorSession) GetCandidateCap(_candidate common.Address) (*big.Int, error) {
+	return _XDCValidator.Contract.GetCandidateCap(&_XDCValidator.CallOpts, _candidate)
 }
 
 // GetCandidateCap is a free data retrieval call binding the contract method 0x58e7525f.
 //
 // Solidity: function getCandidateCap(_candidate address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) GetCandidateCap(_candidate common.Address) (*big.Int, error) {
-	return _xdcValidator.Contract.GetCandidateCap(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorCallerSession) GetCandidateCap(_candidate common.Address) (*big.Int, error) {
+	return _XDCValidator.Contract.GetCandidateCap(&_XDCValidator.CallOpts, _candidate)
 }
 
-// GetCandidateNodeUrl is a free data retrieval call binding the contract method 0xda67b599.
-//
-// Solidity: function getCandidateNodeUrl(_candidate address) constant returns(string)
-func (_xdcValidator *xdcValidatorCaller) GetCandidateNodeUrl(opts *bind.CallOpts, _candidate common.Address) (string, error) {
-	var (
-		ret0 = new(string)
-	)
-	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getCandidateNodeUrl", _candidate)
-	return *ret0, err
-}
-
-// GetCandidateNodeUrl is a free data retrieval call binding the contract method 0xda67b599.
-//
-// Solidity: function getCandidateNodeUrl(_candidate address) constant returns(string)
-func (_xdcValidator *xdcValidatorSession) GetCandidateNodeUrl(_candidate common.Address) (string, error) {
-	return _xdcValidator.Contract.GetCandidateNodeUrl(&_xdcValidator.CallOpts, _candidate)
-}
-
-// GetCandidateNodeUrl is a free data retrieval call binding the contract method 0xda67b599.
-//
-// Solidity: function getCandidateNodeUrl(_candidate address) constant returns(string)
-func (_xdcValidator *xdcValidatorCallerSession) GetCandidateNodeUrl(_candidate common.Address) (string, error) {
-	return _xdcValidator.Contract.GetCandidateNodeUrl(&_xdcValidator.CallOpts, _candidate)
-}
 // GetCandidateOwner is a free data retrieval call binding the contract method 0xb642facd.
 //
 // Solidity: function getCandidateOwner(_candidate address) constant returns(address)
-func (_xdcValidator *xdcValidatorCaller) GetCandidateOwner(opts *bind.CallOpts, _candidate common.Address) (common.Address, error) {
+func (_XDCValidator *XDCValidatorCaller) GetCandidateOwner(opts *bind.CallOpts, _candidate common.Address) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getCandidateOwner", _candidate)
+	err := _XDCValidator.contract.Call(opts, out, "getCandidateOwner", _candidate)
 	return *ret0, err
 }
 
 // GetCandidateOwner is a free data retrieval call binding the contract method 0xb642facd.
 //
 // Solidity: function getCandidateOwner(_candidate address) constant returns(address)
-func (_xdcValidator *xdcValidatorSession) GetCandidateOwner(_candidate common.Address) (common.Address, error) {
-	return _xdcValidator.Contract.GetCandidateOwner(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorSession) GetCandidateOwner(_candidate common.Address) (common.Address, error) {
+	return _XDCValidator.Contract.GetCandidateOwner(&_XDCValidator.CallOpts, _candidate)
 }
 
 // GetCandidateOwner is a free data retrieval call binding the contract method 0xb642facd.
 //
 // Solidity: function getCandidateOwner(_candidate address) constant returns(address)
-func (_xdcValidator *xdcValidatorCallerSession) GetCandidateOwner(_candidate common.Address) (common.Address, error) {
-	return _xdcValidator.Contract.GetCandidateOwner(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorCallerSession) GetCandidateOwner(_candidate common.Address) (common.Address, error) {
+	return _XDCValidator.Contract.GetCandidateOwner(&_XDCValidator.CallOpts, _candidate)
 }
 
-
-// GetCandidateWithdrawBlockNumber is a free data retrieval call binding the contract method 0x28265294.
-//
-// Solidity: function getCandidateWithdrawBlockNumber(_candidate address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) GetCandidateWithdrawBlockNumber(opts *bind.CallOpts, _candidate common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getCandidateWithdrawBlockNumber", _candidate)
-	return *ret0, err
-}
-
-// GetCandidateWithdrawBlockNumber is a free data retrieval call binding the contract method 0x28265294.
-//
-// Solidity: function getCandidateWithdrawBlockNumber(_candidate address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) GetCandidateWithdrawBlockNumber(_candidate common.Address) (*big.Int, error) {
-	return _xdcValidator.Contract.GetCandidateWithdrawBlockNumber(&_xdcValidator.CallOpts, _candidate)
-}
-
-// GetCandidateWithdrawBlockNumber is a free data retrieval call binding the contract method 0x28265294.
-//
-// Solidity: function getCandidateWithdrawBlockNumber(_candidate address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) GetCandidateWithdrawBlockNumber(_candidate common.Address) (*big.Int, error) {
-	return _xdcValidator.Contract.GetCandidateWithdrawBlockNumber(&_xdcValidator.CallOpts, _candidate)
-}
-	
 // GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
 //
 // Solidity: function getCandidates() constant returns(address[])
-func (_xdcValidator *xdcValidatorCaller) GetCandidates(opts *bind.CallOpts) ([]common.Address, error) {
+func (_XDCValidator *XDCValidatorCaller) GetCandidates(opts *bind.CallOpts) ([]common.Address, error) {
 	var (
 		ret0 = new([]common.Address)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getCandidates")
+	err := _XDCValidator.contract.Call(opts, out, "getCandidates")
 	return *ret0, err
 }
 
 // GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
 //
 // Solidity: function getCandidates() constant returns(address[])
-func (_xdcValidator *xdcValidatorSession) GetCandidates() ([]common.Address, error) {
-	return _xdcValidator.Contract.GetCandidates(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorSession) GetCandidates() ([]common.Address, error) {
+	return _XDCValidator.Contract.GetCandidates(&_XDCValidator.CallOpts)
 }
 
 // GetCandidates is a free data retrieval call binding the contract method 0x06a49fce.
 //
 // Solidity: function getCandidates() constant returns(address[])
-func (_xdcValidator *xdcValidatorCallerSession) GetCandidates() ([]common.Address, error) {
-	return _xdcValidator.Contract.GetCandidates(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorCallerSession) GetCandidates() ([]common.Address, error) {
+	return _XDCValidator.Contract.GetCandidates(&_XDCValidator.CallOpts)
 }
-
 
 // GetVoterCap is a free data retrieval call binding the contract method 0x302b6872.
 //
 // Solidity: function getVoterCap(_candidate address, _voter address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) GetVoterCap(opts *bind.CallOpts, _candidate common.Address, _voter common.Address) (*big.Int, error) {
+func (_XDCValidator *XDCValidatorCaller) GetVoterCap(opts *bind.CallOpts, _candidate common.Address, _voter common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getVoterCap", _candidate, _voter)
+	err := _XDCValidator.contract.Call(opts, out, "getVoterCap", _candidate, _voter)
 	return *ret0, err
 }
 
 // GetVoterCap is a free data retrieval call binding the contract method 0x302b6872.
 //
 // Solidity: function getVoterCap(_candidate address, _voter address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) GetVoterCap(_candidate common.Address, _voter common.Address) (*big.Int, error) {
-	return _xdcValidator.Contract.GetVoterCap(&_xdcValidator.CallOpts, _candidate, _voter)
+func (_XDCValidator *XDCValidatorSession) GetVoterCap(_candidate common.Address, _voter common.Address) (*big.Int, error) {
+	return _XDCValidator.Contract.GetVoterCap(&_XDCValidator.CallOpts, _candidate, _voter)
 }
 
 // GetVoterCap is a free data retrieval call binding the contract method 0x302b6872.
 //
 // Solidity: function getVoterCap(_candidate address, _voter address) constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) GetVoterCap(_candidate common.Address, _voter common.Address) (*big.Int, error) {
-	return _xdcValidator.Contract.GetVoterCap(&_xdcValidator.CallOpts, _candidate, _voter)
+func (_XDCValidator *XDCValidatorCallerSession) GetVoterCap(_candidate common.Address, _voter common.Address) (*big.Int, error) {
+	return _XDCValidator.Contract.GetVoterCap(&_XDCValidator.CallOpts, _candidate, _voter)
 }
+
 // GetVoters is a free data retrieval call binding the contract method 0x2d15cc04.
 //
 // Solidity: function getVoters(_candidate address) constant returns(address[])
-func (_xdcValidator *xdcValidatorCaller) GetVoters(opts *bind.CallOpts, _candidate common.Address) ([]common.Address, error) {
+func (_XDCValidator *XDCValidatorCaller) GetVoters(opts *bind.CallOpts, _candidate common.Address) ([]common.Address, error) {
 	var (
 		ret0 = new([]common.Address)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "getVoters", _candidate)
+	err := _XDCValidator.contract.Call(opts, out, "getVoters", _candidate)
 	return *ret0, err
 }
 
 // GetVoters is a free data retrieval call binding the contract method 0x2d15cc04.
 //
 // Solidity: function getVoters(_candidate address) constant returns(address[])
-func (_xdcValidator *xdcValidatorSession) GetVoters(_candidate common.Address) ([]common.Address, error) {
-	return _xdcValidator.Contract.GetVoters(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorSession) GetVoters(_candidate common.Address) ([]common.Address, error) {
+	return _XDCValidator.Contract.GetVoters(&_XDCValidator.CallOpts, _candidate)
 }
 
 // GetVoters is a free data retrieval call binding the contract method 0x2d15cc04.
 //
 // Solidity: function getVoters(_candidate address) constant returns(address[])
-func (_xdcValidator *xdcValidatorCallerSession) GetVoters(_candidate common.Address) ([]common.Address, error) {
-	return _xdcValidator.Contract.GetVoters(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorCallerSession) GetVoters(_candidate common.Address) ([]common.Address, error) {
+	return _XDCValidator.Contract.GetVoters(&_XDCValidator.CallOpts, _candidate)
 }
+
+// GetWithdrawBlockNumbers is a free data retrieval call binding the contract method 0x2f9c4bba.
+//
+// Solidity: function getWithdrawBlockNumbers() constant returns(uint256[])
+func (_XDCValidator *XDCValidatorCaller) GetWithdrawBlockNumbers(opts *bind.CallOpts) ([]*big.Int, error) {
+	var (
+		ret0 = new([]*big.Int)
+	)
+	out := ret0
+	err := _XDCValidator.contract.Call(opts, out, "getWithdrawBlockNumbers")
+	return *ret0, err
+}
+
+// GetWithdrawBlockNumbers is a free data retrieval call binding the contract method 0x2f9c4bba.
+//
+// Solidity: function getWithdrawBlockNumbers() constant returns(uint256[])
+func (_XDCValidator *XDCValidatorSession) GetWithdrawBlockNumbers() ([]*big.Int, error) {
+	return _XDCValidator.Contract.GetWithdrawBlockNumbers(&_XDCValidator.CallOpts)
+}
+
+// GetWithdrawBlockNumbers is a free data retrieval call binding the contract method 0x2f9c4bba.
+//
+// Solidity: function getWithdrawBlockNumbers() constant returns(uint256[])
+func (_XDCValidator *XDCValidatorCallerSession) GetWithdrawBlockNumbers() ([]*big.Int, error) {
+	return _XDCValidator.Contract.GetWithdrawBlockNumbers(&_XDCValidator.CallOpts)
+}
+
+// GetWithdrawCap is a free data retrieval call binding the contract method 0x15febd68.
+//
+// Solidity: function getWithdrawCap(_blockNumber uint256) constant returns(uint256)
+func (_XDCValidator *XDCValidatorCaller) GetWithdrawCap(opts *bind.CallOpts, _blockNumber *big.Int) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _XDCValidator.contract.Call(opts, out, "getWithdrawCap", _blockNumber)
+	return *ret0, err
+}
+
+// GetWithdrawCap is a free data retrieval call binding the contract method 0x15febd68.
+//
+// Solidity: function getWithdrawCap(_blockNumber uint256) constant returns(uint256)
+func (_XDCValidator *XDCValidatorSession) GetWithdrawCap(_blockNumber *big.Int) (*big.Int, error) {
+	return _XDCValidator.Contract.GetWithdrawCap(&_XDCValidator.CallOpts, _blockNumber)
+}
+
+// GetWithdrawCap is a free data retrieval call binding the contract method 0x15febd68.
+//
+// Solidity: function getWithdrawCap(_blockNumber uint256) constant returns(uint256)
+func (_XDCValidator *XDCValidatorCallerSession) GetWithdrawCap(_blockNumber *big.Int) (*big.Int, error) {
+	return _XDCValidator.Contract.GetWithdrawCap(&_XDCValidator.CallOpts, _blockNumber)
+}
+
 // IsCandidate is a free data retrieval call binding the contract method 0xd51b9e93.
 //
 // Solidity: function isCandidate(_candidate address) constant returns(bool)
-func (_xdcValidator *xdcValidatorCaller) IsCandidate(opts *bind.CallOpts, _candidate common.Address) (bool, error) {
+func (_XDCValidator *XDCValidatorCaller) IsCandidate(opts *bind.CallOpts, _candidate common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "isCandidate", _candidate)
+	err := _XDCValidator.contract.Call(opts, out, "isCandidate", _candidate)
 	return *ret0, err
 }
 
 // IsCandidate is a free data retrieval call binding the contract method 0xd51b9e93.
 //
 // Solidity: function isCandidate(_candidate address) constant returns(bool)
-func (_xdcValidator *xdcValidatorSession) IsCandidate(_candidate common.Address) (bool, error) {
-	return _xdcValidator.Contract.IsCandidate(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorSession) IsCandidate(_candidate common.Address) (bool, error) {
+	return _XDCValidator.Contract.IsCandidate(&_XDCValidator.CallOpts, _candidate)
 }
 
 // IsCandidate is a free data retrieval call binding the contract method 0xd51b9e93.
 //
 // Solidity: function isCandidate(_candidate address) constant returns(bool)
-func (_xdcValidator *xdcValidatorCallerSession) IsCandidate(_candidate common.Address) (bool, error) {
-	return _xdcValidator.Contract.IsCandidate(&_xdcValidator.CallOpts, _candidate)
+func (_XDCValidator *XDCValidatorCallerSession) IsCandidate(_candidate common.Address) (bool, error) {
+	return _XDCValidator.Contract.IsCandidate(&_XDCValidator.CallOpts, _candidate)
 }
-
 
 // MaxValidatorNumber is a free data retrieval call binding the contract method 0xd09f1ab4.
 //
 // Solidity: function maxValidatorNumber() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) MaxValidatorNumber(opts *bind.CallOpts) (*big.Int, error) {
+func (_XDCValidator *XDCValidatorCaller) MaxValidatorNumber(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "maxValidatorNumber")
+	err := _XDCValidator.contract.Call(opts, out, "maxValidatorNumber")
 	return *ret0, err
 }
 
 // MaxValidatorNumber is a free data retrieval call binding the contract method 0xd09f1ab4.
 //
 // Solidity: function maxValidatorNumber() constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) MaxValidatorNumber() (*big.Int, error) {
-	return _xdcValidator.Contract.MaxValidatorNumber(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorSession) MaxValidatorNumber() (*big.Int, error) {
+	return _XDCValidator.Contract.MaxValidatorNumber(&_XDCValidator.CallOpts)
 }
 
 // MaxValidatorNumber is a free data retrieval call binding the contract method 0xd09f1ab4.
 //
 // Solidity: function maxValidatorNumber() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) MaxValidatorNumber() (*big.Int, error) {
-	return _xdcValidator.Contract.MaxValidatorNumber(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorCallerSession) MaxValidatorNumber() (*big.Int, error) {
+	return _XDCValidator.Contract.MaxValidatorNumber(&_XDCValidator.CallOpts)
 }
 
 // MinCandidateCap is a free data retrieval call binding the contract method 0xd55b7dff.
 //
 // Solidity: function minCandidateCap() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCaller) MinCandidateCap(opts *bind.CallOpts) (*big.Int, error) {
+func (_XDCValidator *XDCValidatorCaller) MinCandidateCap(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _xdcValidator.contract.Call(opts, out, "minCandidateCap")
+	err := _XDCValidator.contract.Call(opts, out, "minCandidateCap")
 	return *ret0, err
 }
 
 // MinCandidateCap is a free data retrieval call binding the contract method 0xd55b7dff.
 //
 // Solidity: function minCandidateCap() constant returns(uint256)
-func (_xdcValidator *xdcValidatorSession) MinCandidateCap() (*big.Int, error) {
-	return _xdcValidator.Contract.MinCandidateCap(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorSession) MinCandidateCap() (*big.Int, error) {
+	return _XDCValidator.Contract.MinCandidateCap(&_XDCValidator.CallOpts)
 }
 
 // MinCandidateCap is a free data retrieval call binding the contract method 0xd55b7dff.
 //
 // Solidity: function minCandidateCap() constant returns(uint256)
-func (_xdcValidator *xdcValidatorCallerSession) MinCandidateCap() (*big.Int, error) {
-	return _xdcValidator.Contract.MinCandidateCap(&_xdcValidator.CallOpts)
+func (_XDCValidator *XDCValidatorCallerSession) MinCandidateCap() (*big.Int, error) {
+	return _XDCValidator.Contract.MinCandidateCap(&_XDCValidator.CallOpts)
 }
 
-// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
+// MinVoterCap is a free data retrieval call binding the contract method 0xf8ac9dd5.
 //
-// Solidity: function propose(_candidate address, _nodeUrl string) returns()
-func (_xdcValidator *xdcValidatorTransactor) Propose(opts *bind.TransactOpts, _candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "propose", _candidate, _nodeUrl)
+// Solidity: function minVoterCap() constant returns(uint256)
+func (_XDCValidator *XDCValidatorCaller) MinVoterCap(opts *bind.CallOpts) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _XDCValidator.contract.Call(opts, out, "minVoterCap")
+	return *ret0, err
 }
 
-// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
-// Solidity: function propose(_candidate address, _nodeUrl string) returns()
-func (_xdcValidator *xdcValidatorSession) Propose(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
-}
-
-// Propose is a paid mutator transaction binding the contract method 0xd6f0948c.
+// MinVoterCap is a free data retrieval call binding the contract method 0xf8ac9dd5.
 //
-// Solidity: function propose(_candidate address, _nodeUrl string) returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Propose(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Propose(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
+// Solidity: function minVoterCap() constant returns(uint256)
+func (_XDCValidator *XDCValidatorSession) MinVoterCap() (*big.Int, error) {
+	return _XDCValidator.Contract.MinVoterCap(&_XDCValidator.CallOpts)
+}
+
+// MinVoterCap is a free data retrieval call binding the contract method 0xf8ac9dd5.
+//
+// Solidity: function minVoterCap() constant returns(uint256)
+func (_XDCValidator *XDCValidatorCallerSession) MinVoterCap() (*big.Int, error) {
+	return _XDCValidator.Contract.MinVoterCap(&_XDCValidator.CallOpts)
+}
+
+// VoterWithdrawDelay is a free data retrieval call binding the contract method 0xa9ff959e.
+//
+// Solidity: function voterWithdrawDelay() constant returns(uint256)
+func (_XDCValidator *XDCValidatorCaller) VoterWithdrawDelay(opts *bind.CallOpts) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _XDCValidator.contract.Call(opts, out, "voterWithdrawDelay")
+	return *ret0, err
+}
+
+// VoterWithdrawDelay is a free data retrieval call binding the contract method 0xa9ff959e.
+//
+// Solidity: function voterWithdrawDelay() constant returns(uint256)
+func (_XDCValidator *XDCValidatorSession) VoterWithdrawDelay() (*big.Int, error) {
+	return _XDCValidator.Contract.VoterWithdrawDelay(&_XDCValidator.CallOpts)
+}
+
+// VoterWithdrawDelay is a free data retrieval call binding the contract method 0xa9ff959e.
+//
+// Solidity: function voterWithdrawDelay() constant returns(uint256)
+func (_XDCValidator *XDCValidatorCallerSession) VoterWithdrawDelay() (*big.Int, error) {
+	return _XDCValidator.Contract.VoterWithdrawDelay(&_XDCValidator.CallOpts)
+}
+
+// Propose is a paid mutator transaction binding the contract method 0x01267951.
+//
+// Solidity: function propose(_candidate address) returns()
+func (_XDCValidator *XDCValidatorTransactor) Propose(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.contract.Transact(opts, "propose", _candidate)
+}
+
+// Propose is a paid mutator transaction binding the contract method 0x01267951.
+//
+// Solidity: function propose(_candidate address) returns()
+func (_XDCValidator *XDCValidatorSession) Propose(_candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Propose(&_XDCValidator.TransactOpts, _candidate)
+}
+
+// Propose is a paid mutator transaction binding the contract method 0x01267951.
+//
+// Solidity: function propose(_candidate address) returns()
+func (_XDCValidator *XDCValidatorTransactorSession) Propose(_candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Propose(&_XDCValidator.TransactOpts, _candidate)
 }
 
 // Resign is a paid mutator transaction binding the contract method 0xae6e43f5.
 //
 // Solidity: function resign(_candidate address) returns()
-func (_xdcValidator *xdcValidatorTransactor) Resign(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "resign", _candidate)
+func (_XDCValidator *XDCValidatorTransactor) Resign(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.contract.Transact(opts, "resign", _candidate)
 }
+
 // Resign is a paid mutator transaction binding the contract method 0xae6e43f5.
 //
 // Solidity: function resign(_candidate address) returns()
-func (_xdcValidator *xdcValidatorSession) Resign(_candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Resign(&_xdcValidator.TransactOpts, _candidate)
+func (_XDCValidator *XDCValidatorSession) Resign(_candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Resign(&_XDCValidator.TransactOpts, _candidate)
 }
 
-// Resign is a paid mutator transaction binding the contract method 0xae6e43f5
+// Resign is a paid mutator transaction binding the contract method 0xae6e43f5.
 //
 // Solidity: function resign(_candidate address) returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Resign(_candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Resign(&_xdcValidator.TransactOpts, _candidate)
-}
-
-// SetNodeUrl is a paid mutator transaction binding the contract method 0xa3ec7965.
-//
-// Solidity: function setNodeUrl(_candidate address, _nodeUrl string) returns()
-func (_xdcValidator *xdcValidatorTransactor) SetNodeUrl(opts *bind.TransactOpts, _candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "setNodeUrl", _candidate, _nodeUrl)
-}
-
-// SetNodeUrl is a paid mutator transaction binding the contract method 0xa3ec7965.
-//
-// Solidity: function setNodeUrl(_candidate address, _nodeUrl string) returns()
-func (_xdcValidator *xdcValidatorSession) SetNodeUrl(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
-	return _xdcValidator.Contract.SetNodeUrl(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
-}
-
-// SetNodeUrl is a paid mutator transaction binding the contract method 0xa3ec7965.
-//
-// Solidity: function setNodeUrl(_candidate address, _nodeUrl string) returns()
-func (_xdcValidator *xdcValidatorTransactorSession) SetNodeUrl(_candidate common.Address, _nodeUrl string) (*types.Transaction, error) {
-	return _xdcValidator.Contract.SetNodeUrl(&_xdcValidator.TransactOpts, _candidate, _nodeUrl)
+func (_XDCValidator *XDCValidatorTransactorSession) Resign(_candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Resign(&_XDCValidator.TransactOpts, _candidate)
 }
 
 // Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
 //
 // Solidity: function unvote(_candidate address, _cap uint256) returns()
-func (_xdcValidator *xdcValidatorTransactor) Unvote(opts *bind.TransactOpts, _candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "unvote", _candidate, _cap)
+func (_XDCValidator *XDCValidatorTransactor) Unvote(opts *bind.TransactOpts, _candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
+	return _XDCValidator.contract.Transact(opts, "unvote", _candidate, _cap)
 }
 
 // Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
 //
 // Solidity: function unvote(_candidate address, _cap uint256) returns()
-func (_xdcValidator *xdcValidatorSession) Unvote(_candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Unvote(&_xdcValidator.TransactOpts, _candidate, _cap)
+func (_XDCValidator *XDCValidatorSession) Unvote(_candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Unvote(&_XDCValidator.TransactOpts, _candidate, _cap)
 }
 
 // Unvote is a paid mutator transaction binding the contract method 0x02aa9be2.
 //
 // Solidity: function unvote(_candidate address, _cap uint256) returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Unvote(_candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Unvote(&_xdcValidator.TransactOpts, _candidate, _cap)
-}
-
-
-// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
-//
-// Solidity: function vote(_candidate address) returns()
-func (_xdcValidator *xdcValidatorTransactor) Vote(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "vote", _candidate)
+func (_XDCValidator *XDCValidatorTransactorSession) Unvote(_candidate common.Address, _cap *big.Int) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Unvote(&_XDCValidator.TransactOpts, _candidate, _cap)
 }
 
 // Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
 //
 // Solidity: function vote(_candidate address) returns()
-func (_xdcValidator *xdcValidatorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Vote(&_xdcValidator.TransactOpts, _candidate)
+func (_XDCValidator *XDCValidatorTransactor) Vote(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.contract.Transact(opts, "vote", _candidate)
 }
 
 // Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
 //
 // Solidity: function vote(_candidate address) returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Vote(&_xdcValidator.TransactOpts, _candidate)
+func (_XDCValidator *XDCValidatorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Vote(&_XDCValidator.TransactOpts, _candidate)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0x51cff8d9.
+// Vote is a paid mutator transaction binding the contract method 0x6dd7d8ea.
 //
-// Solidity: function withdraw(_candidate address) returns()
-func (_xdcValidator *xdcValidatorTransactor) Withdraw(opts *bind.TransactOpts, _candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.contract.Transact(opts, "withdraw", _candidate)
+// Solidity: function vote(_candidate address) returns()
+func (_XDCValidator *XDCValidatorTransactorSession) Vote(_candidate common.Address) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Vote(&_XDCValidator.TransactOpts, _candidate)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0x51cff8d9.
+// Withdraw is a paid mutator transaction binding the contract method 0x441a3e70.
 //
-// Solidity: function withdraw(_candidate address) returns()
-func (_xdcValidator *xdcValidatorSession) Withdraw(_candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Withdraw(&_xdcValidator.TransactOpts, _candidate)
+// Solidity: function withdraw(_blockNumber uint256, _index uint256) returns()
+func (_XDCValidator *XDCValidatorTransactor) Withdraw(opts *bind.TransactOpts, _blockNumber *big.Int, _index *big.Int) (*types.Transaction, error) {
+	return _XDCValidator.contract.Transact(opts, "withdraw", _blockNumber, _index)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0x51cff8d9.
+// Withdraw is a paid mutator transaction binding the contract method 0x441a3e70.
 //
-// Solidity: function withdraw(_candidate address) returns()
-func (_xdcValidator *xdcValidatorTransactorSession) Withdraw(_candidate common.Address) (*types.Transaction, error) {
-	return _xdcValidator.Contract.Withdraw(&_xdcValidator.TransactOpts, _candidate)
+// Solidity: function withdraw(_blockNumber uint256, _index uint256) returns()
+func (_XDCValidator *XDCValidatorSession) Withdraw(_blockNumber *big.Int, _index *big.Int) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Withdraw(&_XDCValidator.TransactOpts, _blockNumber, _index)
 }
 
-// xdcValidatorProposeIterator is returned from FilterPropose and is used to iterate over the raw logs and unpacked data for Propose events raised by the xdcValidator contract.
-type xdcValidatorProposeIterator struct {
-	Event *xdcValidatorPropose // Event containing the contract specifics and raw log
+// Withdraw is a paid mutator transaction binding the contract method 0x441a3e70.
+//
+// Solidity: function withdraw(_blockNumber uint256, _index uint256) returns()
+func (_XDCValidator *XDCValidatorTransactorSession) Withdraw(_blockNumber *big.Int, _index *big.Int) (*types.Transaction, error) {
+	return _XDCValidator.Contract.Withdraw(&_XDCValidator.TransactOpts, _blockNumber, _index)
+}
+
+// XDCValidatorProposeIterator is returned from FilterPropose and is used to iterate over the raw logs and unpacked data for Propose events raised by the XDCValidator contract.
+type XDCValidatorProposeIterator struct {
+	Event *XDCValidatorPropose // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -990,7 +848,7 @@ type xdcValidatorProposeIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorProposeIterator) Next() bool {
+func (it *XDCValidatorProposeIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -999,7 +857,7 @@ func (it *xdcValidatorProposeIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(xdcValidatorPropose)
+			it.Event = new(XDCValidatorPropose)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1014,7 +872,7 @@ func (it *xdcValidatorProposeIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(xdcValidatorPropose)
+		it.Event = new(XDCValidatorPropose)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1030,41 +888,43 @@ func (it *xdcValidatorProposeIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorProposeIterator) Error() error {
+func (it *XDCValidatorProposeIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *xdcValidatorProposeIterator) Close() error {
+func (it *XDCValidatorProposeIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// xdcValidatorPropose represents a Propose event raised by the xdcValidator contract.
-type xdcValidatorPropose struct {
-	Owner    common.Address
+// XDCValidatorPropose represents a Propose event raised by the XDCValidator contract.
+type XDCValidatorPropose struct {
+	Owner     common.Address
 	Candidate common.Address
 	Cap       *big.Int
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterPropose is a free log retrieval operation binding the contract event 0x7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1
+// FilterPropose is a free log retrieval operation binding the contract event 0x7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1.
+//
 // Solidity: event Propose(_owner address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) FilterPropose(opts *bind.FilterOpts) (*xdcValidatorProposeIterator, error) {
+func (_XDCValidator *XDCValidatorFilterer) FilterPropose(opts *bind.FilterOpts) (*XDCValidatorProposeIterator, error) {
 
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Propose")
+	logs, sub, err := _XDCValidator.contract.FilterLogs(opts, "Propose")
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorProposeIterator{contract: _xdcValidator.contract, event: "Propose", logs: logs, sub: sub}, nil
+	return &XDCValidatorProposeIterator{contract: _XDCValidator.contract, event: "Propose", logs: logs, sub: sub}, nil
 }
 
 // WatchPropose is a free log subscription operation binding the contract event 0x7635f1d87b47fba9f2b09e56eb4be75cca030e0cb179c1602ac9261d39a8f5c1.
-// Solidity: event Propose(_owner  address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) WatchPropose(opts *bind.WatchOpts, sink chan<- *xdcValidatorPropose) (event.Subscription, error) {
+//
+// Solidity: event Propose(_owner address, _candidate address, _cap uint256)
+func (_XDCValidator *XDCValidatorFilterer) WatchPropose(opts *bind.WatchOpts, sink chan<- *XDCValidatorPropose) (event.Subscription, error) {
 
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Propose")
+	logs, sub, err := _XDCValidator.contract.WatchLogs(opts, "Propose")
 	if err != nil {
 		return nil, err
 	}
@@ -1074,8 +934,8 @@ func (_xdcValidator *xdcValidatorFilterer) WatchPropose(opts *bind.WatchOpts, si
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorPropose)
-				if err := _xdcValidator.contract.UnpackLog(event, "Propose", log); err != nil {
+				event := new(XDCValidatorPropose)
+				if err := _XDCValidator.contract.UnpackLog(event, "Propose", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1096,9 +956,9 @@ func (_xdcValidator *xdcValidatorFilterer) WatchPropose(opts *bind.WatchOpts, si
 	}), nil
 }
 
-// xdcValidatorResignIterator is returned from FilterResign and is used to iterate over the raw logs and unpacked data for Resign events raised by the xdcValidator contract.
-type xdcValidatorResignIterator struct {
-	Event *xdcValidatorResign // Event containing the contract specifics and raw log
+// XDCValidatorResignIterator is returned from FilterResign and is used to iterate over the raw logs and unpacked data for Resign events raised by the XDCValidator contract.
+type XDCValidatorResignIterator struct {
+	Event *XDCValidatorResign // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1112,7 +972,7 @@ type xdcValidatorResignIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorResignIterator) Next() bool {
+func (it *XDCValidatorResignIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1121,7 +981,7 @@ func (it *xdcValidatorResignIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(xdcValidatorResign)
+			it.Event = new(XDCValidatorResign)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1136,7 +996,7 @@ func (it *xdcValidatorResignIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(xdcValidatorResign)
+		it.Event = new(XDCValidatorResign)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1152,19 +1012,20 @@ func (it *xdcValidatorResignIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorResignIterator) Error() error {
+func (it *XDCValidatorResignIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *xdcValidatorResignIterator) Close() error {
+func (it *XDCValidatorResignIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
-// xdcValidatorResign represents a Resign event raised by the xdcValidator contract.
-type xdcValidatorResign struct {
-	Owner       common.Address
+
+// XDCValidatorResign represents a Resign event raised by the XDCValidator contract.
+type XDCValidatorResign struct {
+	Owner     common.Address
 	Candidate common.Address
 	Raw       types.Log // Blockchain specific contextual infos
 }
@@ -1172,20 +1033,21 @@ type xdcValidatorResign struct {
 // FilterResign is a free log retrieval operation binding the contract event 0x4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d3.
 //
 // Solidity: event Resign(_owner address, _candidate address)
-func (_xdcValidator *xdcValidatorFilterer) FilterResign(opts *bind.FilterOpts) (*xdcValidatorResignIterator, error) {
+func (_XDCValidator *XDCValidatorFilterer) FilterResign(opts *bind.FilterOpts) (*XDCValidatorResignIterator, error) {
 
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Resign")
+	logs, sub, err := _XDCValidator.contract.FilterLogs(opts, "Resign")
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorResignIterator{contract: _xdcValidator.contract, event: "Resign", logs: logs, sub: sub}, nil
+	return &XDCValidatorResignIterator{contract: _XDCValidator.contract, event: "Resign", logs: logs, sub: sub}, nil
 }
 
 // WatchResign is a free log subscription operation binding the contract event 0x4edf3e325d0063213a39f9085522994a1c44bea5f39e7d63ef61260a1e58c6d3.
 //
 // Solidity: event Resign(_owner address, _candidate address)
-func (_xdcValidator *xdcValidatorFilterer) WatchResign(opts *bind.WatchOpts, sink chan<- *xdcValidatorResign) (event.Subscription, error) {
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Resign")
+func (_XDCValidator *XDCValidatorFilterer) WatchResign(opts *bind.WatchOpts, sink chan<- *XDCValidatorResign) (event.Subscription, error) {
+
+	logs, sub, err := _XDCValidator.contract.WatchLogs(opts, "Resign")
 	if err != nil {
 		return nil, err
 	}
@@ -1195,8 +1057,8 @@ func (_xdcValidator *xdcValidatorFilterer) WatchResign(opts *bind.WatchOpts, sin
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorResign)
-				if err := _xdcValidator.contract.UnpackLog(event, "Resign", log); err != nil {
+				event := new(XDCValidatorResign)
+				if err := _XDCValidator.contract.UnpackLog(event, "Resign", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1217,9 +1079,9 @@ func (_xdcValidator *xdcValidatorFilterer) WatchResign(opts *bind.WatchOpts, sin
 	}), nil
 }
 
-// xdcValidatorSetNodeUrlIterator is returned from FilterSetNodeUrl and is used to iterate over the raw logs and unpacked data for SetNodeUrl events raised by the xdcValidator contract.
-type xdcValidatorSetNodeUrlIterator struct {
-	Event *xdcValidatorSetNodeUrl // Event containing the contract specifics and raw log
+// XDCValidatorUnvoteIterator is returned from FilterUnvote and is used to iterate over the raw logs and unpacked data for Unvote events raised by the XDCValidator contract.
+type XDCValidatorUnvoteIterator struct {
+	Event *XDCValidatorUnvote // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1233,7 +1095,7 @@ type xdcValidatorSetNodeUrlIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorSetNodeUrlIterator) Next() bool {
+func (it *XDCValidatorUnvoteIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1242,7 +1104,7 @@ func (it *xdcValidatorSetNodeUrlIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(xdcValidatorSetNodeUrl)
+			it.Event = new(XDCValidatorUnvote)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1257,7 +1119,7 @@ func (it *xdcValidatorSetNodeUrlIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(xdcValidatorSetNodeUrl)
+		it.Event = new(XDCValidatorUnvote)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1273,144 +1135,19 @@ func (it *xdcValidatorSetNodeUrlIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorSetNodeUrlIterator) Error() error {
+func (it *XDCValidatorUnvoteIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *xdcValidatorSetNodeUrlIterator) Close() error {
+func (it *XDCValidatorUnvoteIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// xdcValidatorSetNodeUrl represents a SetNodeUrl event raised by the xdcValidator contract.
-type xdcValidatorSetNodeUrl struct {
-	Backer    common.Address
-	Candidate common.Address
-	NodeUrl   string
-	Raw       types.Log // Blockchain specific contextual infos
-}
-
-// FilterSetNodeUrl is a free log retrieval operation binding the contract event 0x63f303264cd4b7a198f0163f96e0b6b1f972f9b73359a70c44241b862879d8a4.
-//
-// Solidity: event SetNodeUrl(_owner address, _candidate address, _nodeUrl string)
-func (_xdcValidator *xdcValidatorFilterer) FilterSetNodeUrl(opts *bind.FilterOpts) (*xdcValidatorSetNodeUrlIterator, error) {
-
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "SetNodeUrl")
-	if err != nil {
-		return nil, err
-	}
-	return &xdcValidatorSetNodeUrlIterator{contract: _xdcValidator.contract, event: "SetNodeUrl", logs: logs, sub: sub}, nil
-}
-
-// WatchSetNodeUrl is a free log subscription operation binding the contract event 0x63f303264cd4b7a198f0163f96e0b6b1f972f9b73359a70c44241b862879d8a4.
-//
-// Solidity: event SetNodeUrl(_backer address, _candidate address, _nodeUrl string)
-func (_xdcValidator *xdcValidatorFilterer) WatchSetNodeUrl(opts *bind.WatchOpts, sink chan<- *xdcValidatorSetNodeUrl) (event.Subscription, error) {
-
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "SetNodeUrl")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorSetNodeUrl)
-				if err := _xdcValidator.contract.UnpackLog(event, "SetNodeUrl", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-
-// xdcValidatorUnvoteIterator is returned from FilterUnvote and is used to iterate over the raw logs and unpacked data for Unvote events raised by the xdcValidator contract.
-type xdcValidatorUnvoteIterator struct {
-	Event *xdcValidatorUnvote // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorUnvoteIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(xdcValidatorUnvote)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(xdcValidatorUnvote)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorUnvoteIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *xdcValidatorUnvoteIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// xdcValidatorUnvote represents a Unvote event raised by the xdcValidator contract.
-type xdcValidatorUnvote struct {
+// XDCValidatorUnvote represents a Unvote event raised by the XDCValidator contract.
+type XDCValidatorUnvote struct {
 	Voter     common.Address
 	Candidate common.Address
 	Cap       *big.Int
@@ -1420,21 +1157,21 @@ type xdcValidatorUnvote struct {
 // FilterUnvote is a free log retrieval operation binding the contract event 0xaa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2.
 //
 // Solidity: event Unvote(_voter address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) FilterUnvote(opts *bind.FilterOpts) (*xdcValidatorUnvoteIterator, error) {
+func (_XDCValidator *XDCValidatorFilterer) FilterUnvote(opts *bind.FilterOpts) (*XDCValidatorUnvoteIterator, error) {
 
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Unvote")
+	logs, sub, err := _XDCValidator.contract.FilterLogs(opts, "Unvote")
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorUnvoteIterator{contract: _xdcValidator.contract, event: "Unvote", logs: logs, sub: sub}, nil
+	return &XDCValidatorUnvoteIterator{contract: _XDCValidator.contract, event: "Unvote", logs: logs, sub: sub}, nil
 }
 
 // WatchUnvote is a free log subscription operation binding the contract event 0xaa0e554f781c3c3b2be110a0557f260f11af9a8aa2c64bc1e7a31dbb21e32fa2.
 //
 // Solidity: event Unvote(_voter address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) WatchUnvote(opts *bind.WatchOpts, sink chan<- *xdcValidatorUnvote) (event.Subscription, error) {
+func (_XDCValidator *XDCValidatorFilterer) WatchUnvote(opts *bind.WatchOpts, sink chan<- *XDCValidatorUnvote) (event.Subscription, error) {
 
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Unvote")
+	logs, sub, err := _XDCValidator.contract.WatchLogs(opts, "Unvote")
 	if err != nil {
 		return nil, err
 	}
@@ -1444,8 +1181,8 @@ func (_xdcValidator *xdcValidatorFilterer) WatchUnvote(opts *bind.WatchOpts, sin
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorUnvote)
-				if err := _xdcValidator.contract.UnpackLog(event, "Unvote", log); err != nil {
+				event := new(XDCValidatorUnvote)
+				if err := _XDCValidator.contract.UnpackLog(event, "Unvote", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1466,9 +1203,9 @@ func (_xdcValidator *xdcValidatorFilterer) WatchUnvote(opts *bind.WatchOpts, sin
 	}), nil
 }
 
-// xdcValidatorVoteIterator is returned from FilterVote and is used to iterate over the raw logs and unpacked data for Vote events raised by the xdcValidator contract.
-type xdcValidatorVoteIterator struct {
-	Event *xdcValidatorVote // Event containing the contract specifics and raw log
+// XDCValidatorVoteIterator is returned from FilterVote and is used to iterate over the raw logs and unpacked data for Vote events raised by the XDCValidator contract.
+type XDCValidatorVoteIterator struct {
+	Event *XDCValidatorVote // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1482,7 +1219,7 @@ type xdcValidatorVoteIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorVoteIterator) Next() bool {
+func (it *XDCValidatorVoteIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1491,7 +1228,7 @@ func (it *xdcValidatorVoteIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(xdcValidatorVote)
+			it.Event = new(XDCValidatorVote)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1506,7 +1243,7 @@ func (it *xdcValidatorVoteIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(xdcValidatorVote)
+		it.Event = new(XDCValidatorVote)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1522,19 +1259,19 @@ func (it *xdcValidatorVoteIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorVoteIterator) Error() error {
+func (it *XDCValidatorVoteIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *xdcValidatorVoteIterator) Close() error {
+func (it *XDCValidatorVoteIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// xdcValidatorVote represents a Vote event raised by the xdcValidator contract.
-type xdcValidatorVote struct {
+// XDCValidatorVote represents a Vote event raised by the XDCValidator contract.
+type XDCValidatorVote struct {
 	Voter     common.Address
 	Candidate common.Address
 	Cap       *big.Int
@@ -1544,21 +1281,21 @@ type xdcValidatorVote struct {
 // FilterVote is a free log retrieval operation binding the contract event 0x66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc.
 //
 // Solidity: event Vote(_voter address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) FilterVote(opts *bind.FilterOpts) (*xdcValidatorVoteIterator, error) {
+func (_XDCValidator *XDCValidatorFilterer) FilterVote(opts *bind.FilterOpts) (*XDCValidatorVoteIterator, error) {
 
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Vote")
+	logs, sub, err := _XDCValidator.contract.FilterLogs(opts, "Vote")
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorVoteIterator{contract: _xdcValidator.contract, event: "Vote", logs: logs, sub: sub}, nil
+	return &XDCValidatorVoteIterator{contract: _XDCValidator.contract, event: "Vote", logs: logs, sub: sub}, nil
 }
 
 // WatchVote is a free log subscription operation binding the contract event 0x66a9138482c99e9baf08860110ef332cc0c23b4a199a53593d8db0fc8f96fbfc.
 //
 // Solidity: event Vote(_voter address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) WatchVote(opts *bind.WatchOpts, sink chan<- *xdcValidatorVote) (event.Subscription, error) {
+func (_XDCValidator *XDCValidatorFilterer) WatchVote(opts *bind.WatchOpts, sink chan<- *XDCValidatorVote) (event.Subscription, error) {
 
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Vote")
+	logs, sub, err := _XDCValidator.contract.WatchLogs(opts, "Vote")
 	if err != nil {
 		return nil, err
 	}
@@ -1568,8 +1305,8 @@ func (_xdcValidator *xdcValidatorFilterer) WatchVote(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorVote)
-				if err := _xdcValidator.contract.UnpackLog(event, "Vote", log); err != nil {
+				event := new(XDCValidatorVote)
+				if err := _XDCValidator.contract.UnpackLog(event, "Vote", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1590,9 +1327,9 @@ func (_xdcValidator *xdcValidatorFilterer) WatchVote(opts *bind.WatchOpts, sink 
 	}), nil
 }
 
-// xdcValidatorWithdrawIterator is returned from FilterWithdraw and is used to iterate over the raw logs and unpacked data for Withdraw events raised by the xdcValidator contract.
-type xdcValidatorWithdrawIterator struct {
-	Event *xdcValidatorWithdraw // Event containing the contract specifics and raw log
+// XDCValidatorWithdrawIterator is returned from FilterWithdraw and is used to iterate over the raw logs and unpacked data for Withdraw events raised by the XDCValidator contract.
+type XDCValidatorWithdrawIterator struct {
+	Event *XDCValidatorWithdraw // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1606,7 +1343,7 @@ type xdcValidatorWithdrawIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *xdcValidatorWithdrawIterator) Next() bool {
+func (it *XDCValidatorWithdrawIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1615,7 +1352,7 @@ func (it *xdcValidatorWithdrawIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(xdcValidatorWithdraw)
+			it.Event = new(XDCValidatorWithdraw)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1630,7 +1367,7 @@ func (it *xdcValidatorWithdrawIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(xdcValidatorWithdraw)
+		it.Event = new(XDCValidatorWithdraw)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1646,43 +1383,43 @@ func (it *xdcValidatorWithdrawIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *xdcValidatorWithdrawIterator) Error() error {
+func (it *XDCValidatorWithdrawIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *xdcValidatorWithdrawIterator) Close() error {
+func (it *XDCValidatorWithdrawIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// xdcValidatorWithdraw represents a Withdraw event raised by the xdcValidator contract.
-type xdcValidatorWithdraw struct {
-	Owner    common.Address
-	Candidate common.Address
-	Cap       *big.Int
-	Raw       types.Log // Blockchain specific contextual infos
+// XDCValidatorWithdraw represents a Withdraw event raised by the XDCValidator contract.
+type XDCValidatorWithdraw struct {
+	Owner       common.Address
+	BlockNumber *big.Int
+	Cap         *big.Int
+	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterWithdraw is a free log retrieval operation binding the contract event 0x9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f6447c714cad8eb.
+// FilterWithdraw is a free log retrieval operation binding the contract event 0xf279e6a1f5e320cca91135676d9cb6e44ca8a08c0b88342bcdb1144f6511b568.
 //
-// Solidity: event Withdraw(_owner address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) FilterWithdraw(opts *bind.FilterOpts) (*xdcValidatorWithdrawIterator, error) {
+// Solidity: event Withdraw(_owner address, _blockNumber uint256, _cap uint256)
+func (_XDCValidator *XDCValidatorFilterer) FilterWithdraw(opts *bind.FilterOpts) (*XDCValidatorWithdrawIterator, error) {
 
-	logs, sub, err := _xdcValidator.contract.FilterLogs(opts, "Withdraw")
+	logs, sub, err := _XDCValidator.contract.FilterLogs(opts, "Withdraw")
 	if err != nil {
 		return nil, err
 	}
-	return &xdcValidatorWithdrawIterator{contract: _xdcValidator.contract, event: "Withdraw", logs: logs, sub: sub}, nil
+	return &XDCValidatorWithdrawIterator{contract: _XDCValidator.contract, event: "Withdraw", logs: logs, sub: sub}, nil
 }
 
-// WatchWithdraw is a free log subscription operation binding the contract event 0x9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f6447c714cad8eb.
+// WatchWithdraw is a free log subscription operation binding the contract event 0xf279e6a1f5e320cca91135676d9cb6e44ca8a08c0b88342bcdb1144f6511b568.
 //
-// Solidity: event Withdraw(_owner address, _candidate address, _cap uint256)
-func (_xdcValidator *xdcValidatorFilterer) WatchWithdraw(opts *bind.WatchOpts, sink chan<- *xdcValidatorWithdraw) (event.Subscription, error) {
+// Solidity: event Withdraw(_owner address, _blockNumber uint256, _cap uint256)
+func (_XDCValidator *XDCValidatorFilterer) WatchWithdraw(opts *bind.WatchOpts, sink chan<- *XDCValidatorWithdraw) (event.Subscription, error) {
 
-	logs, sub, err := _xdcValidator.contract.WatchLogs(opts, "Withdraw")
+	logs, sub, err := _XDCValidator.contract.WatchLogs(opts, "Withdraw")
 	if err != nil {
 		return nil, err
 	}
@@ -1692,8 +1429,8 @@ func (_xdcValidator *xdcValidatorFilterer) WatchWithdraw(opts *bind.WatchOpts, s
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(xdcValidatorWithdraw)
-				if err := _xdcValidator.contract.UnpackLog(event, "Withdraw", log); err != nil {
+				event := new(XDCValidatorWithdraw)
+				if err := _XDCValidator.contract.UnpackLog(event, "Withdraw", log); err != nil {
 					return err
 				}
 				event.Raw = log

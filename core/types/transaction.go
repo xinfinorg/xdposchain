@@ -206,6 +206,11 @@ func (tx *Transaction) Hash() common.Hash {
 	return v
 }
 
+func (tx *Transaction) CacheHash() {
+	v := rlpHash(tx)
+	tx.hash.Store(v)
+}
+
 // Size returns the true RLP encoded storage size of the transaction, either by
 // encoding and returning it, or returning a previsouly cached value.
 func (tx *Transaction) Size() common.StorageSize {
@@ -260,6 +265,13 @@ func (tx *Transaction) Cost() *big.Int {
 
 func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 	return tx.data.V, tx.data.R, tx.data.S
+}
+
+func (tx *Transaction) IsSpecialTransaction() bool {
+	if tx.To() == nil {
+		return false
+	}
+	return tx.To().String() == common.RandomizeSMC || tx.To().String() == common.BlockSigners
 }
 
 func (tx *Transaction) String() string {
@@ -390,14 +402,38 @@ type TransactionsByPriceAndNonce struct {
 //
 // Note, the input map is reowned so the caller should not interact any more with
 // if after providing it to the constructor.
-func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transactions) *TransactionsByPriceAndNonce {
+
+// It also classifies special txs and normal txs
+func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transactions, signers map[common.Address]struct{}) (*TransactionsByPriceAndNonce, Transactions) {
 	// Initialize a price based heap with the head transactions
-	heads := make(TxByPrice, 0, len(txs))
+	heads := TxByPrice{}
+	specialTxs := Transactions{}
 	for _, accTxs := range txs {
-		heads = append(heads, accTxs[0])
-		// Ensure the sender address is from the signer
-		acc, _ := Sender(signer, accTxs[0])
-		txs[acc] = accTxs[1:]
+		from, _ := Sender(signer, accTxs[0])
+		var normalTxs Transactions
+		lastSpecialTx := -1
+		if len(signers) > 0 {
+			if _, ok := signers[from]; ok {
+				for i, tx := range accTxs {
+					if tx.IsSpecialTransaction() {
+						lastSpecialTx = i
+					}
+				}
+			}
+		}
+		if lastSpecialTx >= 0 {
+			for i := 0; i <= lastSpecialTx; i++ {
+				specialTxs = append(specialTxs, accTxs[i])
+			}
+			normalTxs = accTxs[lastSpecialTx+1:]
+		} else {
+			normalTxs = accTxs
+		}
+		if len(normalTxs) > 0 {
+			heads = append(heads, normalTxs[0])
+			// Ensure the sender address is from the signer
+			txs[from] = normalTxs[1:]
+		}
 	}
 	heap.Init(&heads)
 
@@ -406,7 +442,7 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 		txs:    txs,
 		heads:  heads,
 		signer: signer,
-	}
+	}, specialTxs
 }
 
 // Peek returns the next transaction by price.

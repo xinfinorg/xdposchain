@@ -33,8 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/clique"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/consensus/XDPoS"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -113,6 +113,14 @@ func NewApp(gitCommit, usage string) *cli.App {
 
 var (
 	// General settings
+	AnnounceTxsFlag = cli.BoolFlag{
+		Name:  "announce-txs",
+		Usage: "Always commit transactions",
+	}
+	StoreRewardFlag = cli.BoolFlag{
+		Name:  "store-reward",
+		Usage: "Store reward to file",
+	}
 	DataDirFlag = DirectoryFlag{
 		Name:  "datadir",
 		Usage: "Data directory for the databases and keystore",
@@ -128,12 +136,16 @@ var (
 	}
 	NetworkIdFlag = cli.Uint64Flag{
 		Name:  "networkid",
-		Usage: "Network identifier (integer, 1=Frontier, 2=Morden (disused), 3=Ropsten, 4=Rinkeby)",
+		Usage: "Network identifier (integer, 89=XDCchain)",
 		Value: eth.DefaultConfig.NetworkId,
 	}
 	TestnetFlag = cli.BoolFlag{
 		Name:  "testnet",
 		Usage: "Ropsten network: pre-configured proof-of-work test network",
+	}
+	XDCTestnetFlag = cli.BoolFlag{
+		Name:  "XDC-testnet",
+		Usage: "XDC test network",
 	}
 	RinkebyFlag = cli.BoolFlag{
 		Name:  "rinkeby",
@@ -311,13 +323,13 @@ var (
 		Value: int(state.MaxTrieCacheGen),
 	}
 	// Miner settings
-	MiningEnabledFlag = cli.BoolFlag{
+	StakingEnabledFlag = cli.BoolFlag{
 		Name:  "mine",
-		Usage: "Enable mining",
+		Usage: "Enable staking",
 	}
-	MinerThreadsFlag = cli.IntFlag{
+	StakerThreadsFlag = cli.IntFlag{
 		Name:  "minerthreads",
-		Usage: "Number of CPU threads to use for mining",
+		Usage: "Number of CPU threads to use for staking",
 		Value: runtime.NumCPU(),
 	}
 	TargetGasLimitFlag = cli.Uint64Flag{
@@ -587,7 +599,7 @@ func setNodeUserIdent(ctx *cli.Context, cfg *node.Config) {
 // setBootstrapNodes creates a list of bootstrap nodes from the command line
 // flags, reverting to pre-configured ones if none have been specified.
 func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
-	urls := params.MainnetBootnodes
+	urls := []string{}
 	switch {
 	case ctx.GlobalIsSet(BootnodesFlag.Name) || ctx.GlobalIsSet(BootnodesV4Flag.Name):
 		if ctx.GlobalIsSet(BootnodesV4Flag.Name) {
@@ -653,6 +665,7 @@ func setListenAddress(ctx *cli.Context, cfg *p2p.Config) {
 // setNAT creates a port mapper from command line flags.
 func setNAT(ctx *cli.Context, cfg *p2p.Config) {
 	if ctx.GlobalIsSet(NATFlag.Name) {
+		log.Info("NAT is setted", "value", ctx.GlobalString(NATFlag.Name))
 		natif, err := nat.Parse(ctx.GlobalString(NATFlag.Name))
 		if err != nil {
 			Fatalf("Option %s: %v", NATFlag.Name, err)
@@ -729,7 +742,7 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 }
 
 // makeDatabaseHandles raises out the number of allowed file handles per process
-// for xdc and returns half of the allowance to assign to the database.
+// for XDC and returns half of the allowance to assign to the database.
 func makeDatabaseHandles() int {
 	limit, err := fdlimit.Current()
 	if err != nil {
@@ -761,7 +774,7 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	log.Warn("-------------------------------------------------------------------")
 	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
 	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `xdc account list`)")
+	log.Warn("Please use explicit addresses! (can search via `XDC account list`)")
 	log.Warn("-------------------------------------------------------------------")
 
 	accs := ks.Accounts()
@@ -895,6 +908,9 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	}
 	if ctx.GlobalIsSet(NoUSBFlag.Name) {
 		cfg.NoUSB = ctx.GlobalBool(NoUSBFlag.Name)
+	}
+	if ctx.GlobalIsSet(AnnounceTxsFlag.Name) {
+		cfg.AnnounceTxs = ctx.GlobalBool(AnnounceTxsFlag.Name)
 	}
 }
 
@@ -1054,8 +1070,8 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheGCFlag.Name) {
 		cfg.TrieCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheGCFlag.Name) / 100
 	}
-	if ctx.GlobalIsSet(MinerThreadsFlag.Name) {
-		cfg.MinerThreads = ctx.GlobalInt(MinerThreadsFlag.Name)
+	if ctx.GlobalIsSet(StakerThreadsFlag.Name) {
+		cfg.MinerThreads = ctx.GlobalInt(StakerThreadsFlag.Name)
 	}
 	if ctx.GlobalIsSet(DocRootFlag.Name) {
 		cfg.DocRoot = ctx.GlobalString(DocRootFlag.Name)
@@ -1070,7 +1086,12 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 		// TODO(fjl): force-enable this in --dev mode
 		cfg.EnablePreimageRecording = ctx.GlobalBool(VMEnableDebugFlag.Name)
 	}
-
+	if ctx.GlobalIsSet(StoreRewardFlag.Name) {
+		cfg.StoreRewardFolder = filepath.Join(stack.DataDir(), "XDC", "rewards")
+		if _, err := os.Stat(cfg.StoreRewardFolder); os.IsNotExist(err) {
+			os.Mkdir(cfg.StoreRewardFolder, os.ModePerm)
+		}
+	}
 	// Override any default configs for hard coded networks.
 	switch {
 	case ctx.GlobalBool(TestnetFlag.Name):
@@ -1221,8 +1242,8 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 		Fatalf("%v", err)
 	}
 	var engine consensus.Engine
-	if config.Clique != nil {
-		engine = clique.New(config.Clique, chainDb)
+	if config.XDPoS != nil {
+		engine = XDPoS.New(config.XDPoS, chainDb)
 	} else {
 		engine = ethash.NewFaker()
 		if !ctx.GlobalBool(FakePoWFlag.Name) {
@@ -1276,11 +1297,11 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 // This is a temporary function used for migrating old command/flags to the
 // new format.
 //
-// e.g. xdc account new --keystore /tmp/mykeystore --lightkdf
+// e.g. XDC account new --keystore /tmp/mykeystore --lightkdf
 //
 // is equivalent after calling this method with:
 //
-// xdc --keystore /tmp/mykeystore --lightkdf account new
+// XDC --keystore /tmp/mykeystore --lightkdf account new
 //
 // This allows the use of the existing configuration functionality.
 // When all flags are migrated this function can be removed and the existing

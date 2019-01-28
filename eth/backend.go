@@ -18,20 +18,26 @@
 package eth
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
+	"bytes"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/clique"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/consensus/XDPoS"
 	"github.com/ethereum/go-ethereum/contracts"
+	"github.com/ethereum/go-ethereum/contracts/validator/contract"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/bloombits"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -40,7 +46,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
@@ -52,8 +57,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 )
-
-const NumOfMasternodes = 99
 
 type LesServer interface {
 	Start(srvr *p2p.Server)
@@ -96,9 +99,7 @@ type Ethereum struct {
 	networkId     uint64
 	netRPCService *ethapi.PublicNetAPI
 
-	lock        sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
-	IPCEndpoint string
-	Client      *ethclient.Client // Global ipc client instance.
+	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
 }
 
 func (s *Ethereum) AddLesServer(ls LesServer) {
@@ -175,7 +176,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if eth.protocolManager, err = NewProtocolManager(eth.chainConfig, config.SyncMode, config.NetworkId, eth.eventMux, eth.txPool, eth.engine, eth.blockchain, chainDb); err != nil {
 		return nil, err
 	}
-	eth.miner = miner.New(eth, eth.chainConfig, eth.EventMux(), eth.engine)
+	eth.miner = miner.New(eth, eth.chainConfig, eth.EventMux(), eth.engine, ctx.GetConfig().AnnounceTxs)
 	eth.miner.SetExtra(makeExtraData(config.ExtraData))
 
 	eth.ApiBackend = &EthApiBackend{eth, nil}
@@ -185,64 +186,216 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	}
 	eth.ApiBackend.gpo = gasprice.NewOracle(eth.ApiBackend, gpoParams)
 
-	if eth.chainConfig.Clique != nil {
-		c := eth.engine.(*clique.Clique)
-		
-		// Set global ipc endpoint.
-		eth.IPCEndpoint = ctx.GetConfig().IPCEndpoint()
+	// Set global ipc endpoint.
+	eth.blockchain.IPCEndpoint = ctx.GetConfig().IPCEndpoint()
 
-		// Inject hook for send tx sign to smartcontract after insert block into chain.
-		importedHook := func(block *types.Block) {
-			snap, err := c.GetSnapshot(eth.blockchain, block.Header())
+	if eth.chainConfig.XDPoS != nil {
+		c := eth.engine.(*XDPoS.XDPoS)
+		signHook := func(block *types.Block) error {
+			ok, err := eth.ValidateMasternode()
 			if err != nil {
-				log.Error("Fail to get snapshot for sign tx validator.")
-				return
+				return fmt.Errorf("Can't verify masternode permission: %v", err)
 			}
-			if _, authorized := snap.Signers[eth.etherbase]; authorized {
-				if err := contracts.CreateTransactionSign(chainConfig, eth.txPool, eth.accountManager, block); err != nil {
-					log.Error("Fail to create tx sign for imported block", "error", err)
-					return
-				}
+			if !ok {
+				// silently return as this node doesn't have masternode permission to sign block
+				return nil
 			}
-		}
-		eth.protocolManager.fetcher.SetImportedHook(importedHook)
-
-		// Hook reward for clique validator.
-		c.HookReward = func(chain consensus.ChainReader, state *state.StateDB, header *types.Header) error {
-			client, err := eth.GetClient()
-			if err != nil {
-				log.Error("Fail to connect IPC client for blockSigner", "error", err)
-
-				return err
+			if err := contracts.CreateTransactionSign(chainConfig, eth.txPool, eth.accountManager, block, chainDb); err != nil {
+				return fmt.Errorf("Fail to create tx sign for importing block: %v", err)
 			}
-
-			number := header.Number.Uint64()
-			rCheckpoint := chain.Config().Clique.RewardCheckpoint
-			if number > 0 && number-rCheckpoint > 0 {
-				// Get signers in blockSigner smartcontract.
-				addr := common.HexToAddress(common.BlockSigners)
-				chainReward := new(big.Int).SetUint64(chain.Config().Clique.Reward * params.Ether)
-				totalSigner := new(uint64)
-				signers, err := contracts.GetRewardForCheckpoint(addr, number, rCheckpoint, client, totalSigner)
-				if err != nil {
-					log.Error("Fail to get signers for reward checkpoint", "error", err)
-				}
-				rewardSigners, err := contracts.CalculateReward(chainReward, signers, *totalSigner)
-				if err != nil {
-					log.Error("Fail to calculate reward for signers", "error", err)
-				}
-				// Add reward for signers.
-				if len(signers) > 0 {
-					for signer, calcReward := range rewardSigners {
-						state.AddBalance(signer, calcReward)
-					}
-				}
-			}
-
 			return nil
 		}
-	}
 
+		appendM2HeaderHook := func(block *types.Block) (*types.Block, bool, error) {
+			eb, err := eth.Etherbase()
+			if err != nil {
+				log.Error("Cannot get etherbase for append m2 header", "err", err)
+				return block, false, fmt.Errorf("etherbase missing: %v", err)
+			}
+			m1, err := c.RecoverSigner(block.Header())
+			if err != nil {
+				return block, false, fmt.Errorf("can't get block creator: %v", err)
+			}
+			m2, err := c.GetValidator(m1, eth.blockchain, block.Header())
+			if err != nil {
+				return block, false, fmt.Errorf("can't get block validator: %v", err)
+			}
+			if m2 == eb {
+				wallet, _ := eth.accountManager.Find(accounts.Account{Address: eb})
+				header := block.Header()
+				sighash, _ := wallet.SignHash(accounts.Account{Address: eb}, XDPoS.SigHash(header).Bytes())
+				header.Validator = sighash
+				return types.NewBlockWithHeader(header).WithBody(block.Transactions(), block.Uncles()), true, nil
+			}
+			return block, false, nil
+		}
+
+		eth.protocolManager.fetcher.SetSignHook(signHook)
+		eth.protocolManager.fetcher.SetAppendM2HeaderHook(appendM2HeaderHook)
+
+		// Hook prepares validators M2 for the current epoch at checkpoint block
+		c.HookValidator = func(header *types.Header, signers []common.Address) ([]byte, error) {
+			start := time.Now()
+			validators, err := GetValidators(eth.blockchain, signers)
+			if err != nil {
+				return []byte{}, err
+			}
+			header.Validators = validators
+			log.Debug("Time Calculated HookValidator ", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
+			return validators, nil
+		}
+
+		// Hook scans for bad masternodes and decide to penalty them
+		c.HookPenalty = func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error) {
+			client, err := eth.blockchain.GetClient()
+			if err != nil {
+				return nil, err
+			}
+			prevEpoc := blockNumberEpoc - chain.Config().XDPoS.Epoch
+			if prevEpoc >= 0 {
+				start := time.Now()
+				prevHeader := chain.GetHeaderByNumber(prevEpoc)
+				penSigners := c.GetMasternodes(chain, prevHeader)
+				if len(penSigners) > 0 {
+					blockSignerAddr := common.HexToAddress(common.BlockSigners)
+					// Loop for each block to check missing sign.
+					for i := prevEpoc; i < blockNumberEpoc; i++ {
+						blockHeader := chain.GetHeaderByNumber(i)
+						if len(penSigners) > 0 {
+							signedMasternodes, err := contracts.GetSignersFromContract(blockSignerAddr, client, blockHeader.Hash())
+							if err != nil {
+								return nil, err
+							}
+							if len(signedMasternodes) > 0 {
+								// Check signer signed?
+								for _, signed := range signedMasternodes {
+									for j, addr := range penSigners {
+										if signed == addr {
+											// Remove it from dupSigners.
+											penSigners = append(penSigners[:j], penSigners[j+1:]...)
+										}
+									}
+								}
+							}
+						} else {
+							break
+						}
+					}
+				}
+				log.Debug("Time Calculated HookPenalty ", "block", blockNumberEpoc, "time", common.PrettyDuration(time.Since(start)))
+				return penSigners, nil
+			}
+			return []common.Address{}, nil
+		}
+
+		// Hook calculates reward for masternodes
+		c.HookReward = func(chain consensus.ChainReader, state *state.StateDB, header *types.Header) (error, map[string]interface{}) {
+			client, err := eth.blockchain.GetClient()
+			if err != nil {
+				log.Error("Fail to connect IPC client for blockSigner", "error", err)
+				return err, nil
+			}
+			number := header.Number.Uint64()
+			rCheckpoint := chain.Config().XDPoS.RewardCheckpoint
+			foudationWalletAddr := chain.Config().XDPoS.FoudationWalletAddr
+			if foudationWalletAddr == (common.Address{}) {
+				log.Error("Foundation Wallet Address is empty", "error", foudationWalletAddr)
+			}
+			rewards := make(map[string]interface{})
+			if number > 0 && number-rCheckpoint > 0 && foudationWalletAddr != (common.Address{}) {
+				start := time.Now()
+				// Get signers in blockSigner smartcontract.
+				addr := common.HexToAddress(common.BlockSigners)
+				// Get reward inflation.
+				chainReward := new(big.Int).Mul(new(big.Int).SetUint64(chain.Config().XDPoS.Reward), new(big.Int).SetUint64(params.Ether))
+				chainReward = rewardInflation(chainReward, number, common.BlocksPerYear)
+
+				totalSigner := new(uint64)
+				signers, err := contracts.GetRewardForCheckpoint(chain, addr, number, rCheckpoint, client, totalSigner)
+				if err != nil {
+					log.Error("Fail to get signers for reward checkpoint", "error", err)
+					return err, nil
+				}
+				rewards["signers"] = signers
+				rewardSigners, err := contracts.CalculateRewardForSigner(chainReward, signers, *totalSigner)
+				if err != nil {
+					log.Error("Fail to calculate reward for signers", "error", err)
+					return err, nil
+				}
+				// Get validator.
+				validator, err := contract.NewXDCValidator(common.HexToAddress(common.MasternodeVotingSMC), client)
+				if err != nil {
+					log.Error("Fail get instance of XDC Validator", "error", err)
+					return err, nil
+				}
+				// Add reward for coin holders.
+				voterResults := make(map[common.Address]interface{})
+				if len(signers) > 0 {
+					for signer, calcReward := range rewardSigners {
+						err, rewards := contracts.CalculateRewardForHolders(foudationWalletAddr, validator, state, signer, calcReward)
+						if err != nil {
+							log.Error("Fail to calculate reward for holders.", "error", err)
+							return err, nil
+						}
+						voterResults[signer] = rewards
+					}
+				}
+				rewards["rewards"] = voterResults
+				log.Debug("Time Calculated HookReward ", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
+			}
+			return nil, rewards
+		}
+
+		// Hook verifies masternodes set
+		c.HookVerifyMNs = func(header *types.Header, signers []common.Address) error {
+			number := header.Number.Int64()
+			if number > 0 && number%common.EpocBlockRandomize == 0 {
+				start := time.Now()
+				validators, err := GetValidators(eth.blockchain, signers)
+				log.Debug("Time Calculated HookVerifyMNs ", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
+				if err != nil {
+					return err
+				}
+				if !bytes.Equal(header.Validators, validators) {
+					return XDPoS.ErrInvalidCheckpointValidators
+				}
+			}
+			return nil
+		}
+		eth.txPool.IsMasterNode = func(address common.Address) bool {
+			currentHeader := eth.blockchain.CurrentHeader()
+			snap, err := c.GetSnapshot(eth.blockchain, currentHeader)
+			if err != nil {
+				log.Error("Can't get snapshot with current header ", "number", currentHeader.Number, "hash", currentHeader.Hash().Hex(), "err", err)
+				return false
+			}
+			if _, ok := snap.Signers[address]; ok {
+				return true
+			}
+			return false
+		}
+		eth.blockchain.HookWriteRewards = func(header *types.Header) {
+			if len(config.StoreRewardFolder) > 0 {
+				rewards := c.GetRewards(header.Hash())
+				if rewards == nil {
+					rewards = c.GetRewards(header.HashNoValidator())
+					if rewards != nil {
+						c.InsertRewards(header.Hash(), rewards)
+					}
+				}
+				if rewards == nil {
+					return
+				}
+				data, err := json.Marshal(rewards)
+				if err == nil {
+					err = ioutil.WriteFile(filepath.Join(config.StoreRewardFolder, header.Number.String()+"."+header.Hash().Hex()), data, 0644)
+				}
+				if err != nil {
+					log.Error("Error when save reward info ", "number", header.Number, "hash", header.Hash().Hex(), "err", err)
+				}
+			}
+		}
+	}
 	return eth, nil
 }
 
@@ -251,7 +404,7 @@ func makeExtraData(extra []byte) []byte {
 		// create default extradata
 		extra, _ = rlp.EncodeToBytes([]interface{}{
 			uint(params.VersionMajor<<16 | params.VersionMinor<<8 | params.VersionPatch),
-			"geth",
+			"XDC",
 			runtime.Version(),
 			runtime.GOOS,
 		})
@@ -277,9 +430,9 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (ethdb.Data
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(ctx *node.ServiceContext, config *ethash.Config, chainConfig *params.ChainConfig, db ethdb.Database) consensus.Engine {
-	// If proof-of-authority is requested, set it up
-	if chainConfig.Clique != nil {
-		return clique.New(chainConfig.Clique, db)
+	// If XinFin-DPoS is requested, set it up
+	if chainConfig.XDPoS != nil {
+		return XDPoS.New(chainConfig.XDPoS, db)
 	}
 	// Otherwise assume proof-of-work
 	switch {
@@ -399,42 +552,27 @@ func (self *Ethereum) SetEtherbase(etherbase common.Address) {
 	self.miner.SetEtherbase(etherbase)
 }
 
-// ValidateMiner checks if node's address is in set of validators
-func (s *Ethereum) ValidateStaker() (bool, error) {
+// ValidateMasternode checks if node's address is in set of masternodes
+func (s *Ethereum) ValidateMasternode() (bool, error) {
 	eb, err := s.Etherbase()
 	if err != nil {
 		return false, err
 	}
-	if s.chainConfig.Clique != nil {
+	if s.chainConfig.XDPoS != nil {
 		//check if miner's wallet is in set of validators
-		c := s.engine.(*clique.Clique)
+		c := s.engine.(*XDPoS.XDPoS)
 		snap, err := c.GetSnapshot(s.blockchain, s.blockchain.CurrentHeader())
 		if err != nil {
-			return false, fmt.Errorf("Can't verify miner: %v", err)
+			return false, fmt.Errorf("Can't verify masternode permission: %v", err)
 		}
 		if _, authorized := snap.Signers[eb]; !authorized {
 			//This miner doesn't belong to set of validators
 			return false, nil
 		}
 	} else {
-		return false, fmt.Errorf("Only verify miners in Clique protocol")
+		return false, fmt.Errorf("Only verify masternode permission in XDPoS protocol")
 	}
 	return true, nil
-}
-
-// Store new set of masternodes into local db
-func (s *Ethereum) UpdateMasternodes(ms []clique.Masternode) error {
-	// get snapshot from local db
-	if s.chainConfig.Clique == nil {
-		return errors.New("not clique")
-	}
-	c := s.engine.(*clique.Clique)
-	err := c.UpdateMasternodes(s.blockchain, s.blockchain.CurrentHeader(), ms)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *Ethereum) StartStaking(local bool) error {
@@ -443,13 +581,13 @@ func (s *Ethereum) StartStaking(local bool) error {
 		log.Error("Cannot start mining without etherbase", "err", err)
 		return fmt.Errorf("etherbase missing: %v", err)
 	}
-	if clique, ok := s.engine.(*clique.Clique); ok {
+	if XDPoS, ok := s.engine.(*XDPoS.XDPoS); ok {
 		wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
 		if wallet == nil || err != nil {
 			log.Error("Etherbase account unavailable locally", "err", err)
 			return fmt.Errorf("signer missing: %v", err)
 		}
-		clique.Authorize(eb, wallet.SignHash)
+		XDPoS.Authorize(eb, wallet.SignHash)
 	}
 	if local {
 		// If local (CPU) mining is started, we can disable the transaction rejection
@@ -462,8 +600,8 @@ func (s *Ethereum) StartStaking(local bool) error {
 	return nil
 }
 
-func (s *Ethereum) StopMining()         { s.miner.Stop() }
-func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
+func (s *Ethereum) StopStaking()        { s.miner.Stop() }
+func (s *Ethereum) IsStaking() bool     { return s.miner.Mining() }
 func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
@@ -533,17 +671,47 @@ func (s *Ethereum) Stop() error {
 	return nil
 }
 
-// Get current IPC Client.
-func (s *Ethereum) GetClient() (*ethclient.Client, error) {
-	if s.Client == nil {
-		// Inject ipc client global instance.
-		client, err := ethclient.Dial(s.IPCEndpoint)
+func GetValidators(bc *core.BlockChain, masternodes []common.Address) ([]byte, error) {
+	if bc.Config().XDPoS == nil {
+		return nil, core.ErrNotXDPoS
+	}
+	client, err := bc.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	// Check m2 exists on chaindb.
+	// Get secrets and opening at epoc block checkpoint.
+
+	var candidates []int64
+	if err != nil {
+		return nil, err
+	}
+	lenSigners := int64(len(masternodes))
+	if lenSigners > 0 {
+		for _, addr := range masternodes {
+			random, err := contracts.GetRandomizeFromContract(client, addr)
+			if err != nil {
+				return nil, err
+			}
+			candidates = append(candidates, random)
+		}
+		// Get randomize m2 list.
+		m2, err := contracts.GenM2FromRandomize(candidates, lenSigners)
 		if err != nil {
-			log.Error("Fail to connect RPC", "error", err)
 			return nil, err
 		}
-		s.Client = client
+		return contracts.BuildValidatorFromM2(m2), nil
+	}
+	return nil, core.ErrNotFoundM1
+}
+
+func rewardInflation(chainReward *big.Int, number uint64, blockPerYear uint64) *big.Int {
+	if blockPerYear*2 <= number && number < blockPerYear*6 {
+		chainReward.Div(chainReward, new(big.Int).SetUint64(2))
+	}
+	if blockPerYear*6 <= number {
+		chainReward.Div(chainReward, new(big.Int).SetUint64(4))
 	}
 
-	return s.Client, nil
+	return chainReward
 }

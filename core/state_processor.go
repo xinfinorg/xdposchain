@@ -26,6 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )
+import (
+	"runtime"
+	"sync"
+)
 
 // StateProcessor is a basic Processor, which takes care of transitioning
 // state from one point to another.
@@ -35,6 +39,10 @@ type StateProcessor struct {
 	config *params.ChainConfig // Chain configuration options
 	bc     *BlockChain         // Canonical block chain
 	engine consensus.Engine    // Consensus engine used for block rewards
+}
+type CalculatedBlock struct {
+	block *types.Block
+	stop  bool
 }
 
 // NewStateProcessor initialises a new StateProcessor.
@@ -65,7 +73,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
 		misc.ApplyDAOHardFork(statedb)
 	}
-	// Iterate over and process the individual transactions
+	InitSignerInTransactions(p.config, header, block.Transactions())
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
 		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
@@ -77,7 +85,45 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts)
+	return receipts, allLogs, *usedGas, nil
+}
 
+func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
+	block := cBlock.block
+	var (
+		receipts types.Receipts
+		usedGas  = new(uint64)
+		header   = block.Header()
+		allLogs  []*types.Log
+		gp       = new(GasPool).AddGas(block.GasLimit())
+	)
+	// Mutate the the block and state according to any hard-fork specs
+	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
+		misc.ApplyDAOHardFork(statedb)
+	}
+	if cBlock.stop {
+		return nil, nil, 0, ErrStopPreparingBlock
+	}
+	InitSignerInTransactions(p.config, header, block.Transactions())
+	if cBlock.stop {
+		return nil, nil, 0, ErrStopPreparingBlock
+	}
+	// Iterate over and process the individual transactions
+	receipts = make([]*types.Receipt, block.Transactions().Len())
+	for i, tx := range block.Transactions() {
+		statedb.Prepare(tx.Hash(), block.Hash(), i)
+		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		if cBlock.stop {
+			return nil, nil, 0, ErrStopPreparingBlock
+		}
+		receipts[i] = receipt
+		allLogs = append(allLogs, receipt.Logs...)
+	}
+	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
+	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts)
 	return receipts, allLogs, *usedGas, nil
 }
 
@@ -123,4 +169,30 @@ func ApplyTransaction(config *params.ChainConfig, bc *BlockChain, author *common
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
 	return receipt, gas, err
+}
+
+func InitSignerInTransactions(config *params.ChainConfig, header *types.Header, txs types.Transactions) {
+	nWorker := runtime.NumCPU()
+	signer := types.MakeSigner(config, header.Number)
+	chunkSize := txs.Len() / nWorker
+	if txs.Len()%nWorker != 0 {
+		chunkSize++
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(nWorker)
+	for i := 0; i < nWorker; i++ {
+		from := i * chunkSize
+		to := from + chunkSize
+		if to > txs.Len() {
+			to = txs.Len()
+		}
+		go func(from int, to int) {
+			for j := from; j < to; j++ {
+				types.CacheSigner(signer, txs[j])
+				txs[j].CacheHash()
+			}
+			wg.Done()
+		}(from, to)
+	}
+	wg.Wait()
 }

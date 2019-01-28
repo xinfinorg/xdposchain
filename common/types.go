@@ -28,10 +28,13 @@ import (
 )
 
 const (
-	HashLength    = 32
-	AddressLength = 20
-	BlockSigners  = "0x0000000000000000000000000000000000000089"
-	Validator     = "0x0000000000000000000000000000000000000088"
+	HashLength          = 32
+	AddressLength       = 20
+	BlockSigners        = "0x0000000000000000000000000000000000000089"
+	MasternodeVotingSMC = "0x0000000000000000000000000000000000000088"
+	RandomizeSMC        = "0x0000000000000000000000000000000000000090"
+	FoudationAddr       = "0x0000000000000000000000000000000000000068"
+	TeamAddr            = "0x0000000000000000000000000000000000000099"
 )
 
 var (
@@ -241,4 +244,41 @@ func (a *UnprefixedAddress) UnmarshalText(input []byte) error {
 // MarshalText encodes the address as hex.
 func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(a[:])), nil
+}
+
+// Extract validators from byte array.
+func RemoveItemFromArray(array []Address, items []Address) []Address {
+	if len(items) == 0 {
+		return array
+	}
+
+	for _, item := range items {
+		for i := len(array) - 1; i >= 0; i-- {
+			if array[i] == item {
+				array = append(array[:i], array[i+1:]...)
+			}
+		}
+	}
+
+	return array
+}
+
+// Extract validators from byte array.
+func ExtractAddressToBytes(penalties []Address) []byte {
+	data := []byte{}
+	for _, signer := range penalties {
+		data = append(data, signer[:]...)
+	}
+	return data
+}
+
+func ExtractAddressFromBytes(bytePenalties []byte) []Address {
+	if bytePenalties != nil && len(bytePenalties) < AddressLength {
+		return []Address{}
+	}
+	penalties := make([]Address, len(bytePenalties)/AddressLength)
+	for i := 0; i < len(penalties); i++ {
+		copy(penalties[i][:], bytePenalties[i*AddressLength:])
+	}
+	return penalties
 }
