@@ -7,7 +7,7 @@ Contribute: [Developer Docs](https://docs.xinfin.org)
 
 ## XinFin Network Apothem testnet is community driven project to achieve the following 
 
-- XinFin DPOS (XDPoS) an efficient PBFT consensus that selects 21 validators from MAX 5000 validator Masternodes to achieve a high throughput Energy efficient consensus with instant block finality
+- XinFin DPOS (XDPoS) an efficient PBFT consensus that selects 21 random set of validators from MAX 5000 validator Masternodes to achieve a high throughput Energy efficient consensus with instant block finality
 
 - KYC Enforcement on Masternodes for Enterprise Adoption and compliance
 
