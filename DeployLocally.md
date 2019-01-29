@@ -41,7 +41,7 @@ $ XDC \
   --datadir $DATA_DIR \
   --keystore $KEYSTORE_DIR \
   --identity $NAME \
-  --password $DATA_DIR \
+  --password $DATA_DIR/password \
   --networkid 89 \
   --port 30303 \
   --rpc \
