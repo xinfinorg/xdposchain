@@ -30,7 +30,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
     
     // KYC mapping
-    mapping(address => bytes32) KYCData;
+    mapping(address => bytes32) public KYCData;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
