@@ -236,7 +236,7 @@ contract XDCValidator {
 
     // voteInvalidKYC : any candidate can vote for invalid KYC i.e. a particular candidate's owner has uploaded a bad KYC.
     // On securing 75% votes against an owner ( not candidate ), owner & all its candidates will lose their funds.
-    function voteInvalidKYC(address _invalidCandidate) onlyValidCandidate(msg.sender) public {
+    function voteInvalidKYC(address _invalidCandidate) onlyValidCandidate(msg.sender) onlyValidCandidate(_invalidCandidate) public {
         address candidateOwner = getCandidateOwner(msg.sender);
         address _invalidMasternode = getCandidateOwner(_invalidCandidate);
         require(!hasVotedInvalid[candidateOwner][_invalidMasternode]);
@@ -251,9 +251,12 @@ contract XDCValidator {
                     delete validatorsState[candidates[i]];
                     delete KYCData[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
+                    delete invalidKYCCount[_invalidMasternode];
                     for(uint k=0;k<owners.length;k++){
-                        if (owners[k]==_invalidMasternode)
-                        delete owners[k];
+                        if (owners[k]==_invalidMasternode){
+                            delete owners[k];
+                            owners.length--;
+                        }
                     }
                 }
             }
@@ -261,7 +264,8 @@ contract XDCValidator {
     }
 
     // invalidPercent : get votes against an owner in percentage.
-    function invalidPercent(address _invalidMasternode) view public returns(uint){
+    function invalidPercent(address _invalidCandidate) onlyValidCandidate(_invalidCandidate) view public returns(uint){
+        address _invalidMasternode = getCandidateOwner(_invalidCandidate);
         return (invalidKYCCount[_invalidMasternode]*100/getOwnerCount());
     }
 
