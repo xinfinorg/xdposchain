@@ -5,6 +5,7 @@ pragma solidity ^0.4.21;
 
 import "./libs/SafeMath.sol";
 
+
 contract XDCValidator {
     using SafeMath for uint256;
 
@@ -156,7 +157,10 @@ contract XDCValidator {
         });
         validatorsState[_candidate].voters[msg.sender] = validatorsState[_candidate].voters[msg.sender].add(msg.value);
         candidateCount = candidateCount.add(1);
-        owners.push(msg.sender);
+        if (ownerToCandidate[msg.sender].length ==0){
+            owners.push(msg.sender);
+            
+        }
         ownerToCandidate[msg.sender].push(_candidate);
         voters[_candidate].push(msg.sender);
         emit Propose(msg.sender, _candidate, msg.value);
@@ -240,6 +244,7 @@ contract XDCValidator {
         address candidateOwner = getCandidateOwner(msg.sender);
         address _invalidMasternode = getCandidateOwner(_invalidCandidate);
         require(!hasVotedInvalid[candidateOwner][_invalidMasternode]);
+        hasVotedInvalid[candidateOwner][_invalidMasternode] = true;
         invalidKYCCount[_invalidMasternode] += 1;
         if( invalidKYCCount[_invalidMasternode]*100/getOwnerCount() >= 75 ){
             // 75% owners say that the KYC is invalid
@@ -256,7 +261,8 @@ contract XDCValidator {
                         if (owners[k]==_invalidMasternode){
                             delete owners[k];
                             owners.length--;
-                        }
+                            break;
+                        } 
                     }
                 }
             }
@@ -270,7 +276,7 @@ contract XDCValidator {
     }
 
 
-    // getOwnerCount : get count of total owners; accounts who own atleast on masternode.
+    // getOwnerCount : get count of total owners; accounts who own atleast one masternode.
     function getOwnerCount() view public returns (uint){
         return owners.length;
     }
