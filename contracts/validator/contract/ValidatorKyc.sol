@@ -139,13 +139,13 @@ contract XDCValidator {
     }
 
 
-    // KYC : Upload KYC
+    // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
     function uploadKYC(bytes32 _kycdata) external {
         require(KYCData[msg.sender]=="");
         KYCData[msg.sender]=_kycdata;
     }
 
-    // KYC : Upload KYC
+    // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
     function propose(address _candidate) external payable onlyValidCandidateCap onlyKYCWhitelisted onlyNotCandidate(_candidate) {
         uint256 cap = validatorsState[_candidate].cap.add(msg.value);
         candidates.push(_candidate);
@@ -234,20 +234,22 @@ contract XDCValidator {
         emit Resign(msg.sender, _candidate);
     }
 
-    // KYC : Upload KYC
-    function VoteInvalidKYC(address _invalidMasternode) onlyValidCandidate(msg.sender) public {
-        address candidateOwner = getOwner(msg.sender);
+    // voteInvalidKYC : any candidate can vote for invalid KYC i.e. a particular candidate's owner has uploaded a bad KYC.
+    // On securing 75% votes against an owner ( not candidate ), owner & all its candidates will lose their funds.
+    function voteInvalidKYC(address _invalidCandidate) onlyValidCandidate(msg.sender) public {
+        address candidateOwner = getCandidateOwner(msg.sender);
+        address _invalidMasternode = getCandidateOwner(_invalidCandidate);
         require(!hasVotedInvalid[candidateOwner][_invalidMasternode]);
         invalidKYCCount[_invalidMasternode] += 1;
         if( invalidKYCCount[_invalidMasternode]*100/getOwnerCount() >= 75 ){
             // 75% owners say that the KYC is invalid
             for (uint i=0;i<candidates.length;i++){
-                if (getOwner(candidates[i])==_invalidMasternode){
-                    // logic to rmove cap.
-
+                if (getCandidateOwner(candidates[i])==_invalidMasternode){
+                    // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     delete candidates[i];
                     delete validatorsState[candidates[i]];
+                    delete KYCData[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     for(uint k=0;k<owners.length;k++){
                         if (owners[k]==_invalidMasternode)
@@ -258,22 +260,21 @@ contract XDCValidator {
         }
     }
 
-    function InvalidPercent(address _invalidMasternode) view public returns(uint){
+    // invalidPercent : get votes against an owner in percentage.
+    function invalidPercent(address _invalidMasternode) view public returns(uint){
         return (invalidKYCCount[_invalidMasternode]*100/getOwnerCount());
     }
 
-    function getOwner(address _masternode) view public returns(address){
-        // address addr = _masternode;
-        // while (validatorsState[addr].owner != 0) {
-        //     addr = validatorsState[addr].owner;
-        // }
-        return validatorsState[_masternode].owner;
-    }
 
+    // getOwnerCount : get count of total owners; accounts who own atleast on masternode.
     function getOwnerCount() view public returns (uint){
         return owners.length;
     }
-
+    
+    // getKYCFromCandidate : get KYC uploaded of the owner of the given masternode
+    function getKYCFromCandidate(address _candidate) view public  returns (bytes32) {
+        return KYCData[getCandidateOwner(_candidate)];
+    }
 
     function withdraw(uint256 _blockNumber, uint _index) public onlyValidWithdraw(_blockNumber, _index) {
         uint256 cap = withdrawsState[msg.sender].caps[_blockNumber];
