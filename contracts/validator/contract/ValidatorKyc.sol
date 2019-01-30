@@ -3,6 +3,8 @@ pragma solidity ^0.4.21;
 // This contract is under development.
 // Refer to readme for further details.
 
+import "./libs/SafeMath.sol";
+
 contract XDCValidator {
     using SafeMath for uint256;
 
@@ -28,14 +30,14 @@ contract XDCValidator {
 
     mapping(address => ValidatorState) validatorsState;
     mapping(address => address[]) voters;
-    
-    // KYC mapping
+
+    // Mapping structures added for KYC feature.
     mapping(address => bytes32) public KYCData;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
     address[] public owners;
-    
+
     address[] public candidates;
 
     uint256 public candidateCount = 0;
@@ -52,11 +54,11 @@ contract XDCValidator {
     }
 
     modifier onlyValidVoterCap {
-        
+
         require(msg.value >= minVoterCap);
         _;
     }
-    
+
     modifier onlyKYCWhitelisted {
         if(KYCData[msg.sender] != "")
         {_;}
@@ -135,8 +137,8 @@ contract XDCValidator {
             validatorsState[_candidates[i]].voters[_firstOwner] = minCandidateCap;
         }
     }
-    
-    
+
+
     // KYC : Upload KYC
     function uploadKYC(bytes32 _kycdata) external {
         require(KYCData[msg.sender]=="");
@@ -231,7 +233,7 @@ contract XDCValidator {
         withdrawsState[msg.sender].blockNumbers.push(withdrawBlockNumber);
         emit Resign(msg.sender, _candidate);
     }
-    
+
     // KYC : Upload KYC
     function VoteInvalidKYC(address _invalidMasternode) onlyValidCandidate(msg.sender) public {
         address candidateOwner = getOwner(msg.sender);
@@ -242,7 +244,7 @@ contract XDCValidator {
             for (uint i=0;i<candidates.length;i++){
                 if (getOwner(candidates[i])==_invalidMasternode){
                     // logic to rmove cap.
-                    
+
                     candidateCount = candidateCount.sub(1);
                     delete candidates[i];
                     delete validatorsState[candidates[i]];
@@ -255,19 +257,19 @@ contract XDCValidator {
             }
         }
     }
-    
+
     function InvalidPercent(address _invalidMasternode) view public returns(uint){
         return (invalidKYCCount[_invalidMasternode]*100/getOwnerCount());
     }
-    
+
     function getOwner(address _masternode) view public returns(address){
         // address addr = _masternode;
         // while (validatorsState[addr].owner != 0) {
         //     addr = validatorsState[addr].owner;
         // }
         return validatorsState[_masternode].owner;
-    } 
-    
+    }
+
     function getOwnerCount() view public returns (uint){
         return owners.length;
     }
