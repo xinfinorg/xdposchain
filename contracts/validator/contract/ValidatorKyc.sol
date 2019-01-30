@@ -64,11 +64,7 @@ contract XDCValidator {
         if(KYCData[msg.sender] != "")
         {_;}
         else{
-            address addr = msg.sender;
-            while(validatorsState[addr].owner!=address(0)){
-                addr = validatorsState[addr].owner;
-            }
-            if(KYCData[addr] != "")
+           if (ownerToCandidate[msg.sender].length > 0)
             {_;}
         }
     }
