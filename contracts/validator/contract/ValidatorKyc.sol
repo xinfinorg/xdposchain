@@ -33,7 +33,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
 
     // Mapping structures added for KYC feature.
-    mapping(address => bytes32) public KYCData;
+    mapping(address => string) public KYCData;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
@@ -61,7 +61,7 @@ contract XDCValidator {
     }
 
     modifier onlyKYCWhitelisted {
-        if(KYCData[msg.sender] != "")
+        if(bytes(KYCData[msg.sender]).length > 0)
         {_;}
         else{
            if (ownerToCandidate[msg.sender].length > 0)
@@ -137,8 +137,8 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(bytes32 _kycdata) external {
-        require(KYCData[msg.sender]=="");
+    function uploadKYC(string _kycdata) external {
+        require(bytes(KYCData[msg.sender]).length==0); 
         KYCData[msg.sender]=_kycdata;
     }
 
@@ -278,7 +278,7 @@ contract XDCValidator {
     }
     
     // getKYCFromCandidate : get KYC uploaded of the owner of the given masternode
-    function getKYCFromCandidate(address _candidate) view public  returns (bytes32) {
+    function getKYCFromCandidate(address _candidate) view public  returns (string) {
         return KYCData[getCandidateOwner(_candidate)];
     }
 
@@ -290,3 +290,4 @@ contract XDCValidator {
         emit Withdraw(msg.sender, _blockNumber, cap);
     }
 }
+
