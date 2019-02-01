@@ -16,11 +16,10 @@
 package validator
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/validator/contract"
+	"math/big"
 )
 
 type Validator struct {
@@ -29,7 +28,7 @@ type Validator struct {
 }
 
 func NewValidator(transactOpts *bind.TransactOpts, contractAddr common.Address, contractBackend bind.ContractBackend) (*Validator, error) {
-	validator, err := contract.NewKyc(contractAddr, contractBackend)
+	validator, err := contract.NewXDCValidator(contractAddr, contractBackend)
 	if err != nil {
 		return nil, err
 	}
