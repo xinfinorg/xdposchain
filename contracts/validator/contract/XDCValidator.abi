@@ -226,6 +226,25 @@
 		"constant": true,
 		"inputs": [
 			{
+				"name": "_address",
+				"type": "address"
+			}
+		],
+		"name": "getKYC",
+		"outputs": [
+			{
+				"name": "",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
 				"name": "",
 				"type": "address"
 			}
@@ -306,25 +325,6 @@
 			{
 				"name": "",
 				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_candidate",
-				"type": "address"
-			}
-		],
-		"name": "getKYCFromCandidate",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
 			}
 		],
 		"payable": false,
