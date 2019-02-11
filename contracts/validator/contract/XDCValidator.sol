@@ -2,7 +2,9 @@ pragma solidity ^0.4.21;
 
 // This contract is under development.
 // Refer to readme for further details.
+
 import "./libs/SafeMath.sol";
+
 
 contract XDCValidator {
     using SafeMath for uint256;
@@ -31,7 +33,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
 
     // Mapping structures added for KYC feature.
-    mapping(address => string) public KYCData;
+    mapping(address => bytes32) public KYCData;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
@@ -59,7 +61,7 @@ contract XDCValidator {
     }
 
     modifier onlyKYCWhitelisted {
-        if(bytes(KYCData[msg.sender]).length > 0)
+        if(KYCData[msg.sender] != "")
         {_;}
         else{
            if (ownerToCandidate[msg.sender].length > 0)
@@ -135,7 +137,8 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(string _kycdata) public {
+    function uploadKYC(bytes32 _kycdata) external {
+        require(KYCData[msg.sender]=="");
         KYCData[msg.sender]=_kycdata;
     }
 
@@ -275,7 +278,7 @@ contract XDCValidator {
     }
     
     // getKYCFromCandidate : get KYC uploaded of the owner of the given masternode
-    function getKYCFromCandidate(address _candidate) view public  returns (string) {
+    function getKYCFromCandidate(address _candidate) view public  returns (bytes32) {
         return KYCData[getCandidateOwner(_candidate)];
     }
 
