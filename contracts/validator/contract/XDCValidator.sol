@@ -33,7 +33,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
 
     // Mapping structures added for KYC feature.
-    mapping(address => bytes32) public KYCData;
+    mapping(address => string) public KYCString;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
@@ -61,7 +61,7 @@ contract XDCValidator {
     }
 
     modifier onlyKYCWhitelisted {
-        if(KYCData[msg.sender] != "")
+        if(bytes(KYCString[msg.sender]).length != 0)
         {_;}
         else{
            if (ownerToCandidate[msg.sender].length > 0)
@@ -137,9 +137,9 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(bytes32 _kycdata) external {
-        require(KYCData[msg.sender]=="");
-        KYCData[msg.sender]=_kycdata;
+    function uploadKYC(string test) external {
+        require(bytes(KYCString[msg.sender]).length==0);
+        KYCString[msg.sender]=test;
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
@@ -250,7 +250,7 @@ contract XDCValidator {
                     candidateCount = candidateCount.sub(1);
                     delete candidates[i];
                     delete validatorsState[candidates[i]];
-                    delete KYCData[_invalidMasternode];
+                    delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
                     for(uint k=0;k<owners.length;k++){
@@ -278,8 +278,8 @@ contract XDCValidator {
     }
     
     // getKYCFromCandidate : get KYC uploaded of the owner of the given masternode
-    function getKYCFromCandidate(address _candidate) view public  returns (bytes32) {
-        return KYCData[getCandidateOwner(_candidate)];
+    function getKYCFromCandidate(address _candidate) view public  returns (string) {
+        return KYCString[getCandidateOwner(_candidate)];
     }
 
     function withdraw(uint256 _blockNumber, uint _index) public onlyValidWithdraw(_blockNumber, _index) {
