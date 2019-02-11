@@ -2,7 +2,9 @@ pragma solidity ^0.4.21;
 
 // This contract is under development.
 // Refer to readme for further details.
-import "./libs/SafeMath.sol";
+
+import "./SafeMath.sol";
+
 
 contract XDCValidator {
     using SafeMath for uint256;
@@ -31,7 +33,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
 
     // Mapping structures added for KYC feature.
-    mapping(address => string) public KYCData;
+    mapping(address => string) public KYCString;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
@@ -59,7 +61,7 @@ contract XDCValidator {
     }
 
     modifier onlyKYCWhitelisted {
-        if(bytes(KYCData[msg.sender]).length > 0)
+        if(bytes(KYCString[msg.sender]).length != 0)
         {_;}
         else{
            if (ownerToCandidate[msg.sender].length > 0)
@@ -135,8 +137,9 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(string _kycdata) public {
-        KYCData[msg.sender]=_kycdata;
+    function uploadKYC(string test) external {
+        require(bytes(KYCString[msg.sender]).length==0);
+        KYCString[msg.sender]=test;
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
@@ -247,7 +250,7 @@ contract XDCValidator {
                     candidateCount = candidateCount.sub(1);
                     delete candidates[i];
                     delete validatorsState[candidates[i]];
-                    delete KYCData[_invalidMasternode];
+                    delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
                     for(uint k=0;k<owners.length;k++){
@@ -276,7 +279,7 @@ contract XDCValidator {
     
     // getKYCFromCandidate : get KYC uploaded of the owner of the given masternode
     function getKYCFromCandidate(address _candidate) view public  returns (string) {
-        return KYCData[getCandidateOwner(_candidate)];
+        return KYCString[getCandidateOwner(_candidate)];
     }
 
     function withdraw(uint256 _blockNumber, uint _index) public onlyValidWithdraw(_blockNumber, _index) {
