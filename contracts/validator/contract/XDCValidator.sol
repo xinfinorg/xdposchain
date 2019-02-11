@@ -277,9 +277,14 @@ contract XDCValidator {
         return owners.length;
     }
     
-    // getKYCFromCandidate : get KYC uploaded of the owner of the given masternode
-    function getKYCFromCandidate(address _candidate) view public  returns (string) {
-        return KYCString[getCandidateOwner(_candidate)];
+    // getKYC : get KYC uploaded of the owner of the given masternode or the owner themselves
+    function getKYC(address _address) view public  returns (string) {
+        if(isCandidate(_address)){
+        return KYCString[getCandidateOwner(_address)];
+        }
+        else{
+            return KYCString[_address];
+        }
     }
 
     function withdraw(uint256 _blockNumber, uint _index) public onlyValidWithdraw(_blockNumber, _index) {
