@@ -2,9 +2,7 @@ pragma solidity ^0.4.21;
 
 // This contract is under development.
 // Refer to readme for further details.
-
 import "./libs/SafeMath.sol";
-
 
 contract XDCValidator {
     using SafeMath for uint256;
@@ -137,8 +135,7 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(string _kycdata) external {
-        require(bytes(KYCData[msg.sender]).length==0); 
+    function uploadKYC(string _kycdata) public {
         KYCData[msg.sender]=_kycdata;
     }
 
@@ -290,4 +287,3 @@ contract XDCValidator {
         emit Withdraw(msg.sender, _blockNumber, cap);
     }
 }
-
