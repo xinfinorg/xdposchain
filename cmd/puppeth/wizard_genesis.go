@@ -161,8 +161,8 @@ func (w *wizard) makeGenesis() {
 		}
 
 		fmt.Println()
-		fmt.Println("How many blocks per epoch? (default = 900)")
-		epochNumber := uint64(w.readDefaultInt(900))
+		fmt.Println("How many blocks per epoch? (default = 1800)")
+		epochNumber := uint64(w.readDefaultInt(1800))
 		genesis.Config.XDPoS.Epoch = epochNumber
 		genesis.Config.XDPoS.RewardCheckpoint = epochNumber
 
