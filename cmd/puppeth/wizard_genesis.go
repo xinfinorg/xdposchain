@@ -122,8 +122,8 @@ func (w *wizard) makeGenesis() {
 		genesis.Config.XDPoS.Period = uint64(w.readDefaultInt(2))
 
 		fmt.Println()
-		fmt.Println("How many Ethers should be rewarded to masternode? (default = 10)")
-		genesis.Config.XDPoS.Reward = uint64(w.readDefaultInt(10))
+		fmt.Println("How many XDC should be rewarded to masternode? (default = 100)")
+		genesis.Config.XDPoS.Reward = uint64(w.readDefaultInt(100))
 
 		fmt.Println()
 		fmt.Println("Who own the first masternodes? (mandatory)")
@@ -161,8 +161,8 @@ func (w *wizard) makeGenesis() {
 		}
 
 		fmt.Println()
-		fmt.Println("How many blocks per epoch? (default = 900)")
-		epochNumber := uint64(w.readDefaultInt(900))
+		fmt.Println("How many blocks per epoch? (default = 1800)")
+		epochNumber := uint64(w.readDefaultInt(1800))
 		genesis.Config.XDPoS.Epoch = epochNumber
 		genesis.Config.XDPoS.RewardCheckpoint = epochNumber
 
