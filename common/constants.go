@@ -10,11 +10,13 @@ const (
 	EpocBlockSecret            = 800
 	EpocBlockOpening           = 850
 	EpocBlockRandomize         = 900
-	MaxMasternodes             = 150
+	MaxMasternodes             = 21
 	LimitPenaltyEpoch          = 4
 	BlocksPerYear              = uint64(15768000)
 	LimitThresholdNonceInQueue = 10
 	MinGasPrice                = 2500
+	
+	// Maximum number of Masternodes Set to 21
 )
 
 var IsTestnet bool = false
