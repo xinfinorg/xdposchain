@@ -101,14 +101,10 @@ contract XDCValidator {
         require(msg.value >= minVoterCap);
         _;
     }
-
+    
     modifier onlyKYCWhitelisted {
-        if(bytes(KYCString[msg.sender]).length != 0)
-        {_;}
-        else{
-           if (ownerToCandidate[msg.sender].length > 0)
-            {_;}
-        }
+       require(KYCString[msg.sender].length!=0 || ownerToCandidate[msg.sender].length>0);
+       _;
     }
 
     modifier onlyOwner(address _candidate) {
