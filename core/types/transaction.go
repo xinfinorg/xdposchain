@@ -17,6 +17,7 @@
 package types
 
 import (
+	"bytes"
 	"container/heap"
 	"errors"
 	"fmt"
@@ -271,7 +272,10 @@ func (tx *Transaction) IsSpecialTransaction() bool {
 	if tx.To() == nil {
 		return false
 	}
-	return tx.To().String() == common.RandomizeSMC || tx.To().String() == common.BlockSigners
+	toBytes := tx.To().Bytes()
+	randomizeSMCBytes := common.HexToAddress(common.RandomizeSMC).Bytes()
+	blockSignersBytes := common.HexToAddress(common.BlockSigners).Bytes()
+	return bytes.Equal(toBytes, randomizeSMCBytes) || bytes.Equal(toBytes, blockSignersBytes)
 }
 
 func (tx *Transaction) String() string {

@@ -30,11 +30,13 @@ import (
 const (
 	HashLength          = 32
 	AddressLength       = 20
-	MasternodeVotingSMC = "0x0000000000000000000000000000000000000088"
-	BlockSigners        = "0x0000000000000000000000000000000000000089"
-	RandomizeSMC        = "0x0000000000000000000000000000000000000090"
-	FoudationAddr       = "0x0000000000000000000000000000000000000068"
-	TeamAddr            = "0x0000000000000000000000000000000000000099"
+	MasternodeVotingSMC = "0xdc0000000000000000000000000000000000000088"
+	BlockSigners        = "0xdc0000000000000000000000000000000000000089"
+	RandomizeSMC        = "0xdc0000000000000000000000000000000000000090"
+	FoudationAddr       = "0xdc0000000000000000000000000000000000000068"
+	TeamAddr            = "0xdc0000000000000000000000000000000000000099"
+	PrefixString        = "dc"
+	PrefixByte          = byte(220)
 )
 
 var (
@@ -155,6 +157,9 @@ func HexToAddress(s string) Address    { return BytesToAddress(FromHex(s)) }
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 // Ethereum address or not.
 func IsHexAddress(s string) bool {
+	if len(s) == 2*(AddressLength+1) && s[:2] == PrefixString {
+		s = s[2:]
+	}
 	if hasHexPrefix(s) {
 		s = s[2:]
 	}
@@ -186,6 +191,7 @@ func (a Address) Hex() string {
 			result[i] -= 32
 		}
 	}
+	result = append([]byte("dc"), result...)
 	return "0x" + string(result)
 }
 

@@ -167,11 +167,11 @@ func (w *wizard) makeGenesis() {
 		genesis.Config.XDPoS.RewardCheckpoint = epochNumber
 
 		fmt.Println()
-		fmt.Println("How many blocks before checkpoint need to prepare new set of masternodes? (default = 450)")
-		genesis.Config.XDPoS.Gap = uint64(w.readDefaultInt(450))
+		fmt.Println("How many blocks before checkpoint need to prepare new set of masternodes? (default = 900)")
+		genesis.Config.XDPoS.Gap = uint64(w.readDefaultInt(900))
 
 		fmt.Println()
-		fmt.Println("What is foundation wallet address? (default = 0x0000000000000000000000000000000000000068)")
+		fmt.Println("What is foundation wallet address? (default = 0xdc0000000000000000000000000000000000000068)")
 		genesis.Config.XDPoS.FoudationWalletAddr = w.readDefaultAddress(common.HexToAddress(common.FoudationAddr))
 
 		// Validator Smart Contract Code
