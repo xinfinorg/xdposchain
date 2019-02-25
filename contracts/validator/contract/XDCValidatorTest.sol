@@ -286,10 +286,10 @@ contract XDCValidator {
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     delete candidates[i];
-                    delete validatorsState[candidates[i]];
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
+                    candidates.length--;
                     for(uint k=0;k<owners.length;k++){
                         if (owners[k]==_invalidMasternode){
                             delete owners[k];
@@ -307,7 +307,6 @@ contract XDCValidator {
         address _invalidMasternode = getCandidateOwner(_invalidCandidate);
         return (invalidKYCCount[_invalidMasternode]*100/getOwnerCount());
     }
-
 
     // getOwnerCount : get count of total owners; accounts who own atleast one masternode.
     function getOwnerCount() view public returns (uint){
