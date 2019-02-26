@@ -85,6 +85,7 @@ contract XDCValidator {
     address[] public candidates;
 
     uint256 public candidateCount = 0;
+    uint256 public ownerCount =0;
     uint256 public minCandidateCap;
     uint256 public minVoterCap;
     uint256 public maxValidatorNumber;
@@ -161,6 +162,7 @@ contract XDCValidator {
         voterWithdrawDelay = _voterWithdrawDelay;
         candidateCount = _candidates.length;
         owners.push(_firstOwner);
+        ownerCount++;
         for (uint256 i = 0; i < _candidates.length; i++) {
             candidates.push(_candidates[i]);
             validatorsState[_candidates[i]] = ValidatorState({
@@ -194,7 +196,7 @@ contract XDCValidator {
         candidateCount = candidateCount.add(1);
         if (ownerToCandidate[msg.sender].length ==0){
             owners.push(msg.sender);
-            
+            ownerCount++;
         }
         ownerToCandidate[msg.sender].push(_candidate);
         voters[_candidate].push(msg.sender);
@@ -300,6 +302,7 @@ contract XDCValidator {
             for(uint k=0;k<owners.length;k++){
                         if (owners[k]==_invalidMasternode){
                             delete owners[k];
+                            ownerCount--;
                             break;
                 } 
             }
@@ -316,7 +319,7 @@ contract XDCValidator {
 
     // getOwnerCount : get count of total owners; accounts who own atleast one masternode.
     function getOwnerCount() view public returns (uint){
-        return owners.length;
+        return ownerCount;
     }
     
     // getKYC : get KYC uploaded of the owner of the given masternode or the owner themselves
