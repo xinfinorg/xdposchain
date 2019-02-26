@@ -283,12 +283,13 @@ contract XDCValidator {
         invalidKYCCount[_invalidMasternode] += 1;
         if( invalidKYCCount[_invalidMasternode]*100/getOwnerCount() >= 75 ){
             // 75% owners say that the KYC is invalid
-            address[] allMasternodes ;
+            address[] memory allMasternodes = new address[](candidates.length-1) ;
+            uint count=0;
             for (uint i=0;i<candidates.length;i++){
                 if (getCandidateOwner(candidates[i])==_invalidMasternode){
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
-                    allMasternodes.push(candidates[i]);
+                    allMasternodes[count++] = candidates[i];
                     delete candidates[i];
                     delete validatorsState[candidates[i]];
                     delete KYCString[_invalidMasternode];
