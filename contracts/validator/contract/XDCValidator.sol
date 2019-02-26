@@ -75,7 +75,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
 
     // Mapping structures added for KYC feature.
-    mapping(address => string) public KYCString;
+    mapping(address => string[]) public KYCString;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
@@ -101,7 +101,7 @@ contract XDCValidator {
         require(msg.value >= minVoterCap);
         _;
     }
-    
+
     modifier onlyKYCWhitelisted {
        require(KYCString[msg.sender].length!=0 || ownerToCandidate[msg.sender].length>0);
        _;
@@ -175,9 +175,8 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(string kychash) external {
-        require(bytes(KYCString[msg.sender]).length==0);
-        KYCString[msg.sender]=kychash;
+    function uploadKYC(string kychash) external returns (bool) {
+        KYCString[msg.sender].push(kychash);
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
@@ -316,13 +315,17 @@ contract XDCValidator {
     }
     
     // getKYC : get KYC uploaded of the owner of the given masternode or the owner themselves
-    function getKYC(address _address) view public  returns (string) {
+    function getLatestKYC(address _address) view public  returns (string) {
         if(isCandidate(_address)){
-        return KYCString[getCandidateOwner(_address)];
+        return KYCString[getCandidateOwner(_address)][KYCString[getCandidateOwner(_address)].length-1];
         }
         else{
-            return KYCString[_address];
+            return KYCString[_address][KYCString[_address].length-1];
         }
+    }
+    
+    function getHashCount(address _address) view public returns(uint){
+        return KYCString[_address].length;
     }
 
     function withdraw(uint256 _blockNumber, uint _index) public onlyValidWithdraw(_blockNumber, _index) {
