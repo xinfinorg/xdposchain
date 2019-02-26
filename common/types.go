@@ -157,10 +157,10 @@ func HexToAddress(s string) Address    { return BytesToAddress(FromHex(s)) }
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 // Ethereum address or not.
 func IsHexAddress(s string) bool {
-	if len(s) == 2*(AddressLength+1) && s[:2] == PrefixString {
+	if hasHexPrefix(s) {
 		s = s[2:]
 	}
-	if hasHexPrefix(s) {
+	if len(s) == 2*(AddressLength+1) && s[:2] == PrefixString {
 		s = s[2:]
 	}
 	return len(s) == 2*AddressLength && isHex(s)
@@ -191,7 +191,7 @@ func (a Address) Hex() string {
 			result[i] -= 32
 		}
 	}
-	result = append([]byte("dc"), result...)
+	result = append([]byte(PrefixString), result...)
 	return "0x" + string(result)
 }
 
@@ -231,20 +231,37 @@ func (a Address) MarshalText() ([]byte, error) {
 
 // UnmarshalText parses a hash in hex syntax.
 func (a *Address) UnmarshalText(input []byte) error {
-	return hexutil.UnmarshalFixedText("Address", input, a[:])
+	var tmp [AddressLength + 1]byte
+	err := hexutil.UnmarshalFixedText("Address", input, tmp[:])
+	a.SetBytes(tmp[:])
+	return err
 }
 
 // UnmarshalJSON parses a hash in hex syntax.
 func (a *Address) UnmarshalJSON(input []byte) error {
-	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
+	var tmp [AddressLength + 1]byte
+	err := hexutil.UnmarshalFixedJSON(addressT, input, tmp[:])
+	a.SetBytes(tmp[:])
+	return err
 }
 
 // UnprefixedHash allows marshaling an Address without 0x prefix.
 type UnprefixedAddress Address
 
+// Sets the address to the value of b. If b is larger than len(a) it will panic
+func (a *UnprefixedAddress) SetBytes(b []byte) {
+	if len(b) > len(a) {
+		b = b[len(b)-AddressLength:]
+	}
+	copy(a[AddressLength-len(b):], b)
+}
+
 // UnmarshalText decodes the address from hex. The 0x prefix is optional.
 func (a *UnprefixedAddress) UnmarshalText(input []byte) error {
-	return hexutil.UnmarshalFixedUnprefixedText("UnprefixedAddress", input, a[:])
+	var tmp [AddressLength + 1]byte
+	err := hexutil.UnmarshalFixedUnprefixedText("UnprefixedAddress", input, tmp[:])
+	a.SetBytes(tmp[:])
+	return err
 }
 
 // MarshalText encodes the address as hex.
