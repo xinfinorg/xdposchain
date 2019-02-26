@@ -56,6 +56,8 @@ contract XDCValidator {
     event Propose(address _owner, address _candidate, uint256 _cap);
     event Resign(address _owner, address _candidate);
     event Withdraw(address _owner, uint256 _blockNumber, uint256 _cap);
+    event UploadedKYC(address _owner,string kycHash);
+    event InvalidatedNode(address _masternodeOwner, address[] _masternodes);
 
     struct ValidatorState {
         address owner;
@@ -177,6 +179,7 @@ contract XDCValidator {
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
     function uploadKYC(string kychash) external returns (bool) {
         KYCString[msg.sender].push(kychash);
+        emit UploadedKYC(msg.sender,kychash);
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
@@ -281,24 +284,25 @@ contract XDCValidator {
         invalidKYCCount[_invalidMasternode] += 1;
         if( invalidKYCCount[_invalidMasternode]*100/getOwnerCount() >= 75 ){
             // 75% owners say that the KYC is invalid
+            address[] allMasternodes ;
             for (uint i=0;i<candidates.length;i++){
                 if (getCandidateOwner(candidates[i])==_invalidMasternode){
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
-                    delete candidates[i];
+                    allMasternodes.push(candidates[i]);
                     delete validatorsState[candidates[i]];
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
-                    for(uint k=0;k<owners.length;k++){
-                        if (owners[k]==_invalidMasternode){
-                            delete owners[k];
-                            owners.length--;
-                            break;
-                        } 
-                    }
                 }
             }
+            for(uint k=0;k<owners.length;k++){
+                        if (owners[k]==_invalidMasternode){
+                            delete owners[k];
+                            break;
+                } 
+            }
+            emit InvalidatedNode(_invalidMasternode,allMasternodes);
         }
     }
 
