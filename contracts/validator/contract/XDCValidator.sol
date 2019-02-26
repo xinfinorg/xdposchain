@@ -3,7 +3,6 @@ pragma solidity ^0.4.21;
 // This contract is under development.
 // Refer to readme for further details.
 
-
 library SafeMath {
 
   /**
@@ -177,7 +176,7 @@ contract XDCValidator {
 
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(string kychash) external returns (bool) {
+    function uploadKYC(string kychash) external {
         KYCString[msg.sender].push(kychash);
         emit UploadedKYC(msg.sender,kychash);
     }
