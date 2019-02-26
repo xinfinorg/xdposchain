@@ -226,7 +226,7 @@ func (a *Address) Set(other Address) {
 
 // MarshalText returns the hex representation of a.
 func (a Address) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(a[:]).MarshalText()
+	return hexutil.Bytes(append([]byte{PrefixByte}, a[:]...)).MarshalText()
 }
 
 // UnmarshalText parses a hash in hex syntax.
@@ -266,7 +266,7 @@ func (a *UnprefixedAddress) UnmarshalText(input []byte) error {
 
 // MarshalText encodes the address as hex.
 func (a UnprefixedAddress) MarshalText() ([]byte, error) {
-	return []byte(hex.EncodeToString(a[:])), nil
+	return []byte(hex.EncodeToString(append([]byte{PrefixByte}, a[:]...))), nil
 }
 
 // Extract validators from byte array.
