@@ -30,13 +30,11 @@ import (
 const (
 	HashLength          = 32
 	AddressLength       = 20
-	MasternodeVotingSMC = "0xdc0000000000000000000000000000000000000088"
-	BlockSigners        = "0xdc0000000000000000000000000000000000000089"
-	RandomizeSMC        = "0xdc0000000000000000000000000000000000000090"
-	FoudationAddr       = "0xdc0000000000000000000000000000000000000068"
-	TeamAddr            = "0xdc0000000000000000000000000000000000000099"
-	PrefixString        = "dc"
-	PrefixByte          = byte(220)
+	MasternodeVotingSMC = "xdc0000000000000000000000000000000000000088"
+	BlockSigners        = "xdc0000000000000000000000000000000000000089"
+	RandomizeSMC        = "xdc0000000000000000000000000000000000000090"
+	FoudationAddr       = "xdc0000000000000000000000000000000000000068"
+	TeamAddr            = "xdc0000000000000000000000000000000000000099"
 )
 
 var (
@@ -157,17 +155,17 @@ func HexToAddress(s string) Address    { return BytesToAddress(FromHex(s)) }
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 // Ethereum address or not.
 func IsHexAddress(s string) bool {
-	if hasHexPrefix(s) {
-		s = s[2:]
+	if hasXDCPrefix(s) {
+		s = s[3:]
 	}
-	if len(s) == 2*(AddressLength+1) && s[:2] == PrefixString {
+	if hasHexPrefix(s) {
 		s = s[2:]
 	}
 	return len(s) == 2*AddressLength && isHex(s)
 }
 
 // Get the string representation of the underlying address
-func (a Address) Str() string   { return string(append([]byte{PrefixByte}, a[:]...)) }
+func (a Address) Str() string   { return string(a[:]) }
 func (a Address) Bytes() []byte { return a[:] }
 func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }
 func (a Address) Hash() Hash    { return BytesToHash(a[:]) }
@@ -191,8 +189,7 @@ func (a Address) Hex() string {
 			result[i] -= 32
 		}
 	}
-	result = append([]byte(PrefixString), result...)
-	return "0x" + string(result)
+	return "xdc" + string(result)
 }
 
 // String implements the stringer interface and is used also by the logger.
@@ -226,47 +223,30 @@ func (a *Address) Set(other Address) {
 
 // MarshalText returns the hex representation of a.
 func (a Address) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(append([]byte{PrefixByte}, a[:]...)).MarshalText()
+	return hexutil.Bytes(a[:]).MarshalXDCText()
 }
 
 // UnmarshalText parses a hash in hex syntax.
 func (a *Address) UnmarshalText(input []byte) error {
-	var tmp [AddressLength + 1]byte
-	err := hexutil.UnmarshalFixedText("Address", input, tmp[:])
-	a.SetBytes(tmp[:])
-	return err
+	return hexutil.UnmarshalFixedText("Address", input, a[:])
 }
 
 // UnmarshalJSON parses a hash in hex syntax.
 func (a *Address) UnmarshalJSON(input []byte) error {
-	var tmp [AddressLength + 1]byte
-	err := hexutil.UnmarshalFixedJSON(addressT, input, tmp[:])
-	a.SetBytes(tmp[:])
-	return err
+	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
 }
 
 // UnprefixedHash allows marshaling an Address without 0x prefix.
 type UnprefixedAddress Address
 
-// Sets the address to the value of b. If b is larger than len(a) it will panic
-func (a *UnprefixedAddress) SetBytes(b []byte) {
-	if len(b) > len(a) {
-		b = b[len(b)-AddressLength:]
-	}
-	copy(a[AddressLength-len(b):], b)
-}
-
 // UnmarshalText decodes the address from hex. The 0x prefix is optional.
 func (a *UnprefixedAddress) UnmarshalText(input []byte) error {
-	var tmp [AddressLength + 1]byte
-	err := hexutil.UnmarshalFixedUnprefixedText("UnprefixedAddress", input, tmp[:])
-	a.SetBytes(tmp[:])
-	return err
+	return hexutil.UnmarshalFixedUnprefixedText("UnprefixedAddress", input, a[:])
 }
 
 // MarshalText encodes the address as hex.
 func (a UnprefixedAddress) MarshalText() ([]byte, error) {
-	return []byte(hex.EncodeToString(append([]byte{PrefixByte}, a[:]...))), nil
+	return []byte(hex.EncodeToString(a[:])), nil
 }
 
 // Extract validators from byte array.
