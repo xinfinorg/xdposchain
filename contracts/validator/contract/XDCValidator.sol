@@ -3,7 +3,6 @@ pragma solidity ^0.4.21;
 // This contract is under development.
 // Refer to readme for further details.
 
-
 library SafeMath {
 
   /**
@@ -56,6 +55,8 @@ contract XDCValidator {
     event Propose(address _owner, address _candidate, uint256 _cap);
     event Resign(address _owner, address _candidate);
     event Withdraw(address _owner, uint256 _blockNumber, uint256 _cap);
+    event UploadedKYC(address _owner,string kycHash);
+    event InvalidatedNode(address _masternodeOwner, address[] _masternodes);
 
     struct ValidatorState {
         address owner;
@@ -75,7 +76,7 @@ contract XDCValidator {
     mapping(address => address[]) voters;
 
     // Mapping structures added for KYC feature.
-    mapping(address => string) public KYCString;
+    mapping(address => string[]) public KYCString;
     mapping(address => uint) public invalidKYCCount;
     mapping(address => mapping(address => bool)) public hasVotedInvalid;
     mapping(address => address[]) public ownerToCandidate;
@@ -84,6 +85,7 @@ contract XDCValidator {
     address[] public candidates;
 
     uint256 public candidateCount = 0;
+    uint256 public ownerCount =0;
     uint256 public minCandidateCap;
     uint256 public minVoterCap;
     uint256 public maxValidatorNumber;
@@ -101,7 +103,7 @@ contract XDCValidator {
         require(msg.value >= minVoterCap);
         _;
     }
-    
+
     modifier onlyKYCWhitelisted {
        require(KYCString[msg.sender].length!=0 || ownerToCandidate[msg.sender].length>0);
        _;
@@ -160,6 +162,7 @@ contract XDCValidator {
         voterWithdrawDelay = _voterWithdrawDelay;
         candidateCount = _candidates.length;
         owners.push(_firstOwner);
+        ownerCount++;
         for (uint256 i = 0; i < _candidates.length; i++) {
             candidates.push(_candidates[i]);
             validatorsState[_candidates[i]] = ValidatorState({
@@ -176,8 +179,8 @@ contract XDCValidator {
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
     function uploadKYC(string kychash) external {
-        require(bytes(KYCString[msg.sender]).length==0);
-        KYCString[msg.sender]=kychash;
+        KYCString[msg.sender].push(kychash);
+        emit UploadedKYC(msg.sender,kychash);
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
@@ -193,7 +196,7 @@ contract XDCValidator {
         candidateCount = candidateCount.add(1);
         if (ownerToCandidate[msg.sender].length ==0){
             owners.push(msg.sender);
-            
+            ownerCount++;
         }
         ownerToCandidate[msg.sender].push(_candidate);
         voters[_candidate].push(msg.sender);
@@ -282,24 +285,28 @@ contract XDCValidator {
         invalidKYCCount[_invalidMasternode] += 1;
         if( invalidKYCCount[_invalidMasternode]*100/getOwnerCount() >= 75 ){
             // 75% owners say that the KYC is invalid
+            address[] memory allMasternodes = new address[](candidates.length-1) ;
+            uint count=0;
             for (uint i=0;i<candidates.length;i++){
                 if (getCandidateOwner(candidates[i])==_invalidMasternode){
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
+                    allMasternodes[count++] = candidates[i];
                     delete candidates[i];
                     delete validatorsState[candidates[i]];
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
-                    for(uint k=0;k<owners.length;k++){
-                        if (owners[k]==_invalidMasternode){
-                            delete owners[k];
-                            owners.length--;
-                            break;
-                        } 
-                    }
                 }
             }
+            for(uint k=0;k<owners.length;k++){
+                        if (owners[k]==_invalidMasternode){
+                            delete owners[k];
+                            ownerCount--;
+                            break;
+                } 
+            }
+            emit InvalidatedNode(_invalidMasternode,allMasternodes);
         }
     }
 
@@ -312,17 +319,21 @@ contract XDCValidator {
 
     // getOwnerCount : get count of total owners; accounts who own atleast one masternode.
     function getOwnerCount() view public returns (uint){
-        return owners.length;
+        return ownerCount;
     }
     
     // getKYC : get KYC uploaded of the owner of the given masternode or the owner themselves
-    function getKYC(address _address) view public  returns (string) {
+    function getLatestKYC(address _address) view public  returns (string) {
         if(isCandidate(_address)){
-        return KYCString[getCandidateOwner(_address)];
+        return KYCString[getCandidateOwner(_address)][KYCString[getCandidateOwner(_address)].length-1];
         }
         else{
-            return KYCString[_address];
+            return KYCString[_address][KYCString[_address].length-1];
         }
+    }
+    
+    function getHashCount(address _address) view public returns(uint){
+        return KYCString[_address].length;
     }
 
     function withdraw(uint256 _blockNumber, uint _index) public onlyValidWithdraw(_blockNumber, _index) {
