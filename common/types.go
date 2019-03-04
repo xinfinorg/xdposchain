@@ -165,7 +165,7 @@ func IsHexAddress(s string) bool {
 }
 
 // Get the string representation of the underlying address
-func (a Address) Str() string   { return string(append([]byte("xdc"), a[:]...)) }
+func (a Address) Str() string   { return string(a[:]) }
 func (a Address) Bytes() []byte { return a[:] }
 func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }
 func (a Address) Hash() Hash    { return BytesToHash(a[:]) }
