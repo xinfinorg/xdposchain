@@ -122,8 +122,8 @@ func (w *wizard) makeGenesis() {
 		genesis.Config.XDPoS.Period = uint64(w.readDefaultInt(2))
 
 		fmt.Println()
-		fmt.Println("How many XDC should be rewarded to masternode? (default = 100)")
-		genesis.Config.XDPoS.Reward = uint64(w.readDefaultInt(100))
+		fmt.Println("How many Ethers should be rewarded to masternode? (default = 10)")
+		genesis.Config.XDPoS.Reward = uint64(w.readDefaultInt(10))
 
 		fmt.Println()
 		fmt.Println("Who own the first masternodes? (mandatory)")
@@ -171,7 +171,7 @@ func (w *wizard) makeGenesis() {
 		genesis.Config.XDPoS.Gap = uint64(w.readDefaultInt(450))
 
 		fmt.Println()
-		fmt.Println("What is foundation wallet address? (default = xdc0000000000000000000000000000000000000068)")
+		fmt.Println("What is foundation wallet address? (default = 0x0000000000000000000000000000000000000068)")
 		genesis.Config.XDPoS.FoudationWalletAddr = w.readDefaultAddress(common.HexToAddress(common.FoudationAddr))
 
 		// Validator Smart Contract Code
