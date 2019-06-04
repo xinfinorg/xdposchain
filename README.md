@@ -1,3 +1,9 @@
-## XinFin
+## XinFin 
+
 Blockchain for decentralized applications, token issuance and integration
-https://xinfin.org
+
+Website Resource : https://xinFin.org
+
+XinFin Mainet URL: http://XinFin.network/ 
+
+XinFin TestNet/Apothem URL: http://apothem.network/
