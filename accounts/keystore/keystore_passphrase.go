@@ -15,12 +15,9 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 /*
-
 This key store behaves as KeyStorePlain with the difference that
 the private key is encrypted and on disk uses another JSON encoding.
-
 The crypto is documented at https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
-
 */
 
 package keystore
@@ -152,8 +149,7 @@ func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
 		MAC:          hex.EncodeToString(mac),
 	}
 	encryptedKeyJSONV3 := encryptedKeyJSONV3{
-		// hex.EncodeToString(key.Address[:]),
-		key.Address.String(),
+		hex.EncodeToString(key.Address[:]),
 		cryptoStruct,
 		key.Id.String(),
 		version,
