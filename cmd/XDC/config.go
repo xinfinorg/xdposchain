@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"gopkg.in/urfave/cli.v1"
 	"io"
+	"math/big"
 	"os"
 	"reflect"
 	"strings"
@@ -155,6 +156,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, XDCConfig) {
 	// Check testnet is enable.
 	if ctx.GlobalBool(utils.XDCTestnetFlag.Name) {
 		common.IsTestnet = true
+		common.XRC21IssuerSMC = common.XRC21IssuerSMCTestNet
 	}
 
 	// Check rollback hash exist.
@@ -163,10 +165,10 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, XDCConfig) {
 	}
 
 	// Check GasPrice
-	common.MinGasPrice = common.DefaultMinGasPrice
+	common.MinGasPrice = big.NewInt(common.DefaultMinGasPrice)
 	if ctx.GlobalIsSet(utils.GasPriceFlag.Name) {
 		if gasPrice := int64(ctx.GlobalInt(utils.GasPriceFlag.Name)); gasPrice > common.DefaultMinGasPrice {
-			common.MinGasPrice = gasPrice
+			common.MinGasPrice = big.NewInt(gasPrice)
 		}
 	}
 
