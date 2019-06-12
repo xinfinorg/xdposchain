@@ -73,6 +73,7 @@ type Message interface {
 	Nonce() uint64
 	CheckNonce() bool
 	Data() []byte
+	BalanceTokenFee() *big.Int
 }
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
@@ -140,6 +141,10 @@ func (st *StateTransition) from() vm.AccountRef {
 	return vm.AccountRef(f)
 }
 
+func (st *StateTransition) balanceTokenFee() *big.Int {
+	return st.msg.BalanceTokenFee()
+}
+
 func (st *StateTransition) to() vm.AccountRef {
 	if st.msg == nil {
 		return vm.AccountRef{}
@@ -167,12 +172,17 @@ func (st *StateTransition) useGas(amount uint64) error {
 
 func (st *StateTransition) buyGas() error {
 	var (
-		state  = st.state
-		sender = st.from()
+		state           = st.state
+		balanceTokenFee = st.balanceTokenFee()
+		from            = st.from()
 	)
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.msg.Gas()), st.gasPrice)
-	if state.GetBalance(sender.Address()).Cmp(mgval) < 0 {
-		return errInsufficientBalanceForGas
+	if balanceTokenFee == nil {
+		if state.GetBalance(from.Address()).Cmp(mgval) < 0 {
+			return errInsufficientBalanceForGas
+		}
+	} else if balanceTokenFee.Cmp(mgval) < 0 {
+				return errInsufficientBalanceForGas
 	}
 	if err := st.gp.SubGas(st.msg.Gas()); err != nil {
 		return err
@@ -180,8 +190,10 @@ func (st *StateTransition) buyGas() error {
 	st.gas += st.msg.Gas()
 
 	st.initialGas = st.msg.Gas()
-	state.SubBalance(sender.Address(), mgval)
-	return nil
+	if balanceTokenFee == nil {
+		state.SubBalance(from.Address(), mgval)
+	}
+		return nil
 }
 
 func (st *StateTransition) preCheck() error {
@@ -266,12 +278,13 @@ func (st *StateTransition) refundGas() {
 	}
 	st.gas += refund
 
-	// Return ETH for remaining gas, exchanged at the original rate.
-	sender := st.from()
-
-	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-	st.state.AddBalance(sender.Address(), remaining)
-
+	balanceTokenFee := st.balanceTokenFee()
+	if balanceTokenFee == nil {
+		from := st.from()
+		// Return ETH for remaining gas, exchanged at the original rate.
+		remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
+		st.state.AddBalance(from.Address(), remaining)
+	}
 	// Also return remaining gas to the block gas counter so it is
 	// available for the next transaction.
 	st.gp.AddGas(st.gas)
