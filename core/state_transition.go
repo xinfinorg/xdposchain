@@ -182,7 +182,7 @@ func (st *StateTransition) buyGas() error {
 			return errInsufficientBalanceForGas
 		}
 	} else if balanceTokenFee.Cmp(mgval) < 0 {
-				return errInsufficientBalanceForGas
+		return errInsufficientBalanceForGas
 	}
 	if err := st.gp.SubGas(st.msg.Gas()); err != nil {
 		return err
@@ -193,7 +193,7 @@ func (st *StateTransition) buyGas() error {
 	if balanceTokenFee == nil {
 		state.SubBalance(from.Address(), mgval)
 	}
-		return nil
+	return nil
 }
 
 func (st *StateTransition) preCheck() error {

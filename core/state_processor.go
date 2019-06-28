@@ -63,7 +63,7 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
-func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
+func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config, balanceFee map[common.Address]*big.Int) (types.Receipts, []*types.Log, uint64, error) {
 	var (
 		receipts types.Receipts
 		usedGas  = new(uint64)
@@ -82,17 +82,17 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	balanceUpdated := map[common.Address]*big.Int{}
 	totalFeeUsed := uint64(0)
 	for i, tx := range block.Transactions() {
-				// check black-list txs after hf
-				if block.Number().Uint64() >= common.BlackListHFNumber {
-					// check if sender is in black list
-					if tx.From() != nil && common.Blacklist[*tx.From()] {
-						return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
-					}
-					// check if receiver is in black list
-					if tx.To() != nil && common.Blacklist[*tx.To()] {
-						return nil, nil, 0, fmt.Errorf("Block contains transaction with receiver in black-list: %v", tx.To().Hex())
-					}
-				}
+		// check black-list txs after hf
+		if block.Number().Uint64() >= common.BlackListHFNumber {
+			// check if sender is in black list
+			if tx.From() != nil && common.Blacklist[*tx.From()] {
+				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
+			}
+			// check if receiver is in black list
+			if tx.To() != nil && common.Blacklist[*tx.To()] {
+				return nil, nil, 0, fmt.Errorf("Block contains transaction with receiver in black-list: %v", tx.To().Hex())
+			}
+		}
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
 		receipt, gas, err, tokenFeeUsed := ApplyTransaction(p.config, balanceFee, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
 		if err != nil {
@@ -141,17 +141,17 @@ func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, stated
 	// Iterate over and process the individual transactions
 	receipts = make([]*types.Receipt, block.Transactions().Len())
 	for i, tx := range block.Transactions() {
-				// check black-list txs after hf
-				if block.Number().Uint64() >= common.BlackListHFNumber {
-					// check if sender is in black list
-					if tx.From() != nil && common.Blacklist[*tx.From()] {
-						return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
-					}
-					// check if receiver is in black list
-					if tx.To() != nil && common.Blacklist[*tx.To()] {
-						return nil, nil, 0, fmt.Errorf("Block contains transaction with receiver in black-list: %v", tx.To().Hex())
-					}
-				}
+		// check black-list txs after hf
+		if block.Number().Uint64() >= common.BlackListHFNumber {
+			// check if sender is in black list
+			if tx.From() != nil && common.Blacklist[*tx.From()] {
+				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
+			}
+			// check if receiver is in black list
+			if tx.To() != nil && common.Blacklist[*tx.To()] {
+				return nil, nil, 0, fmt.Errorf("Block contains transaction with receiver in black-list: %v", tx.To().Hex())
+			}
+		}
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
 		receipt, gas, err, tokenFeeUsed := ApplyTransaction(p.config, balanceFee, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
 		if err != nil {
