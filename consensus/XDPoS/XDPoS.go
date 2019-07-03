@@ -1206,3 +1206,14 @@ func Hop(len, pre, cur int) int {
 		return len - 1
 	}
 }
+
+// shuffle the list masternodes
+func (c *XDPoS) ShuffleMasternodes(ms []Masternode) []Masternode {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]Masternode, len(ms))
+	perm := r.Perm(len(ms))
+	for i, v := range perm {
+		ret[i] = ms[v]
+	}
+	return ret
+}
