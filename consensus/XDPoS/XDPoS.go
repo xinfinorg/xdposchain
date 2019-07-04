@@ -1219,13 +1219,3 @@ func (c *XDPoS) ShuffleMasternodes(currentHeader *types.Header, ms []Masternode)
 	}
 	return ms
 }
-
-func (c *XDPoS) VerifyCurrentSigner(ms []Masternode) (bool, common.Address) {
-	signer := c.signer
-	set := make(map[common.Address]struct{}, len(ms))
-	for _, m := range ms {
-		set[m.Address] = struct{}{}
-	}
-	_, ok := set[signer]
-	return ok, signer
-}
