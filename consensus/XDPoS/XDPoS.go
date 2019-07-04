@@ -1207,13 +1207,25 @@ func Hop(len, pre, cur int) int {
 	}
 }
 
-// shuffle the list masternodes
-func (c *XDPoS) ShuffleMasternodes(ms []Masternode) []Masternode {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	ret := make([]Masternode, len(ms))
-	perm := r.Perm(len(ms))
-	for i, v := range perm {
-		ret[i] = ms[v]
+/// shuffle the list masternodes with knuth shuffle algorithm
+func (c *XDPoS) ShuffleMasternodes(currentHeader *types.Header, ms []Masternode) []Masternode {
+	prevHash := currentHeader.ParentHash.Hex()
+	seed := new(big.Int)
+	seed.SetString(prevHash[len(prevHash)-32:], 16)
+	rand.Seed(seed.Int64())
+	for i := len(ms) - 1; i >= 1; i-- {
+		j := rand.Intn(i + 1)
+		ms[i], ms[j] = ms[j], ms[i]
 	}
-	return ret
+	return ms
+}
+
+func (c *XDPoS) VerifyCurrentSigner(ms []Masternode) (bool, common.Address) {
+	signer := c.signer
+	set := make(map[common.Address]struct{}, len(ms))
+	for _, m := range ms {
+		set[m.Address] = struct{}{}
+	}
+	_, ok := set[signer]
+	return ok, signer
 }
