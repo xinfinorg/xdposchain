@@ -33,6 +33,7 @@ var TIPIncreaseMasternodes = big.NewInt(1199999) // example 10 milions
 var IsTestnet bool = false
 var StoreRewardFolder string
 var RollbackHash Hash
+var MinGasPrice = big.NewInt(DefaultMinGasPrice)
 var XRC21IssuerSMCTestNet = HexToAddress("0x7081C72c9DC44686C7B7EAB1d338EA137Fa9f0D3")
 var XRC21IssuerSMC = HexToAddress("0x8c0faeb5C6bEd2129b8674F262Fd45c4e9468bee")
 var XRC21GasPrice = big.NewInt(DefaultMinGasPrice)
