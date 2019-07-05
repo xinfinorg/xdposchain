@@ -682,7 +682,16 @@ func (c *XDPoS) verifySeal(chain consensus.ChainReader, header *types.Header, pa
 			return errInvalidDifficulty
 		}
 	}
-	masternodes := c.GetMasternodes(chain, header)
+	// check if block is the end of epoch
+	// if yes, get the list masternnodes of previous header
+	var masternodes []common.Address
+	e := c.config.Epoch
+	if number%e == 0 {
+		prevHeader := chain.GetHeaderByNumber(number - 1)
+		masternodes = c.GetMasternodes(chain, prevHeader)
+	} else {
+		masternodes = c.GetMasternodes(chain, header)
+	}
 	mstring := []string{}
 	for _, m := range masternodes {
 		mstring = append(mstring, m.String())
@@ -954,7 +963,18 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-cha
 	if err != nil {
 		return nil, err
 	}
-	masternodes := c.GetMasternodes(chain, header)
+
+	// check if block is the end of epoch
+	// if yes, get the list masternnodes of previous header
+	var masternodes []common.Address
+	e := c.config.Epoch
+	if number%e == 0 {
+		prevHeader := chain.GetHeaderByNumber(number - 1)
+		masternodes = c.GetMasternodes(chain, prevHeader)
+	} else {
+		masternodes = c.GetMasternodes(chain, header)
+	}
+	log.Info("Seal", "signer", signer)
 	if _, authorized := snap.Signers[signer]; !authorized {
 		valid := false
 		for _, m := range masternodes {
@@ -1209,10 +1229,12 @@ func Hop(len, pre, cur int) int {
 
 /// shuffle the list masternodes with knuth shuffle algorithm
 func (c *XDPoS) ShuffleMasternodes(currentHeader *types.Header, ms []Masternode) []Masternode {
+	// get previous hash as random input
 	prevHash := currentHeader.ParentHash.Hex()
 	seed := new(big.Int)
 	seed.SetString(prevHash[len(prevHash)-32:], 16)
 	rand.Seed(seed.Int64())
+	// shuffle ms
 	for i := len(ms) - 1; i >= 1; i-- {
 		j := rand.Intn(i + 1)
 		ms[i], ms[j] = ms[j], ms[i]
