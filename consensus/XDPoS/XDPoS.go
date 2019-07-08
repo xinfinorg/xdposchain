@@ -1247,6 +1247,7 @@ func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.He
 		for i := 0; i < len(ms); i++ {
 			if ms[i].Address.String() == m.String() {
 				ms[0], ms[i] = ms[i], ms[0]
+				break
 			}
 		}
 	}
