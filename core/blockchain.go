@@ -1860,7 +1860,7 @@ func (bc *BlockChain) UpdateM1() error {
 		log.Error("No masternode found. Stopping node")
 		os.Exit(1)
 	} else {
-		ms = engine.ShuffleMasternodes(bc.CurrentHeader(), ms)
+		ms = engine.ShuffleMasternodes(bc, bc.CurrentHeader(), ms)
 		// sort.Slice(ms, func(i, j int) bool {
 		// 	return ms[i].Stake.Cmp(ms[j].Stake) >= 0
 		// })
