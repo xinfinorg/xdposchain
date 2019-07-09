@@ -969,7 +969,7 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-cha
 	}
 	// If we're amongst the recent signers, wait for the next block
 	// only check recent signers if there are more than one signer.
-	if len(masternodes) > 1 {
+	if len(masternodes) > 3 {
 		for seen, recent := range snap.Recents {
 			if recent == signer {
 				// Signer is among recents, only wait if the current block doesn't shift it out
