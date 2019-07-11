@@ -1241,12 +1241,14 @@ func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.He
 		}
 	}
 	if !found {
-		// random masternode
-		m := cms[rand.Intn(len(cms))]
+		// get random masternode index
+		idx := rand.Intn(len(cms))
+		// random masternode at index
+		m := cms[idx]
 		// swap first element
 		for i := 0; i < len(ms); i++ {
 			if ms[i].Address.String() == m.String() {
-				ms[0], ms[i] = ms[i], ms[0]
+				ms[idx], ms[i] = ms[i], ms[idx]
 				break
 			}
 		}
