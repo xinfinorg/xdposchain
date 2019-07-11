@@ -1223,13 +1223,14 @@ func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.He
 	// get current ms
 	cms := c.GetMasternodes(chain, header)
 	// get future ms
-	fms := make([]Masternode, len(ms))
+	var fms []Masternode
 	for _, m := range ms {
 		fms = append(fms, m)
 	}
-	if len(ms) > common.MaxMasternodes {
+	if len(fms) > common.MaxMasternodes {
 		fms = fms[:common.MaxMasternodes]
 	}
+
 	// find current ms element in future ms array
 	found := false
 	for i := 0; i < len(cms); i++ {
@@ -1238,6 +1239,9 @@ func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.He
 				found = true
 				break
 			}
+		}
+		if found {
+			break
 		}
 	}
 	if !found {
