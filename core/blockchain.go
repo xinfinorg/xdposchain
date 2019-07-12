@@ -23,6 +23,7 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -1860,10 +1861,19 @@ func (bc *BlockChain) UpdateM1() error {
 		log.Error("No masternode found. Stopping node")
 		os.Exit(1)
 	} else {
-		ms = engine.ShuffleMasternodes(bc, bc.CurrentHeader(), ms)
-		// sort.Slice(ms, func(i, j int) bool {
-		// 	return ms[i].Stake.Cmp(ms[j].Stake) >= 0
-		// })
+		// upgrade new mechanism masterndoes voting
+		// get shuffle checkpoint
+		header := bc.CurrentHeader()
+		number := header.Number.Uint64()
+		if number < common.ShuffleCheckpointNumber {
+			// mechaism voting using sort by stake
+			sort.Slice(ms, func(i, j int) bool {
+				return ms[i].Stake.Cmp(ms[j].Stake) >= 0
+			})
+		} else {
+			// mechanism voting using knuth shuffle
+			ms = engine.ShuffleMasternodes(bc, header, ms)
+		}
 		log.Info("Shuffle list of masternode candidates")
 		for _, m := range ms {
 			log.Info("", "address", m.Address.String(), "stake", m.Stake)

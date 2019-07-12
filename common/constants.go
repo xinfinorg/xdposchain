@@ -20,6 +20,7 @@ const (
 	MergeSignRange             = 15
 	RangeReturnSigner          = 150
 	MinimunMinerBlockPerEpoch  = 1
+	ShuffleCheckpointNumber    = 1000000 // example 1.milion
 )
 
 var TIP2019Block = big.NewInt(1)
