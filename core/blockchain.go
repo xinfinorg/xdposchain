@@ -66,7 +66,7 @@ const (
 
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	BlockChainVersion = 3
-	
+
 	// Maximum length of chain to cache by block's number
 	blocksHashCacheLimit = 900
 )
@@ -147,7 +147,7 @@ type BlockChain struct {
 	badBlocks   *lru.Cache // Bad block cache
 	IPCEndpoint string
 	Client      *ethclient.Client // Global ipc client instance.
-	
+
 	// Blocks hash array by block number
 	// cache field for tracking finality purpose, can't use for tracking block vs block relationship
 	blocksHashCache *lru.Cache
@@ -711,7 +711,6 @@ func (bc *BlockChain) Stop() {
 	//  - HEAD-127: So we have a hard limit on the number of blocks reexecuted
 	if !bc.cacheConfig.Disabled {
 		triedb := bc.stateCache.TrieDB()
-
 		for _, offset := range []uint64{0, 1, triesInMemory - 1} {
 			if number := bc.CurrentBlock().NumberU64(); number > offset {
 				recent := bc.GetBlockByNumber(number - offset)
@@ -1245,7 +1244,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 			// Only count canonical blocks for GC processing time
 			bc.gcproc += proctime
 			bc.UpdateBlocksHashCache(block)
-
 		case SideStatTy:
 			log.Debug("Inserted forked block from downloader", "number", block.Number(), "hash", block.Hash(), "diff", block.Difficulty(), "elapsed",
 				common.PrettyDuration(time.Since(bstart)), "txs", len(block.Transactions()), "gas", block.GasUsed(), "uncles", len(block.Uncles()))
@@ -1403,29 +1401,29 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 	proctime := time.Since(bstart)
 	log.Debug("Calculate new block", "number", block.Number(), "hash", block.Hash(), "uncles", len(block.Uncles()),
 		"txs", len(block.Transactions()), "gas", block.GasUsed(), "elapsed", common.PrettyDuration(time.Since(bstart)), "process", process)
-		return &ResultProcessBlock{receipts: receipts, logs: logs, state: statedb, proctime: proctime, usedGas: usedGas}, nil
-	}
-	
-	// UpdateBlocksHashCache update BlocksHashCache by block number
-	func (bc *BlockChain) UpdateBlocksHashCache(block *types.Block) []common.Hash {
-		var hashArr []common.Hash
-		blockNumber := block.Number().Uint64()
-		cached, ok := bc.blocksHashCache.Get(blockNumber)
-	
-		if ok {
-			hashArr := cached.([]common.Hash)
-			hashArr = append(hashArr, block.Hash())
-			bc.blocksHashCache.Remove(blockNumber)
-			bc.blocksHashCache.Add(blockNumber, hashArr)
-			return hashArr
-		}
-	
-		hashArr = []common.Hash{
-			block.Hash(),
-		}
+	return &ResultProcessBlock{receipts: receipts, logs: logs, state: statedb, proctime: proctime, usedGas: usedGas}, nil
+}
+
+// UpdateBlocksHashCache update BlocksHashCache by block number
+func (bc *BlockChain) UpdateBlocksHashCache(block *types.Block) []common.Hash {
+	var hashArr []common.Hash
+	blockNumber := block.Number().Uint64()
+	cached, ok := bc.blocksHashCache.Get(blockNumber)
+
+	if ok {
+		hashArr := cached.([]common.Hash)
+		hashArr = append(hashArr, block.Hash())
+		bc.blocksHashCache.Remove(blockNumber)
 		bc.blocksHashCache.Add(blockNumber, hashArr)
 		return hashArr
 	}
+
+	hashArr = []common.Hash{
+		block.Hash(),
+	}
+	bc.blocksHashCache.Add(blockNumber, hashArr)
+	return hashArr
+}
 
 // insertChain will execute the actual chain insertion and event aggregation. The
 // only reason this method exists as a separate one is to make locking cleaner
@@ -1477,7 +1475,7 @@ func (bc *BlockChain) insertBlock(block *types.Block) ([]interface{}, []*types.L
 		blockInsertTimer.Update(result.proctime)
 		events = append(events, ChainSideEvent{block})
 
-	bc.UpdateBlocksHashCache(block)
+		bc.UpdateBlocksHashCache(block)
 	}
 	stats.processed++
 	stats.usedGas += result.usedGas

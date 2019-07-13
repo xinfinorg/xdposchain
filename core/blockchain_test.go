@@ -1321,6 +1321,7 @@ func TestLargeReorgTrieGC(t *testing.T) {
 		}
 	}
 }
+
 /*
 	Collection test for BlochsHashCache
 	cases
@@ -1329,6 +1330,7 @@ func TestLargeReorgTrieGC(t *testing.T) {
 		3. when insertFork
 		4. When adding new block by mining
 		5. When adding new block by syncing with other nodes
+
 */
 
 func TestBlocksHashCacheUpdate(t *testing.T) {
