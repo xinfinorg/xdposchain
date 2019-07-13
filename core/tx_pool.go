@@ -574,15 +574,15 @@ func (pool *TxPool) GetSender(tx *types.Transaction) (common.Address, error) {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
-		// check if sender is in black list
-		if tx.From() != nil && common.Blacklist[*tx.From()] {
-			return fmt.Errorf("Reject transaction with sender in black-list: %v",  tx.From().Hex())
-		}
-		// check if receiver is in black list
-		if tx.To() != nil && common.Blacklist[*tx.To()] {
-			return fmt.Errorf("Reject transaction with receiver in black-list: %v", tx.To().Hex())
-		}
-		
+	// check if sender is in black list
+	if tx.From() != nil && common.Blacklist[*tx.From()] {
+		return fmt.Errorf("Reject transaction with sender in black-list: %v",  tx.From().Hex())
+	}
+	// check if receiver is in black list
+	if tx.To() != nil && common.Blacklist[*tx.To()] {
+		return fmt.Errorf("Reject transaction with receiver in black-list: %v", tx.To().Hex())
+	}
+
 	// Heuristic limit, reject transactions over 32KB to prevent DOS attacks
 	if tx.Size() > 32*1024 {
 		return ErrOversizedData
@@ -621,7 +621,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	cost := tx.Cost()
 	minGasPrice := common.MinGasPrice
 	if tx.To() != nil {
-		if value, ok := pool.XRC21FeeCapacity[*tx.To()]; ok {
+		if value, ok := pool.xrc21FeeCapacity[*tx.To()]; ok {
 			balance = value
 			if !state.ValidateXRC21Tx(pool.pendingState.StateDB, from, *tx.To(), tx.Data()) {
 				return ErrInsufficientFunds
@@ -631,7 +631,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 	}
 	if balance.Cmp(cost) < 0 {
-				return ErrInsufficientFunds
+		return ErrInsufficientFunds
 	}
 
 	if tx.To() == nil || (tx.To() != nil && !tx.IsSpecialTransaction()) {

@@ -302,13 +302,13 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, xrc21Issuers map[co
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
 		maximum := costLimit
 		if tx.To() != nil {
-			if balance, ok := XRC21Issuers[*tx.To()]; ok {
+			if balance, ok := xrc21Issuers[*tx.To()]; ok {
 				maximum = balance
 			}
 		}
 		return tx.Cost().Cmp(maximum) > 0 || tx.Gas() > gasLimit
 	})
-	
+
 	// If the list was strict, filter anything above the lowest nonce
 	var invalids types.Transactions
 
