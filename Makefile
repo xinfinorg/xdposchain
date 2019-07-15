@@ -1,6 +1,12 @@
+# This Makefile is meant to be used by people that do not usually work
+# with Go source code. If you know what GOPATH is then you probably
+# don't need to bother with make.
+
 .PHONY: XDC XDC-cross evm all test clean
 .PHONY: XDC-linux XDC-linux-386 XDC-linux-amd64 XDC-linux-mips64 XDC-linux-mips64le
+.PHONY: XDC-linux-arm XDC-linux-arm-5 XDC-linux-arm-6 XDC-linux-arm-7 XDC-linux-arm64
 .PHONY: XDC-darwin XDC-darwin-386 XDC-darwin-amd64
+.PHONY: XDC-windows XDC-windows-386 XDC-windows-amd64
 
 GOBIN = $(shell pwd)/build/bin
 GOFMT = gofmt
@@ -36,7 +42,11 @@ all:
 test: all
 	build/env.sh go run build/ci.go test
 
+lint: ## Run linters.
+	build/env.sh go run build/ci.go lint
+
 clean:
+	./build/clean_go_build_cache.sh
 	rm -fr build/_workspace/pkg/ $(GOBIN)/*
 
 # Cross Compilation Targets (xgo)
