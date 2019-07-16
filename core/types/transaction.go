@@ -34,17 +34,7 @@ import (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-	errNoSigner   = errors.New("missing signing methods")
 )
-
-// deriveSigner makes a *best* guess about which signer to use.
-func deriveSigner(V *big.Int) Signer {
-	if V.Sign() != 0 && isProtectedV(V) {
-		return NewEIP155Signer(deriveChainId(V))
-	} else {
-		return HomesteadSigner{}
-	}
-}
 
 type Transaction struct {
 	data txdata
@@ -130,7 +120,7 @@ func isProtectedV(V *big.Int) bool {
 		v := V.Uint64()
 		return v != 27 && v != 28
 	}
-	// anything not 27 or 28 are considered unprotected
+	// anything not 27 or 28 is considered protected
 	return true
 }
 
@@ -164,16 +154,21 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	if err := dec.UnmarshalJSON(input); err != nil {
 		return err
 	}
-	var V byte
-	if isProtectedV(dec.V) {
-		chainID := deriveChainId(dec.V).Uint64()
-		V = byte(dec.V.Uint64() - 35 - 2*chainID)
-	} else {
-		V = byte(dec.V.Uint64() - 27)
+
+	withSignature := dec.V.Sign() != 0 || dec.R.Sign() != 0 || dec.S.Sign() != 0
+	if withSignature {
+		var V byte
+		if isProtectedV(dec.V) {
+			chainID := deriveChainId(dec.V).Uint64()
+			V = byte(dec.V.Uint64() - 35 - 2*chainID)
+		} else {
+			V = byte(dec.V.Uint64() - 27)
+		}
+		if !crypto.ValidateSignatureValues(V, dec.R, dec.S, false) {
+			return ErrInvalidSig
+		}
 	}
-	if !crypto.ValidateSignatureValues(V, dec.R, dec.S, false) {
-		return ErrInvalidSig
-	}
+
 	*tx = Transaction{data: dec}
 	return nil
 }
@@ -258,7 +253,7 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 }
 
 // WithSignature returns a new transaction with the given signature.
-// This signature needs to be formatted as described in the yellow paper (v+27).
+// This signature needs to be in the [R || S || V] format where V is 0 or 1.
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
 	r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
@@ -276,7 +271,9 @@ func (tx *Transaction) Cost() *big.Int {
 	return total
 }
 
-func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
+// RawSignatureValues returns the V, R, S signature values of the transaction.
+// The return values should not be modified by the caller.
+func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
 	return tx.data.V, tx.data.R, tx.data.S
 }
 
@@ -414,9 +411,9 @@ func (s Transactions) GetRlp(i int) []byte {
 	return enc
 }
 
-// TxDifference returns a new set t which is the difference between a to b.
-func TxDifference(a, b Transactions) (keep Transactions) {
-	keep = make(Transactions, 0, len(a))
+// TxDifference returns a new set which is the difference between a and b.
+func TxDifference(a, b Transactions) Transactions {
+	keep := make(Transactions, 0, len(a))
 
 	remove := make(map[common.Hash]struct{})
 	for _, tx := range b {
@@ -481,12 +478,12 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 	// Initialize a price based heap with the head transactions
 	heads := TxByPrice{}
 	specialTxs := Transactions{}
-	for _, accTxs := range txs {
-		from, _ := Sender(signer, accTxs[0])
+	for from, accTxs := range txs {
+		acc, _ := Sender(signer, accTxs[0])
 		var normalTxs Transactions
 		lastSpecialTx := -1
 		if len(signers) > 0 {
-			if _, ok := signers[from]; ok {
+			if _, ok := signers[acc]; ok {
 				for i, tx := range accTxs {
 					if tx.IsSpecialTransaction() {
 						lastSpecialTx = i
@@ -505,7 +502,10 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 		if len(normalTxs) > 0 {
 			heads = append(heads, normalTxs[0])
 			// Ensure the sender address is from the signer
-			txs[from] = normalTxs[1:]
+			txs[acc] = normalTxs[1:]
+		}
+		if from != acc {
+			delete(txs, from)
 		}
 	}
 	heap.Init(&heads)
