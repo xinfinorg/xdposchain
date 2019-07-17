@@ -30,7 +30,6 @@ var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b
 type Node interface {
 	fstring(string) string
 	Cache() (HashNode, bool)
-	canUnload(cachegen, cachelimit uint16) bool
 }
 
 type (
@@ -47,9 +46,22 @@ type (
 	ValueNode []byte
 )
 
+// nilValueNode is used when collapsing internal trie nodes for hashing, since
+// unset children need to serialize correctly.
+var nilValueNode = valueNode(nil)
+
 // EncodeRLP encodes a full node into the consensus RLP format.
 func (n *FullNode) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, n.Children)
+	var nodes [17]Node
+
+	for i, child := range &n.Children {
+		if child != nil {
+			nodes[i] = child
+		} else {
+			nodes[i] = nilValueNode
+		}
+	}
+	return rlp.Encode(w, nodes)
 }
 
 func (n *FullNode) copy() *FullNode   { copy := *n; return &copy }
@@ -58,19 +70,8 @@ func (n *ShortNode) copy() *ShortNode { copy := *n; return &copy }
 // nodeFlag contains caching-related metadata about a node.
 type nodeFlag struct {
 	hash  HashNode // cached hash of the node (may be nil)
-	gen   uint16   // cache generation counter
 	dirty bool     // whether the node has changes that must be written to the database
 }
-
-// canUnload tells whether a Node can be unloaded.
-func (n *nodeFlag) canUnload(cachegen, cachelimit uint16) bool {
-	return !n.dirty && cachegen-n.gen >= cachelimit
-}
-
-func (n *FullNode) canUnload(gen, limit uint16) bool  { return n.flags.canUnload(gen, limit) }
-func (n *ShortNode) canUnload(gen, limit uint16) bool { return n.flags.canUnload(gen, limit) }
-func (n HashNode) canUnload(uint16, uint16) bool      { return false }
-func (n ValueNode) canUnload(uint16, uint16) bool     { return false }
 
 func (n *FullNode) Cache() (HashNode, bool)  { return n.flags.hash, n.flags.dirty }
 func (n *ShortNode) Cache() (HashNode, bool) { return n.flags.hash, n.flags.dirty }
@@ -85,7 +86,7 @@ func (n ValueNode) String() string  { return n.fstring("") }
 
 func (n *FullNode) fstring(ind string) string {
 	resp := fmt.Sprintf("[\n%s  ", ind)
-	for i, node := range n.Children {
+	for i, node := range &n.Children {
 		if node == nil {
 			resp += fmt.Sprintf("%s: <nil> ", indices[i])
 		} else {
@@ -104,8 +105,8 @@ func (n ValueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
 
-func MustDecodeNode(hash, buf []byte, cachegen uint16) Node {
-	n, err := decodeNode(hash, buf, cachegen)
+func MustDecodeNode(hash, buf []byte) Node {
+	n, err := decodeNode(hash, buf)
 	if err != nil {
 		panic(fmt.Sprintf("node %x: %v", hash, err))
 	}
@@ -113,7 +114,7 @@ func MustDecodeNode(hash, buf []byte, cachegen uint16) Node {
 }
 
 // decodeNode parses the RLP encoding of a trie node.
-func decodeNode(hash, buf []byte, cachegen uint16) (Node, error) {
+func decodeNode(hash, buf []byte) (Node, error) {
 	if len(buf) == 0 {
 		return nil, io.ErrUnexpectedEOF
 	}
@@ -123,22 +124,22 @@ func decodeNode(hash, buf []byte, cachegen uint16) (Node, error) {
 	}
 	switch c, _ := rlp.CountValues(elems); c {
 	case 2:
-		n, err := decodeShort(hash, buf, elems, cachegen)
+		n, err := decodeShort(hash, elems)
 		return n, wrapError(err, "short")
 	case 17:
-		n, err := decodeFull(hash, buf, elems, cachegen)
+		n, err := decodeFull(hash, elems)
 		return n, wrapError(err, "full")
 	default:
 		return nil, fmt.Errorf("invalid number of list elements: %v", c)
 	}
 }
 
-func decodeShort(hash, buf, elems []byte, cachegen uint16) (Node, error) {
+func decodeShort(hash, elems []byte) (Node, error) {
 	kbuf, rest, err := rlp.SplitString(elems)
 	if err != nil {
 		return nil, err
 	}
-	flag := nodeFlag{hash: hash, gen: cachegen}
+	flag := nodeFlag{hash: hash}
 	key := compactToHex(kbuf)
 	if hasTerm(key) {
 		// value node
@@ -148,17 +149,17 @@ func decodeShort(hash, buf, elems []byte, cachegen uint16) (Node, error) {
 		}
 		return &ShortNode{key, append(ValueNode{}, val...), flag}, nil
 	}
-	r, _, err := decodeRef(rest, cachegen)
+	r, _, err := decodeRef(rest)
 	if err != nil {
 		return nil, wrapError(err, "val")
 	}
 	return &ShortNode{key, r, flag}, nil
 }
 
-func decodeFull(hash, buf, elems []byte, cachegen uint16) (*FullNode, error) {
-	n := &FullNode{flags: nodeFlag{hash: hash, gen: cachegen}}
+func decodeFull(hash, elems []byte) (*FullNode, error) {
+	n := &FullNode{flags: nodeFlag{hash: hash}}
 	for i := 0; i < 16; i++ {
-		cld, rest, err := decodeRef(elems, cachegen)
+		cld, rest, err := decodeRef(elems)
 		if err != nil {
 			return n, wrapError(err, fmt.Sprintf("[%d]", i))
 		}
@@ -176,7 +177,7 @@ func decodeFull(hash, buf, elems []byte, cachegen uint16) (*FullNode, error) {
 
 const hashLen = len(common.Hash{})
 
-func decodeRef(buf []byte, cachegen uint16) (Node, []byte, error) {
+func decodeRef(buf []byte) (Node, []byte, error) {
 	kind, val, rest, err := rlp.Split(buf)
 	if err != nil {
 		return nil, buf, err
@@ -189,7 +190,7 @@ func decodeRef(buf []byte, cachegen uint16) (Node, []byte, error) {
 			err := fmt.Errorf("oversized embedded node (size is %d bytes, want size < %d)", size, hashLen)
 			return nil, buf, err
 		}
-		n, err := decodeNode(nil, buf, cachegen)
+		n, err := decodeNode(nil, buf)
 		return n, rest, err
 	case kind == rlp.String && len(val) == 0:
 		// empty node
