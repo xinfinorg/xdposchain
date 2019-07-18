@@ -17,13 +17,15 @@
 package types
 
 import (
+	"bytes"
 	"math/big"
 	"testing"
 
 	"bytes"
+	"reflect"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
-	"reflect"
 )
 
 // from bcValidBlockTest.json, "SimpleTx"
@@ -47,7 +49,7 @@ func TestBlockEncoding(t *testing.T) {
 	check("Root", block.Root().String(), common.HexToHash("ef1552a40b7165c3cd773806b9e0c165b75356e0314bf0706f279c729f51e017").String())
 	check("Hash", block.Hash().String(), common.HexToHash("e8d9d473fdeddd3079988fa7be58f582b7b2800e90917d4bb6f11155ce4dba30").String())
 	check("Nonce", block.Nonce(), uint64(0xa13a5a8c8f2bb1c4))
-	check("Time", block.Time(), big.NewInt(1426516743))
+	check("Time", block.Time(), uint64(1426516743))
 	check("Size", block.Size(), common.StorageSize(len(blockEnc)))
 
 	ourBlockEnc, err := rlp.EncodeToBytes(&block)
@@ -57,5 +59,21 @@ func TestBlockEncoding(t *testing.T) {
 
 	if !bytes.Equal(ourBlockEnc, blockEnc) {
 		t.Errorf("encoded block mismatch:\ngot:  %x\nwant: %x", ourBlockEnc, blockEnc)
+	}
+}
+
+func TestUncleHash(t *testing.T) {
+	uncles := make([]*Header, 0)
+	h := CalcUncleHash(uncles)
+	exp := common.HexToHash("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
+	if h != exp {
+		t.Fatalf("empty uncle hash is wrong, got %x != %x", h, exp)
+	}
+}
+func BenchmarkUncleHash(b *testing.B) {
+	uncles := make([]*Header, 0)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		CalcUncleHash(uncles)
 	}
 }
