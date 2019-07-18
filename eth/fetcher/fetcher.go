@@ -19,15 +19,14 @@ package fetcher
 
 import (
 	"errors"
-	"github.com/hashicorp/golang-lru"
 	"math/rand"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 
 const (
@@ -91,7 +90,7 @@ type headerFilterTask struct {
 	time    time.Time       // Arrival time of the headers
 }
 
-// headerFilterTask represents a batch of block bodies (transactions and uncles)
+// bodyFilterTask represents a batch of block bodies (transactions and uncles)
 // needing fetcher filtering.
 type bodyFilterTask struct {
 	peer         string                 // The source peer of block bodies
@@ -113,7 +112,6 @@ type Fetcher struct {
 	notify chan *announce
 	inject chan *inject
 
-	blockFilter  chan chan []*types.Block
 	headerFilter chan chan *headerFilterTask
 	bodyFilter   chan chan *bodyFilterTask
 
@@ -130,8 +128,9 @@ type Fetcher struct {
 	// Block cache
 	queue  *prque.Prque            // Queue containing the import operations (block number sorted)
 	queues map[string]int          // Per peer block counts to prevent memory exhaustion
-	queued map[common.Hash]*inject // Set of already queued blocks (to dedup imports)
+	queued map[common.Hash]*inject // Set of already queued blocks (to dedupe imports)
 	knowns *lru.ARCCache
+
 	// Callbacks
 	getBlock       blockRetrievalFn   // Retrieves a block from the local chain
 	verifyHeader   headerVerifierFn   // Checks if a block's headers have a valid proof of work
@@ -156,7 +155,6 @@ func New(getBlock blockRetrievalFn, verifyHeader headerVerifierFn, broadcastBloc
 	return &Fetcher{
 		notify:         make(chan *announce),
 		inject:         make(chan *inject),
-		blockFilter:    make(chan chan []*types.Block),
 		headerFilter:   make(chan chan *headerFilterTask),
 		bodyFilter:     make(chan chan *bodyFilterTask),
 		done:           make(chan common.Hash),
@@ -166,7 +164,7 @@ func New(getBlock blockRetrievalFn, verifyHeader headerVerifierFn, broadcastBloc
 		fetching:       make(map[common.Hash]*announce),
 		fetched:        make(map[common.Hash][]*announce),
 		completing:     make(map[common.Hash]*announce),
-		queue:          prque.New(),
+		queue:          prque.New(nil),
 		queues:         make(map[string]int),
 		queued:         make(map[common.Hash]*inject),
 		knowns:         knownBlocks,
@@ -212,7 +210,7 @@ func (f *Fetcher) Notify(peer string, hash common.Hash, number uint64, time time
 	}
 }
 
-// Enqueue tries to fill gaps the the fetcher's future import queue.
+// Enqueue tries to fill gaps the fetcher's future import queue.
 func (f *Fetcher) Enqueue(peer string, block *types.Block) error {
 	op := &inject{
 		origin: peer,
@@ -300,20 +298,20 @@ func (f *Fetcher) loop() {
 		height := f.chainHeight()
 		for !f.queue.Empty() {
 			op := f.queue.PopItem().(*inject)
+			hash := op.block.Hash()
 			if f.queueChangeHook != nil {
-				f.queueChangeHook(op.block.Hash(), false)
+				f.queueChangeHook(hash, false)
 			}
 			// If too high up the chain or phase, continue later
 			number := op.block.NumberU64()
 			if number > height+1 {
-				f.queue.Push(op, -float32(op.block.NumberU64()))
+				f.queue.Push(op, -int64(number))
 				if f.queueChangeHook != nil {
-					f.queueChangeHook(op.block.Hash(), true)
+					f.queueChangeHook(hash, true)
 				}
 				break
 			}
 			// Otherwise if fresh and still unknown, try and import
-			hash := op.block.Hash()
 			if number+maxUncleDist < height || f.getBlock(hash) != nil {
 				f.forgetBlock(hash)
 				continue
@@ -636,7 +634,7 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 		f.queues[peer] = count
 		f.queued[hash] = op
 		f.knowns.Add(hash, true)
-		f.queue.Push(op, -float32(block.NumberU64()))
+		f.queue.Push(op, -int64(block.NumberU64()))
 		if f.queueChangeHook != nil {
 			f.queueChangeHook(op.block.Hash(), true)
 		}
@@ -735,7 +733,7 @@ func (f *Fetcher) forgetHash(hash common.Hash) {
 	// Remove all pending announces and decrement DOS counters
 	for _, announce := range f.announced[hash] {
 		f.announces[announce.origin]--
-		if f.announces[announce.origin] == 0 {
+		if f.announces[announce.origin] <= 0 {
 			delete(f.announces, announce.origin)
 		}
 	}
@@ -746,7 +744,7 @@ func (f *Fetcher) forgetHash(hash common.Hash) {
 	// Remove any pending fetches and decrement the DOS counters
 	if announce := f.fetching[hash]; announce != nil {
 		f.announces[announce.origin]--
-		if f.announces[announce.origin] == 0 {
+		if f.announces[announce.origin] <= 0 {
 			delete(f.announces, announce.origin)
 		}
 		delete(f.fetching, hash)
@@ -755,7 +753,7 @@ func (f *Fetcher) forgetHash(hash common.Hash) {
 	// Remove any pending completion requests and decrement the DOS counters
 	for _, announce := range f.fetched[hash] {
 		f.announces[announce.origin]--
-		if f.announces[announce.origin] == 0 {
+		if f.announces[announce.origin] <= 0 {
 			delete(f.announces, announce.origin)
 		}
 	}
@@ -764,7 +762,7 @@ func (f *Fetcher) forgetHash(hash common.Hash) {
 	// Remove any pending completions and decrement the DOS counters
 	if announce := f.completing[hash]; announce != nil {
 		f.announces[announce.origin]--
-		if f.announces[announce.origin] == 0 {
+		if f.announces[announce.origin] <= 0 {
 			delete(f.announces, announce.origin)
 		}
 		delete(f.completing, hash)
