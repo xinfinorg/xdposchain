@@ -880,10 +880,16 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 	})
 	isTopCandidate := false // is candidates in top 150
 	status := ""
+	var maxMasternodes int
+	if blockNum < common.ShuffleCheckpointNumber {
+		maxMasternodes = common.MaxMasternodes
+	} else {
+		maxMasternodes = common.MaxMasternodesV2
+	}
 	for i := 0; i < len(candidates); i++ {
 		if candidates[i].Address == coinbaseAddress {
 			status = statusProposed
-			if i < common.MaxMasternodes {
+			if i < maxMasternodes {
 				isTopCandidate = true
 			}
 			break

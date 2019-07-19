@@ -2482,12 +2482,15 @@ func (bc *BlockChain) UpdateM1() error {
 		// get shuffle checkpoint
 		header := bc.CurrentHeader()
 		number := header.Number.Uint64()
+		var maxMasternodes int
 		if number < common.ShuffleCheckpointNumber {
+			maxMasternodes = common.MaxMasternodes
 			// mechaism voting using sort by stake
 			sort.Slice(ms, func(i, j int) bool {
 				return ms[i].Stake.Cmp(ms[j].Stake) >= 0
 			})
 		} else {
+			maxMasternodes = common.MaxMasternodesV2
 			// mechanism voting using knuth shuffle
 			ms = engine.ShuffleMasternodes(bc, header, ms)
 		}
@@ -2497,8 +2500,8 @@ func (bc *BlockChain) UpdateM1() error {
 		}
 		// update masternodes
 		log.Info("Updating new set of masternodes")
-		if len(ms) > common.MaxMasternodes {
-			err = engine.UpdateMasternodes(bc, bc.CurrentHeader(), ms[:common.MaxMasternodes])
+		if len(ms) > maxMasternodes {
+			err = engine.UpdateMasternodes(bc, bc.CurrentHeader(), ms[:maxMasternodes])
 		} else {
 			err = engine.UpdateMasternodes(bc, bc.CurrentHeader(), ms)
 		}
