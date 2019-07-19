@@ -555,7 +555,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if pool.currentState.GetNonce(from) > tx.Nonce() {
 		return ErrNonceTooLow
 	}
-	if pool.pendingState.GetNonce(from)+common.LimitThresholdNonceInQueue < tx.Nonce() {
+	if pool.pendingNonces.get(from)+common.LimitThresholdNonceInQueue < tx.Nonce() {
 		return ErrNonceTooHigh
 	}
 	// Transactor should have enough funds to cover the costs
@@ -563,24 +563,24 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if pool.currentState.GetBalance(from).Cmp(tx.Cost()) < 0 {
 		return ErrInsufficientFunds
 	}
-		if tx.To() == nil || (tx.To() != nil && !tx.IsSpecialTransaction()) {
-			// Ensure the transaction has more gas than the basic tx fee.
-			intrGas, err := IntrinsicGas(tx.Data(), tx.To() == nil, true)
-			if err != nil {
-				return err
-			}
-			// Exclude check smart contract sign address.
-			if tx.Gas() < intrGas {
-				return ErrIntrinsicGas
-			}
-			// Check zero gas price.
-			if tx.GasPrice().Cmp(new(big.Int)).SetInt64(0) == 0 {
-				return ErrZeroGasPrice
-			}
-			// under min gas price
-			if tx.GasPrice().Cmp(new(big.Int).SetInt64(common.MinGasPrice)) < 0 {
-				return ErrUnderMinGasPrice
-			}
+
+	if tx.To() == nil || (tx.To() != nil && !tx.IsSpecialTransaction()) {
+		// Ensure the transaction has more gas than the basic tx fee.
+		intrGas, err := IntrinsicGas(tx.Data(), tx.To() == nil, true)
+		if err != nil {
+			return err
+		}
+		// Exclude check smart contract sign address.
+		if tx.Gas() < intrGas {
+			return ErrIntrinsicGas
+		}
+		// Check zero gas price.
+		if tx.GasPrice().Cmp(new(big.Int).SetInt64(0)) == 0 {
+			return ErrZeroGasPrice
+		}
+		// under min gas price
+		if tx.GasPrice().Cmp(new(big.Int).SetInt64(common.MinGasPrice)) < 0 {
+			return ErrUnderMinGasPrice
 		}
 	}
 
@@ -615,7 +615,7 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (replaced bool, err e
 	}
 
 	from, _ := types.Sender(pool.signer, tx) // already validated
-	if tx.IsSpecialTransaction() && pool.IsSigner != nil && pool.IsSigner(from) && pool.pendingState.GetNonce(from) == tx.Nonce() {
+	if tx.IsSpecialTransaction() && pool.IsSigner != nil && pool.IsSigner(from) && pool.pendingNonces.get(from) == tx.Nonce() {
 		return pool.promoteSpecialTx(from, tx)
 	}
 	// If the transaction pool is full, discard underpriced transactions
@@ -635,8 +635,7 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (replaced bool, err e
 		}
 	}
 
-	// Try to replace an existing transaction in the pending pool
-	from, _ := types.Sender(pool.signer, tx) // already validated
+	// Try to replace an existing transaction in the pending poo
 	if list := pool.pending[from]; list != nil && list.Overlaps(tx) {
 		// Nonce already pending, check if required price bump is met
 		inserted, old := list.Add(tx, pool.config.PriceBump)
@@ -768,7 +767,7 @@ func (pool *TxPool) promoteTx(addr common.Address, hash common.Hash, tx *types.T
 func (pool *TxPool) promoteSpecialTx(addr common.Address, tx *types.Transaction) (bool, error) {
 	// Try to insert the transaction into the pending queue
 	if pool.pending[addr] == nil {
-		pool.pending[addr] = newTxList()
+		pool.pending[addr] = newTxList(true)
 	}
 	list := pool.pending[addr]
 	old := list.txs.Get(tx.Nonce())

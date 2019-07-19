@@ -35,6 +35,16 @@ var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
+// TODO: do later here
+// deriveSigner makes a *best* guess about which signer to use.
+// func deriveSigner(V *big.Int) Signer {
+// 	if V.Sign() != 0 && isProtectedV(V) {
+// 		return NewEIP155Signer(deriveChainId(V))
+// 	} else {
+// 		return HomesteadSigner{}
+// 	}
+// }
+
 type Transaction struct {
 	data txdata
 	// caches
@@ -189,18 +199,17 @@ func (tx *Transaction) To() *common.Address {
 	return &to
 }
 
-func (tx *Transaction) From() *common.Address {
-	if tx.data.V != nil {
-		signer := deriveSigner(tx.data.V)
-		if f, err := Sender(signer, tx); err != nil {
-			return nil
-		} else {
-			return &f
-		}
-	} else {
-		return nil
-	}
-}
+// TODO: do later here
+// func (tx *Transaction) From() *common.Address {
+// 	if tx.data.V != nil {
+// 		signer := deriveSigner(tx.data.V)
+// 		if f, err := Sender(signer, tx); err != nil {
+// 			return nil
+// 		}
+// 		return &f
+// 	}
+// 	return nil
+// }
 
 // Hash hashes the RLP encoding of tx.
 // It uniquely identifies the transaction.
@@ -484,7 +493,7 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 		acc, _ := Sender(signer, accTxs[0])
 		var normalTxs Transactions
 		lastSpecialTx := -1
-		if len(signer) > 0 {
+		if len(signers) > 0 {
 			if _, ok := signers[acc]; ok {
 				for i, tx := range accTxs {
 					if tx.IsSpecialTransaction() {

@@ -40,13 +40,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -149,7 +150,7 @@ var (
 
 // SignerFn is a signer callback function to request a hash to be signed by a
 // backing account.
-//type SignerFn func(accounts.Account, []byte) ([]byte, error)
+type SignerFn func(accounts.Account, string, []byte) ([]byte, error)
 
 // sigHash returns the hash which is used as input for the proof-of-stake-voting
 // signing. It is the hash of the entire header apart from the 65 byte signature
@@ -159,7 +160,7 @@ var (
 // panics. This is done to avoid accidentally using both forms (signature present
 // or not), which could be abused to produce different hashes for the same header.
 func sigHash(header *types.Header) (hash common.Hash) {
-	hasher := sha3.NewKeccak256()
+	hasher := sha3.NewLegacyKeccak256()
 
 	rlp.Encode(hasher, []interface{}{
 		header.ParentHash,
@@ -215,7 +216,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Ethereum testnet following the Ropsten attacks.
 type XDPoS struct {
 	config *params.XDPoSConfig // Consensus engine configuration parameters
-	db     ethdb.Database     // Database to store and retrieve snapshot checkpoints
+	db     ethdb.Database      // Database to store and retrieve snapshot checkpoints
 
 	recents             *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures          *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -322,7 +323,7 @@ func (c *XDPoS) verifyHeader(chain consensus.ChainReader, header *types.Header, 
 			return consensus.ErrNoValidatorSignature
 		}
 		// Don't waste time checking blocks from the future
-		if header.Time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
+		if header.Time > uint64(time.Now().Unix()) {
 			return consensus.ErrFutureBlock
 		}
 	}
@@ -390,7 +391,7 @@ func (c *XDPoS) verifyCascadingFields(chain consensus.ChainReader, header *types
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
-	if parent.Time.Uint64()+c.config.Period > header.Time.Uint64() {
+	if parent.Time+c.config.Period > header.Time {
 		return ErrInvalidTimestamp
 	}
 	// Retrieve the snapshot needed to verify this header and cache it
@@ -857,9 +858,9 @@ func (c *XDPoS) Prepare(chain consensus.ChainReader, header *types.Header) error
 
 	// Ensure the timestamp has the correct delay
 
-	header.Time = new(big.Int).Add(parent.Time, new(big.Int).SetUint64(c.config.Period))
-	if header.Time.Int64() < time.Now().Unix() {
-		header.Time = big.NewInt(time.Now().Unix())
+	header.Time = parent.Time + c.config.Period
+	if header.Time < uint64(time.Now().Unix()) {
+		header.Time = uint64(time.Now().Unix())
 	}
 	return nil
 }
@@ -887,8 +888,38 @@ func (c *XDPoS) UpdateMasternodes(chain consensus.ChainReader, header *types.Hea
 }
 
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
+// but does not assemble the block.
+func (c *XDPoS) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
+	// set block reward
+	number := header.Number.Uint64()
+	rCheckpoint := chain.Config().XDPoS.RewardCheckpoint
+
+	// _ = c.CacheData(header, txs, receipts)
+
+	if c.HookReward != nil && number%rCheckpoint == 0 {
+		err, rewards := c.HookReward(chain, state, header)
+		if err != nil {
+			return
+		}
+		if len(common.StoreRewardFolder) > 0 {
+			data, err := json.Marshal(rewards)
+			if err == nil {
+				err = ioutil.WriteFile(filepath.Join(common.StoreRewardFolder, header.Number.String()+"."+header.Hash().Hex()), data, 0644)
+			}
+			if err != nil {
+				log.Error("Error when save reward info ", "number", header.Number, "hash", header.Hash().Hex(), "err", err)
+			}
+		}
+	}
+
+	// the state remains as is and uncles are dropped
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	header.UncleHash = types.CalcUncleHash(nil)
+}
+
+// FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given, and returns the final block.
-func (c *XDPoS) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+func (c *XDPoS) FinalizeAndAssemble(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// set block reward
 	number := header.Number.Uint64()
 	rCheckpoint := chain.Config().XDPoS.RewardCheckpoint
@@ -931,18 +962,18 @@ func (c *XDPoS) Authorize(signer common.Address, signFn clique.SignerFn) {
 
 // Seal implements consensus.Engine, attempting to create a sealed block using
 // the local signing credentials.
-func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error) {
+func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	header := block.Header()
 
 	// Sealing the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
-		return nil, errUnknownBlock
+		return errUnknownBlock
 	}
 	// For 0-period chains, refuse to seal empty blocks (no reward but would spin sealing)
 	// checkpoint blocks have no tx
 	if c.config.Period == 0 && len(block.Transactions()) == 0 && number%c.config.Epoch != 0 {
-		return nil, errWaitTransactions
+		return errWaitTransactions
 	}
 	// Don't hold the signer fields for the entire sealing procedure
 	c.lock.RLock()
@@ -952,7 +983,7 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-cha
 	// Bail out if we're unauthorized to sign a block
 	snap, err := c.snapshot(chain, number-1, header.ParentHash, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	masternodes := c.GetMasternodes(chain, header)
 	if _, authorized := snap.Signers[signer]; !authorized {
@@ -964,7 +995,7 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-cha
 			}
 		}
 		if !valid {
-			return nil, errUnauthorized
+			return errUnauthorized
 		}
 	}
 	// If we're amongst the recent signers, wait for the next block
@@ -979,7 +1010,7 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-cha
 					if number%c.config.Epoch != 0 {
 						log.Info("Signed recently, must wait for others ", "len(masternodes)", len(masternodes), "number", number, "limit", limit, "seen", seen, "recent", recent.String(), "snap.Recents", snap.Recents)
 						<-stop
-						return nil, nil
+						return nil
 					}
 				}
 			}
@@ -987,23 +1018,29 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, stop <-cha
 	}
 	select {
 	case <-stop:
-		return nil, nil
+		return nil
 	default:
 	}
+	// TODO: do later
 	// Sign all the things!
-	sighash, err := signFn(accounts.Account{Address: signer}, sigHash(header).Bytes())
+	sighash, err := signFn(accounts.Account{Address: signer}, accounts.MimetypeClique, sigHash(header).Bytes())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
 	m2, err := c.GetValidator(signer, chain, header)
 	if err != nil {
-		return nil, fmt.Errorf("can't get block validator: %v", err)
+		return fmt.Errorf("can't get block validator: %v", err)
 	}
 	if m2 == signer {
 		header.Validator = sighash
 	}
-	return block.WithSeal(header), nil
+	return nil
+}
+
+// SealHash returns the hash of a block prior to it being sealed.
+func (c *XDPoS) SealHash(header *types.Header) common.Hash {
+	return c.SealHash(header)
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
@@ -1030,6 +1067,11 @@ func (c *XDPoS) APIs(chain consensus.ChainReader) []rpc.API {
 		Service:   &API{chain: chain, XDPoS: c},
 		Public:    false,
 	}}
+}
+
+// Close implements consensus.Engine
+func (c *XDPoS) Close() error {
+	return c.Close()
 }
 
 func (c *XDPoS) RecoverSigner(header *types.Header) (common.Address, error) {
@@ -1077,7 +1119,7 @@ func (c *XDPoS) CacheData(header *types.Header, txs []*types.Transaction, receip
 	signTxs := []*types.Transaction{}
 	for _, tx := range txs {
 		if tx.IsSigningTransaction() {
-			var b uint
+			var b uint64
 			for _, r := range receipts {
 				if r.TxHash == tx.Hash() {
 					if len(r.PostState) > 0 {

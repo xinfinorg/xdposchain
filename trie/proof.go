@@ -80,7 +80,7 @@ func (t *Trie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) e
 			} else {
 				enc, _ := rlp.EncodeToBytes(n)
 				if !ok {
-					hash = hasher.makeHashNode(enc)
+					hash = hasher.MakeHashNode(enc)
 				}
 				proofDb.Put(hash, enc)
 			}

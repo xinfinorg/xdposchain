@@ -80,7 +80,7 @@ func (h *hasher) hash(n Node, db *Database, force bool) (Node, Node, error) {
 		}
 		if !dirty {
 			switch n.(type) {
-			case *fullNode, *shortNode:
+			case *FullNode, *ShortNode:
 				return hash, hash, nil
 			default:
 				return hash, n, nil

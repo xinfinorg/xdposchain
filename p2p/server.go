@@ -756,15 +756,16 @@ running:
 				} else {
 					peers[c.node.ID()] = p
 					p.log.Debug("Adding p2p peer", "addr", p.RemoteAddr(), "peers", len(peers)+1, "name", name)
-				
-				if p.Inbound() {
-					inboundCount++
+
+					if p.Inbound() {
+						inboundCount++
+					}
 				}
+				// The dialer logic relies on the assumption that
+				// dial tasks complete after the peer has been added or
+				// discarded. Unblock the task last.
+				c.cont <- err
 			}
-			// The dialer logic relies on the assumption that
-			// dial tasks complete after the peer has been added or
-			// discarded. Unblock the task last.
-			c.cont <- err
 
 		case pd := <-srv.delpeer:
 			// A peer disconnected.

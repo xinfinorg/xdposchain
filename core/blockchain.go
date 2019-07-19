@@ -28,13 +28,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	// "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/XDPoS"
-	contractValidator "github.com/ethereum/go-ethereum/contracts/validator/contract"
+
+	// contractValidator "github.com/ethereum/go-ethereum/contracts/validator/contract"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -1729,11 +1730,11 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 
 		if status == CanonStatTy && bc.chainConfig.XDPoS != nil {
 			// epoch block
-			if (chain[i].NumberU64() % bc.chainConfig.XDPoS.Epoch) == 0 {
+			if (chain[it.index].NumberU64() % bc.chainConfig.XDPoS.Epoch) == 0 {
 				CheckpointCh <- 1
 			}
 			// prepare set of masternodes for the next epoch
-			if (chain[i].NumberU64() % bc.chainConfig.XDPoS.Epoch) == (bc.chainConfig.XDPoS.Epoch - bc.chainConfig.XDPoS.Gap) {
+			if (chain[it.index].NumberU64() % bc.chainConfig.XDPoS.Epoch) == (bc.chainConfig.XDPoS.Epoch - bc.chainConfig.XDPoS.Gap) {
 				err := bc.UpdateM1()
 				if err != nil {
 					log.Crit("Error when update masternodes set. Stopping node", "err", err)
@@ -1798,6 +1799,7 @@ func (bc *BlockChain) PrepareBlock(block *types.Block) (err error) {
 	return err
 }
 
+// TODO: need to be refactor
 func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*ResultProcessBlock, error) {
 	var calculatedBlock *CalculatedBlock
 	if verifiedM2 {
@@ -1855,7 +1857,7 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 		}
 		log.Debug("Number block need calculated again", "number", block.NumberU64(), "hash", block.Hash().Hex(), "winners", len(winner))
 		// Import all the pruned blocks to make the state available
-		_, _, _, err := bc.insertChain(winner)
+		_, _, _, err := bc.insertChain(winner, true)
 		if err != nil {
 			return nil, err
 		}
@@ -1880,7 +1882,7 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 		return nil, err
 	}
 	// Validate the state using the default validator
-	err = bc.Validator().ValidateState(block, parent, state, receipts, usedGas)
+	err = bc.Validator().ValidateState(block, state, receipts, usedGas)
 	if err != nil {
 		bc.reportBlock(block, receipts, err)
 		return nil, err
@@ -1942,7 +1944,9 @@ func (bc *BlockChain) insertBlock(block *types.Block) ([]interface{}, []*types.L
 	}
 	stats.processed++
 	stats.usedGas += result.usedGas
-	stats.report(types.Blocks{block}, 0, bc.stateCache.TrieDB().Size())
+
+	dirty, _ := bc.stateCache.TrieDB().Size()
+	stats.report(types.Blocks{block}, 0, dirty)
 	if status == CanonStatTy && bc.chainConfig.XDPoS != nil {
 		// epoch block
 		if (block.NumberU64() % bc.chainConfig.XDPoS.Epoch) == 0 {
@@ -2422,7 +2426,7 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 	return bc.scope.Track(bc.logsFeed.Subscribe(ch))
 }
 
-// Get current IPC Client.
+// GetClient Get current IPC Client.
 func (bc *BlockChain) GetClient() (*ethclient.Client, error) {
 	if bc.Client == nil {
 		// Inject ipc client global instance.
@@ -2437,6 +2441,7 @@ func (bc *BlockChain) GetClient() (*ethclient.Client, error) {
 	return bc.Client, nil
 }
 
+// UpdateM1 will be execute voting masternode for next epoch
 func (bc *BlockChain) UpdateM1() error {
 	if bc.Config().XDPoS == nil {
 		return ErrNotXDPoS

@@ -161,7 +161,7 @@ func (it *nodeIterator) Leaf() bool {
 
 func (it *nodeIterator) LeafKey() []byte {
 	if len(it.stack) > 0 {
-		if _, ok := it.stack[len(it.stack)-1].node.(valueNode); ok {
+		if _, ok := it.stack[len(it.stack)-1].node.(ValueNode); ok {
 			return hexToKeybytes(it.path)
 		}
 	}
@@ -189,7 +189,7 @@ func (it *nodeIterator) LeafProof() [][]byte {
 				// Gather nodes that end up as hash nodes (or the root)
 				node, _, _ := hasher.hashChildren(item.node, nil)
 				hashed, _ := hasher.store(node, nil, false)
-				if _, ok := hashed.(hashNode); ok || i == 0 {
+				if _, ok := hashed.(HashNode); ok || i == 0 {
 					enc, _ := rlp.EncodeToBytes(node)
 					proofs = append(proofs, enc)
 				}

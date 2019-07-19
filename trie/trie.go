@@ -179,7 +179,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 	return nil
 }
 
-func (t *Trie) insert(n Node, prefix, key []byte, value Node) (bool, node, error) {
+func (t *Trie) insert(n Node, prefix, key []byte, value Node) (bool, Node, error) {
 	if len(key) == 0 {
 		if v, ok := n.(ValueNode); ok {
 			return !bytes.Equal(v, value.(ValueNode)), value, nil
