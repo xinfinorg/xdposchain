@@ -211,7 +211,7 @@ func testEmptyWork(t *testing.T, chainConfig *params.ChainConfig, engine consens
 	w.newTaskHook = func(task *task) {
 		if task.block.NumberU64() == 1 {
 			checkEqual(t, task, taskIndex)
-			taskIndex += 1
+			taskIndex++
 			taskCh <- struct{}{}
 		}
 	}
@@ -228,7 +228,7 @@ func testEmptyWork(t *testing.T, chainConfig *params.ChainConfig, engine consens
 	}
 
 	w.start()
-	for i := 0; i < 2; i += 1 {
+	for i := 0; i < 2; i++ {
 		select {
 		case <-taskCh:
 		case <-time.NewTimer(2 * time.Second).C:
@@ -257,7 +257,7 @@ func TestStreamUncleBlock(t *testing.T) {
 				}
 			}
 			taskCh <- struct{}{}
-			taskIndex += 1
+			taskIndex++
 		}
 	}
 	w.skipSealHook = func(task *task) bool {
@@ -277,7 +277,7 @@ func TestStreamUncleBlock(t *testing.T) {
 	w.start()
 
 	// Ignore the first two works
-	for i := 0; i < 2; i += 1 {
+	for i := 0; i < 2; i++ {
 		select {
 		case <-taskCh:
 		case <-time.NewTimer(time.Second).C:
@@ -322,7 +322,7 @@ func testRegenerateMiningBlock(t *testing.T, chainConfig *params.ChainConfig, en
 				}
 			}
 			taskCh <- struct{}{}
-			taskIndex += 1
+			taskIndex++
 		}
 	}
 	w.skipSealHook = func(task *task) bool {
@@ -341,7 +341,7 @@ func testRegenerateMiningBlock(t *testing.T, chainConfig *params.ChainConfig, en
 
 	w.start()
 	// Ignore the first two works
-	for i := 0; i < 2; i += 1 {
+	for i := 0; i < 2; i++ {
 		select {
 		case <-taskCh:
 		case <-time.NewTimer(time.Second).C:
@@ -415,7 +415,7 @@ func testAdjustInterval(t *testing.T, chainConfig *params.ChainConfig, engine co
 			t.Errorf("resubmit interval mismatch: have %v, want %v", recommitInterval, wantRecommitInterval)
 		}
 		result = append(result, float64(recommitInterval.Nanoseconds()))
-		index += 1
+		index++
 		progress <- struct{}{}
 	}
 	// Ensure worker has finished initialization
