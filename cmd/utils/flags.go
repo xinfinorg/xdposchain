@@ -411,64 +411,64 @@ var (
 		Usage: "Number of CPU threads to use for mining",
 		Value: 0,
 	}
-	MinerLegacyThreadsFlag = cli.IntFlag{
+	StakerLegacyThreadsFlag = cli.IntFlag{
 		Name:  "minerthreads",
 		Usage: "Number of CPU threads to use for mining (deprecated, use --miner.threads)",
 		Value: 0,
 	}
-	MinerNotifyFlag = cli.StringFlag{
+	StakerNotifyFlag = cli.StringFlag{
 		Name:  "miner.notify",
 		Usage: "Comma separated HTTP URL list to notify of new work packages",
 	}
-	MinerGasTargetFlag = cli.Uint64Flag{
+	StakerGasTargetFlag = cli.Uint64Flag{
 		Name:  "miner.gastarget",
 		Usage: "Target gas floor for mined blocks",
 		Value: eth.DefaultConfig.Miner.GasFloor,
 	}
-	MinerLegacyGasTargetFlag = cli.Uint64Flag{
+	StakerLegacyGasTargetFlag = cli.Uint64Flag{
 		Name:  "targetgaslimit",
 		Usage: "Target gas floor for mined blocks (deprecated, use --miner.gastarget)",
 		Value: eth.DefaultConfig.Miner.GasFloor,
 	}
-	MinerGasLimitFlag = cli.Uint64Flag{
+	StakerGasLimitFlag = cli.Uint64Flag{
 		Name:  "miner.gaslimit",
 		Usage: "Target gas ceiling for mined blocks",
 		Value: eth.DefaultConfig.Miner.GasCeil,
 	}
-	MinerGasPriceFlag = BigFlag{
+	StakerGasPriceFlag = BigFlag{
 		Name:  "miner.gasprice",
 		Usage: "Minimum gas price for mining a transaction",
 		Value: eth.DefaultConfig.Miner.GasPrice,
 	}
-	MinerLegacyGasPriceFlag = BigFlag{
+	StakerLegacyGasPriceFlag = BigFlag{
 		Name:  "gasprice",
 		Usage: "Minimum gas price for mining a transaction (deprecated, use --miner.gasprice)",
 		Value: eth.DefaultConfig.Miner.GasPrice,
 	}
-	MinerEtherbaseFlag = cli.StringFlag{
+	StakerEtherbaseFlag = cli.StringFlag{
 		Name:  "miner.etherbase",
 		Usage: "Public address for block mining rewards (default = first account)",
 		Value: "0",
 	}
-	MinerLegacyEtherbaseFlag = cli.StringFlag{
+	StakerLegacyEtherbaseFlag = cli.StringFlag{
 		Name:  "etherbase",
 		Usage: "Public address for block mining rewards (default = first account, deprecated, use --miner.etherbase)",
 		Value: "0",
 	}
-	MinerExtraDataFlag = cli.StringFlag{
+	StakerExtraDataFlag = cli.StringFlag{
 		Name:  "miner.extradata",
 		Usage: "Block extra data set by the miner (default = client version)",
 	}
-	MinerLegacyExtraDataFlag = cli.StringFlag{
+	StakerLegacyExtraDataFlag = cli.StringFlag{
 		Name:  "extradata",
 		Usage: "Block extra data set by the miner (default = client version, deprecated, use --miner.extradata)",
 	}
-	MinerRecommitIntervalFlag = cli.DurationFlag{
+	StakerRecommitIntervalFlag = cli.DurationFlag{
 		Name:  "miner.recommit",
 		Usage: "Time interval to recreate the block being mined",
 		Value: eth.DefaultConfig.Miner.Recommit,
 	}
-	MinerNoVerfiyFlag = cli.BoolFlag{
+	StakerNoVerfiyFlag = cli.BoolFlag{
 		Name:  "miner.noverify",
 		Usage: "Disable remote sealing verification",
 	}
@@ -1059,11 +1059,11 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *eth.Config) {
 	// Extract the current etherbase, new flag overriding legacy one
 	var etherbase string
-	if ctx.GlobalIsSet(MinerLegacyEtherbaseFlag.Name) {
-		etherbase = ctx.GlobalString(MinerLegacyEtherbaseFlag.Name)
+	if ctx.GlobalIsSet(StakerLegacyEtherbaseFlag.Name) {
+		etherbase = ctx.GlobalString(StakerLegacyEtherbaseFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerEtherbaseFlag.Name) {
-		etherbase = ctx.GlobalString(MinerEtherbaseFlag.Name)
+	if ctx.GlobalIsSet(StakerEtherbaseFlag.Name) {
+		etherbase = ctx.GlobalString(StakerEtherbaseFlag.Name)
 	}
 	// Convert the etherbase into an address and configure it
 	if etherbase != "" {
@@ -1313,35 +1313,35 @@ func setEthash(ctx *cli.Context, cfg *eth.Config) {
 }
 
 func setMiner(ctx *cli.Context, cfg *miner.Config) {
-	if ctx.GlobalIsSet(MinerNotifyFlag.Name) {
-		cfg.Notify = strings.Split(ctx.GlobalString(MinerNotifyFlag.Name), ",")
+	if ctx.GlobalIsSet(StakerNotifyFlag.Name) {
+		cfg.Notify = strings.Split(ctx.GlobalString(StakerNotifyFlag.Name), ",")
 	}
-	if ctx.GlobalIsSet(MinerLegacyExtraDataFlag.Name) {
-		cfg.ExtraData = []byte(ctx.GlobalString(MinerLegacyExtraDataFlag.Name))
+	if ctx.GlobalIsSet(StakerLegacyExtraDataFlag.Name) {
+		cfg.ExtraData = []byte(ctx.GlobalString(StakerLegacyExtraDataFlag.Name))
 	}
-	if ctx.GlobalIsSet(MinerExtraDataFlag.Name) {
-		cfg.ExtraData = []byte(ctx.GlobalString(MinerExtraDataFlag.Name))
+	if ctx.GlobalIsSet(StakerExtraDataFlag.Name) {
+		cfg.ExtraData = []byte(ctx.GlobalString(StakerExtraDataFlag.Name))
 	}
-	if ctx.GlobalIsSet(MinerLegacyGasTargetFlag.Name) {
-		cfg.GasFloor = ctx.GlobalUint64(MinerLegacyGasTargetFlag.Name)
+	if ctx.GlobalIsSet(StakerLegacyGasTargetFlag.Name) {
+		cfg.GasFloor = ctx.GlobalUint64(StakerLegacyGasTargetFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerGasTargetFlag.Name) {
-		cfg.GasFloor = ctx.GlobalUint64(MinerGasTargetFlag.Name)
+	if ctx.GlobalIsSet(StakerGasTargetFlag.Name) {
+		cfg.GasFloor = ctx.GlobalUint64(StakerGasTargetFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerGasLimitFlag.Name) {
-		cfg.GasCeil = ctx.GlobalUint64(MinerGasLimitFlag.Name)
+	if ctx.GlobalIsSet(StakerGasLimitFlag.Name) {
+		cfg.GasCeil = ctx.GlobalUint64(StakerGasLimitFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerLegacyGasPriceFlag.Name) {
-		cfg.GasPrice = GlobalBig(ctx, MinerLegacyGasPriceFlag.Name)
+	if ctx.GlobalIsSet(StakerLegacyGasPriceFlag.Name) {
+		cfg.GasPrice = GlobalBig(ctx, StakerLegacyGasPriceFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-		cfg.GasPrice = GlobalBig(ctx, MinerGasPriceFlag.Name)
+	if ctx.GlobalIsSet(StakerGasPriceFlag.Name) {
+		cfg.GasPrice = GlobalBig(ctx, StakerGasPriceFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerRecommitIntervalFlag.Name) {
-		cfg.Recommit = ctx.Duration(MinerRecommitIntervalFlag.Name)
+	if ctx.GlobalIsSet(StakerRecommitIntervalFlag.Name) {
+		cfg.Recommit = ctx.Duration(StakerRecommitIntervalFlag.Name)
 	}
-	if ctx.GlobalIsSet(MinerNoVerfiyFlag.Name) {
-		cfg.Noverify = ctx.Bool(MinerNoVerfiyFlag.Name)
+	if ctx.GlobalIsSet(StakerNoVerfiyFlag.Name) {
+		cfg.Noverify = ctx.Bool(StakerNoVerfiyFlag.Name)
 	}
 }
 
@@ -1464,9 +1464,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheTrieFlag.Name) {
 		cfg.TrieCleanCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheTrieFlag.Name) / 100
 	}
-	if ctx.GlobalIsSet(StakerThreadsFlag.Name) {
-		cfg.MinerThreads = ctx.GlobalInt(StakerThreadsFlag.Name)
-	}
+	// if ctx.GlobalIsSet(StakerThreadsFlag.Name) {
+	// 	cfg.MinerThreads = ctx.GlobalInt(StakerThreadsFlag.Name)
+	// }
 	// TODO: do later here
 	// it may be comment or remove because the flag not exitsts
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheGCFlag.Name) {
@@ -1511,11 +1511,11 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 			cfg.NetworkId = 4
 		}
 		cfg.Genesis = core.DefaultRinkebyGenesisBlock()
-	case ctx.GlobalBool(GoerliFlag.Name):
-		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 5
-		}
-		cfg.Genesis = core.DefaultGoerliGenesisBlock()
+	// case ctx.GlobalBool(GoerliFlag.Name):
+	// 	if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
+	// 		cfg.NetworkId = 5
+	// 	}
+	// 	cfg.Genesis = core.DefaultGoerliGenesisBlock()
 	case ctx.GlobalBool(DeveloperFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 1337
@@ -1539,7 +1539,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 		log.Info("Using developer account", "address", developer.Address)
 
 		cfg.Genesis = core.DeveloperGenesisBlock(uint64(ctx.GlobalInt(DeveloperPeriodFlag.Name)), developer.Address)
-		if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) && !ctx.GlobalIsSet(MinerLegacyGasPriceFlag.Name) {
+		if !ctx.GlobalIsSet(StakerGasPriceFlag.Name) && !ctx.GlobalIsSet(StakerLegacyGasPriceFlag.Name) {
 			cfg.Miner.GasPrice = big.NewInt(1)
 		}
 	}
@@ -1690,8 +1690,8 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultTestnetGenesisBlock()
 	case ctx.GlobalBool(RinkebyFlag.Name):
 		genesis = core.DefaultRinkebyGenesisBlock()
-	case ctx.GlobalBool(GoerliFlag.Name):
-		genesis = core.DefaultGoerliGenesisBlock()
+	// case ctx.GlobalBool(GoerliFlag.Name):
+	// 	genesis = core.DefaultGoerliGenesisBlock()
 	case ctx.GlobalBool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
 	}

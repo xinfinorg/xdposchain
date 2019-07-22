@@ -39,6 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/blocksigner/contract"
 	randomizeContract "github.com/ethereum/go-ethereum/contracts/randomize/contract"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -74,9 +75,9 @@ func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, m
 		}
 
 		// Create and send tx to smart contract for sign validate block.
-		nonce := pool.State().GetNonce(account.Address)
+		nonce := pool.Nonce(account.Address)
 		tx := CreateTxSign(block.Number(), block.Hash(), nonce, common.HexToAddress(common.BlockSigners))
-		txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainId)
+		txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainID)
 		if err != nil {
 			log.Error("Fail to create tx sign", "error", err)
 			return err
@@ -105,7 +106,7 @@ func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, m
 				log.Error("Fail to get tx opening for randomize", "error", err)
 				return err
 			}
-			txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainId)
+			txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainID)
 			if err != nil {
 				log.Error("Fail to create tx secret", "error", err)
 				return err
@@ -134,7 +135,7 @@ func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, m
 				log.Error("Fail to get tx opening for randomize", "error", err)
 				return err
 			}
-			txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainId)
+			txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainID)
 			if err != nil {
 				log.Error("Fail to create tx opening", "error", err)
 				return err
@@ -326,7 +327,7 @@ func GetRewardForCheckpoint(c *XDPoS.XDPoS, chain consensus.ChainReader, header 
 			block := chain.GetBlock(header.Hash(), i)
 			txs := block.Transactions()
 			if !chain.Config().IsTIPSigning(header.Number) {
-				receipts := core.GetBlockReceipts(c.GetDb(), header.Hash(), i)
+				receipts := rawdb.ReadRawReceipts(c.GetDb(), header.Hash(), i)
 				signData = c.CacheData(header, txs, receipts)
 			} else {
 				signData = c.CacheSigner(header.Hash(), txs)

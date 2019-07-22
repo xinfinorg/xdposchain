@@ -242,11 +242,11 @@ var AppHelpFlagGroups = []flagGroup{
 		Flags: []cli.Flag{
 			utils.LightLegacyServFlag,
 			utils.LightLegacyPeersFlag,
-			utils.MinerLegacyThreadsFlag,
-			utils.MinerLegacyGasTargetFlag,
-			utils.MinerLegacyGasPriceFlag,
-			utils.MinerLegacyEtherbaseFlag,
-			utils.MinerLegacyExtraDataFlag,
+			utils.StakerLegacyThreadsFlag,
+			utils.StakerLegacyGasTargetFlag,
+			utils.StakerLegacyGasPriceFlag,
+			utils.StakerLegacyEtherbaseFlag,
+			utils.StakerLegacyExtraDataFlag,
 		},
 	},
 	{

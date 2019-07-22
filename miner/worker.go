@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/XDPoS"
 	"github.com/ethereum/go-ethereum/consensus/misc"
+	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -450,7 +451,7 @@ func (w *worker) mainLoop() {
 			timeout.Reset(waitPeriod * time.Second)
 		case ev := <-w.chainSideCh:
 			// network is not XDC
-			if w.config.XDPoS == nil {
+			if w.chainConfig.XDPoS == nil {
 				// Short circuit for duplicate side blocks
 				if _, exist := w.localUncles[ev.Block.Hash()]; exist {
 					continue
@@ -510,7 +511,7 @@ func (w *worker) mainLoop() {
 					acc, _ := types.Sender(w.current.signer, tx)
 					txs[acc] = append(txs[acc], tx)
 				}
-				txset, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, txs)
+				txset, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, txs, nil)
 				tcount := w.current.tcount
 				w.commitTransactions(txset, specialTxs, coinbase, nil)
 				// Only update the snapshot if any new transactons were added
@@ -817,7 +818,7 @@ func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Addres
 	return receipt.Logs, nil
 }
 
-func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, specialTxs *types.Transactions, coinbase common.Address, interrupt *int32) bool {
+func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, specialTxs types.Transactions, coinbase common.Address, interrupt *int32) bool {
 	// Short circuit if current is nil
 	if w.current == nil {
 		return true
@@ -830,7 +831,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, spec
 	var coalescedLogs []*types.Log
 	// first priority for special Txs
 	for _, tx := range specialTxs {
-		if gp.Gas() < params.TxGas && tx.Gas() > 0 {
+		if gp := w.current.gasPool; gp != nil && gp.Gas() < params.TxGas && tx.Gas() > 0 {
 			log.Trace("Not enough gas for further transactions", "gp", gp)
 			break
 		}
@@ -838,11 +839,12 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, spec
 		// during transaction acceptance is the transaction pool.
 		//
 		// We use the eip155 signer regardless of the current hf.
+		env := w.current
 		from, _ := types.Sender(env.signer, tx)
 		// Check whether the tx is replay protected. If we're not in the EIP155 hf
 		// phase, start ignoring the sender until we do.
-		if tx.Protected() && !env.config.IsEIP155(env.header.Number) {
-			log.Trace("Ignoring reply protected special transaction", "hash", tx.Hash(), "eip155", env.config.EIP155Block)
+		if tx.Protected() && !w.chainConfig.IsEIP155(env.header.Number) {
+			log.Trace("Ignoring reply protected special transaction", "hash", tx.Hash(), "eip155", w.chainConfig.EIP155Block)
 			continue
 		}
 		if tx.To().Hex() == common.BlockSigners {
@@ -851,7 +853,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, spec
 				continue
 			}
 			blkNumber := binary.BigEndian.Uint64(tx.Data()[8:40])
-			if blkNumber >= env.header.Number.Uint64() || blkNumber <= env.header.Number.Uint64()-env.config.XDPoS.Epoch*2 {
+			if blkNumber >= env.header.Number.Uint64() || blkNumber <= env.header.Number.Uint64()-w.chainConfig.XDPoS.Epoch*2 {
 				log.Trace("Data special transaction invalid number", "hash", tx.Hash(), "blkNumber", blkNumber, "miner", env.header.Number)
 				continue
 			}
@@ -863,24 +865,34 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, spec
 			log.Trace("Skipping account with special transaction invalide nonce", "sender", from, "nonce", nonce, "tx nonce ", tx.Nonce(), "to", tx.To())
 			continue
 		}
-		err, logs := env.commitTransaction(tx, bc, coinbase, gp)
+		logs, err := w.commitTransaction(tx, coinbase)
 		switch err {
+		case core.ErrGasLimitReached:
+			// Pop the current out-of-gas transaction without shifting in the next from the account
+			log.Trace("Gas limit exceeded for current block", "sender", from)
+			txs.Pop()
+
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and miner, shift
 			log.Trace("Skipping special transaction with low nonce", "sender", from, "nonce", tx.Nonce(), "to", tx.To())
+			txs.Shift()
 
 		case core.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
 			log.Trace("Skipping account with special transaction hight nonce", "sender", from, "nonce", tx.Nonce(), "to", tx.To())
+			txs.Pop()
+
 		case nil:
 			// Everything ok, collect the logs and shift in the next transaction from the same account
 			coalescedLogs = append(coalescedLogs, logs...)
 			env.tcount++
+			txs.Shift()
 
 		default:
 			// Strange error, discard the transaction and get the next in line (note, the
 			// nonce-too-high clause will prevent us from executing in vain).
 			log.Debug("Add Special Transaction failed, account skipped", "hash", tx.Hash(), "sender", from, "nonce", tx.Nonce(), "to", tx.To(), "err", err)
+			txs.Shift()
 		}
 	}
 	for {
@@ -996,7 +1008,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	tstart := time.Now()
 	parent := w.chain.CurrentBlock()
 
-	var singers map[common.Address]struct{}
+	// var singers map[common.Address]struct{}
 	if parent.Hash().Hex() == w.lastParentBlockCommit {
 		return
 	}
@@ -1010,7 +1022,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		if w.chainConfig.XDPoS != nil {
 			// get masternodes set from latest checkpoint
 			c := w.engine.(*XDPoS.XDPoS)
-			len, preIndex, curIndex, ok, err := c.YourTurn(w.chainConfig, parent.Header(), w.coinbase)
+			len, preIndex, curIndex, ok, err := c.YourTurn(w.chain, parent.Header(), w.coinbase)
 			if err != nil {
 				log.Warn("Failed when trying to commit new work", "err", err)
 				return
@@ -1030,10 +1042,10 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 				// Check nearest checkpoint block in hop range.
 				nearest := w.chainConfig.XDPoS.Epoch - (parent.Header().Number.Uint64() % w.chainConfig.XDPoS.Epoch)
 				if uint64(h) >= nearest {
-					gap = waitPeriodCheckpoint * uint64(h)
+					gap = waitPeriodCheckpoint * int64(h)
 				}
 				log.Info("Distance from the parent block", "seconds", gap, "hops", h)
-				waitedTime := time.Now().Unix() - parent.Header().Time.Int64()
+				waitedTime := time.Now().Unix() - int64(parent.Header().Time)
 				if gap > waitedTime {
 					return
 				}
@@ -1096,9 +1108,9 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	if w.chainConfig.DAOForkSupport && w.chainConfig.DAOForkBlock != nil && w.chainConfig.DAOForkBlock.Cmp(header.Number) == 0 {
 		misc.ApplyDAOHardFork(env.state)
 	}
+	uncles := make([]*types.Header, 0, 2)
 	if w.chainConfig.XDPoS == nil {
 		// Accumulate the uncles for the current block
-		uncles := make([]*types.Header, 0, 2)
 		commitUncles := func(blocks map[common.Hash]*types.Block) {
 			// Clean up stale uncle blocks first
 			for hash, uncle := range blocks {
@@ -1133,14 +1145,9 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		w.current.state.DeleteAddress(common.HexToAddress(common.BlockSigners))
 	}
 
-	var (
-		txs        *types.TransactionsByPriceAndNonce
-		specialTxs types.Transactions
-	)
-
+	pending, err := w.eth.TxPool().Pending()
 	if w.chainConfig.XDPoS != nil && header.Number.Uint64()%w.chainConfig.XDPoS.Epoch != 0 {
 		// Fill the block with all available pending transactions.
-		pending, err := w.eth.TxPool().Pending()
 		if err != nil {
 			log.Error("Failed to fetch pending transactions", "err", err)
 			return
@@ -1164,13 +1171,13 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		}
 	}
 	if len(localTxs) > 0 {
-		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs)
+		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs, nil)
 		if w.commitTransactions(txs, specialTxs, w.coinbase, interrupt) {
 			return
 		}
 	}
 	if len(remoteTxs) > 0 {
-		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs)
+		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs, nil)
 		if w.commitTransactions(txs, specialTxs, w.coinbase, interrupt) {
 			return
 		}

@@ -248,7 +248,7 @@ func (b *EthAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.Ma
 	}
 }
 
-func (b *EthApiBackend) GetIPCClient() (*ethclient.Client, error) {
+func (b *EthAPIBackend) GetIPCClient() (*ethclient.Client, error) {
 	client, err := b.eth.blockchain.GetClient()
 	if err != nil {
 		return nil, err
@@ -257,11 +257,11 @@ func (b *EthApiBackend) GetIPCClient() (*ethclient.Client, error) {
 	return client, nil
 }
 
-func (b *EthApiBackend) GetEngine() consensus.Engine {
+func (b *EthAPIBackend) GetEngine() consensus.Engine {
 	return b.eth.engine
 }
 
-func (s *EthApiBackend) GetRewardByHash(hash common.Hash) map[string]interface{} {
+func (s *EthAPIBackend) GetRewardByHash(hash common.Hash) map[string]interface{} {
 	header := s.eth.blockchain.GetHeaderByHash(hash)
 	if header != nil {
 		data, err := ioutil.ReadFile(filepath.Join(common.StoreRewardFolder, header.Number.String()+"."+header.Hash().Hex()))

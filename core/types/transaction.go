@@ -37,13 +37,12 @@ var (
 
 // TODO: do later here
 // deriveSigner makes a *best* guess about which signer to use.
-// func deriveSigner(V *big.Int) Signer {
-// 	if V.Sign() != 0 && isProtectedV(V) {
-// 		return NewEIP155Signer(deriveChainId(V))
-// 	} else {
-// 		return HomesteadSigner{}
-// 	}
-// }
+func deriveSigner(V *big.Int) Signer {
+	if V.Sign() != 0 && isProtectedV(V) {
+		return NewEIP155Signer(deriveChainId(V))
+	}
+	return HomesteadSigner{}
+}
 
 type Transaction struct {
 	data txdata
@@ -200,16 +199,17 @@ func (tx *Transaction) To() *common.Address {
 }
 
 // TODO: do later here
-// func (tx *Transaction) From() *common.Address {
-// 	if tx.data.V != nil {
-// 		signer := deriveSigner(tx.data.V)
-// 		if f, err := Sender(signer, tx); err != nil {
-// 			return nil
-// 		}
-// 		return &f
-// 	}
-// 	return nil
-// }
+func (tx *Transaction) From() *common.Address {
+	if tx.data.V != nil {
+		signer := deriveSigner(tx.data.V)
+		f, err := Sender(signer, tx)
+		if err != nil {
+			return nil
+		}
+		return &f
+	}
+	return nil
+}
 
 // Hash hashes the RLP encoding of tx.
 // It uniquely identifies the transaction.

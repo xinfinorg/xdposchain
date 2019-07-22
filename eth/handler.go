@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/golang-lru"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -40,6 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -161,7 +161,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 	heighter := func() uint64 {
 		return blockchain.CurrentBlock().NumberU64()
 	}
-	inserter := func(block types.Block) (error) {
+	inserter := func(block *types.Block) error {
 		// If sync hasn't reached the checkpoint yet, deny importing weird blocks.
 		//
 		// Ideally we would also compare the head block's timestamp and similarly reject
@@ -181,7 +181,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 			log.Warn("Fast syncing, discarded propagated block", "number", block.Number(), "hash", block.Hash())
 			return nil
 		}
-		n, err := manager.blockchain.InsertBlock(block)
+		err := manager.blockchain.InsertBlock(block)
 		if err == nil {
 			atomic.StoreUint32(&manager.acceptTxs, 1) // Mark initial sync done on any fetcher import
 		}
@@ -357,22 +357,10 @@ func (pm *ProtocolManager) handle(p *peer) error {
 					p.syncDrop.Stop()
 					p.syncDrop = nil
 				}
-				// Start a timer to disconnect if the peer doesn't reply in time
-				p.forkDrop = time.AfterFunc(daoChallengeTimeout, func() {
-					p.Log().Debug("Timed out DAO fork-check, dropping")
-					pm.removePeer(p.id)
-				})
-				// Make sure it's cleaned up if the peer dies off
-				defer func() {
-					if p.forkDrop != nil {
-						p.forkDrop.Stop()
-						p.forkDrop = nil
-					}
-				}()
-			}
+			}()
 		}
 	}
-	
+
 	// If we have any explicit whitelist block hashes, request them
 	for number := range pm.whitelist {
 		if err := p.RequestHeadersByNumber(number, 1, 0, false); err != nil {
@@ -837,7 +825,7 @@ func (pm *ProtocolManager) minedBroadcastLoop() {
 	// automatically stops if unsubscribe
 	for obj := range pm.minedBlockSub.Chan() {
 		if ev, ok := obj.Data.(core.NewMinedBlockEvent); ok {
-			pm.BroadcastBlock(ev.Block, true)  // First propagate block to peers
+			pm.BroadcastBlock(ev.Block, true) // First propagate block to peers
 			// pm.BroadcastBlock(ev.Block, false) // Only then announce to the rest
 		}
 	}

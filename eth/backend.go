@@ -72,7 +72,8 @@ type LesServer interface {
 
 // Ethereum implements the Ethereum full node service.
 type Ethereum struct {
-	config *Config
+	config      *Config
+	chainConfig *params.ChainConfig
 
 	// Channel for shutting down the service
 	shutdownChan chan bool
@@ -153,6 +154,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 
 	eth := &Ethereum{
 		config:         config,
+		chainConfig:    chainConfig,
 		chainDb:        chainDb,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
@@ -292,7 +294,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 					return block, false, err
 				}
 				header := block.Header()
-				sighash, err := wallet.SignHash(accounts.Account{Address: eb}, XDPoS.SigHash(header).Bytes())
+				sighash, err := wallet.SignText(accounts.Account{Address: eb}, XDPoS.SigHash(header).Bytes())
 				if err != nil || sighash == nil {
 					log.Error("Can't get signature hash of m2", "sighash", sighash, "err", err)
 					return block, false, err
@@ -760,7 +762,7 @@ func (s *Ethereum) shouldPreserve(block *types.Block) bool {
 	// is A, F and G sign the block of round5 and reject the block of opponents
 	// and in the round6, the last available signer B is offline, the whole
 	// network is stuck.
-	if _, ok := s.engine.(*clique.Clique); ok {
+	if _, ok := s.engine.(*XDPoS.XDPoS); ok {
 		return false
 	}
 	return s.isLocalBlock(block)
@@ -836,7 +838,7 @@ func (s *Ethereum) StartStaking(threads int) error {
 		th.SetThreads(threads)
 	}
 	// If the miner was not running, initialize it
-	if !s.IsMining() {
+	if !s.IsStaking() {
 		// Propagate the initial price point to the transaction pool
 		s.lock.RLock()
 		price := s.gasPrice

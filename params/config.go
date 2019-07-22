@@ -32,7 +32,7 @@ var (
 	// TestnetGenesisHash = common.HexToHash("dffc8ae3b45965404b4fd73ce7f0e13e822ac0fc23ce7e95b42bc5f1e57023a5") // Testnet genesis hash to enforce below configs on
 	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
 	TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
-	// RinkebyGenesisHash = common.HexToHash("0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177")
+	RinkebyGenesisHash = common.HexToHash("0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177")
 	// GoerliGenesisHash  = common.HexToHash("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")
 )
 
@@ -41,7 +41,7 @@ var (
 var TrustedCheckpoints = map[common.Hash]*TrustedCheckpoint{
 	MainnetGenesisHash: MainnetTrustedCheckpoint,
 	TestnetGenesisHash: TestnetTrustedCheckpoint,
-	// RinkebyGenesisHash: RinkebyTrustedCheckpoint,
+	RinkebyGenesisHash: RinkebyTrustedCheckpoint,
 	// GoerliGenesisHash:  GoerliTrustedCheckpoint,
 }
 
@@ -50,7 +50,7 @@ var TrustedCheckpoints = map[common.Hash]*TrustedCheckpoint{
 var CheckpointOracles = map[common.Hash]*CheckpointOracleConfig{
 	MainnetGenesisHash: MainnetCheckpointOracle,
 	TestnetGenesisHash: TestnetCheckpointOracle,
-	// RinkebyGenesisHash: RinkebyCheckpointOracle,
+	RinkebyGenesisHash: RinkebyCheckpointOracle,
 	// GoerliGenesisHash:  GoerliCheckpointOracle,
 }
 
@@ -129,44 +129,44 @@ var (
 		Threshold: 2,
 	}
 
-	// // RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
-	// RinkebyChainConfig = &ChainConfig{
-	// 	ChainID:             big.NewInt(4),
-	// 	HomesteadBlock:      big.NewInt(1),
-	// 	DAOForkBlock:        nil,
-	// 	DAOForkSupport:      true,
-	// 	EIP150Block:         big.NewInt(2),
-	// 	EIP150Hash:          common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
-	// 	EIP155Block:         big.NewInt(3),
-	// 	EIP158Block:         big.NewInt(3),
-	// 	ByzantiumBlock:      big.NewInt(1035301),
-	// 	ConstantinopleBlock: big.NewInt(3660663),
-	// 	PetersburgBlock:     big.NewInt(4321234),
-	// 	XDPoS: &XDPoSConfig{
-	// 		Period: 15,
-	// 		Epoch:  30000,
-	// 	},
-	// }
+	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
+	RinkebyChainConfig = &ChainConfig{
+		ChainID:             big.NewInt(4),
+		HomesteadBlock:      big.NewInt(1),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      true,
+		EIP150Block:         big.NewInt(2),
+		EIP150Hash:          common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
+		EIP155Block:         big.NewInt(3),
+		EIP158Block:         big.NewInt(3),
+		ByzantiumBlock:      big.NewInt(1035301),
+		ConstantinopleBlock: big.NewInt(3660663),
+		PetersburgBlock:     big.NewInt(4321234),
+		XDPoS: &XDPoSConfig{
+			Period: 15,
+			Epoch:  30000,
+		},
+	}
 
-	// // RinkebyTrustedCheckpoint contains the light client trusted checkpoint for the Rinkeby test network.
-	// RinkebyTrustedCheckpoint = &TrustedCheckpoint{
-	// 	SectionIndex: 142,
-	// 	SectionHead:  common.HexToHash("0xf7e3946d54c3040d391edd61a855fec7293f9d0b51445ede88562f2dc2edce3f"),
-	// 	CHTRoot:      common.HexToHash("0xb2beee185e3ecada83eb69f72cbcca3e0978dbc8da5cdb3e34a71b3d597815d0"),
-	// 	BloomRoot:    common.HexToHash("0x3970039fee31eb0542090030d1567cc99b8051572d51899db4d91619ca26f0cb"),
-	// }
+	// RinkebyTrustedCheckpoint contains the light client trusted checkpoint for the Rinkeby test network.
+	RinkebyTrustedCheckpoint = &TrustedCheckpoint{
+		SectionIndex: 142,
+		SectionHead:  common.HexToHash("0xf7e3946d54c3040d391edd61a855fec7293f9d0b51445ede88562f2dc2edce3f"),
+		CHTRoot:      common.HexToHash("0xb2beee185e3ecada83eb69f72cbcca3e0978dbc8da5cdb3e34a71b3d597815d0"),
+		BloomRoot:    common.HexToHash("0x3970039fee31eb0542090030d1567cc99b8051572d51899db4d91619ca26f0cb"),
+	}
 
-	// // RinkebyCheckpointOracle contains a set of configs for the Rinkeby test network oracle.
-	// RinkebyCheckpointOracle = &CheckpointOracleConfig{
-	// 	Address: common.HexToAddress("0xebe8eFA441B9302A0d7eaECc277c09d20D684540"),
-	// 	Signers: []common.Address{
-	// 		common.HexToAddress("0xd9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3"), // Peter
-	// 		common.HexToAddress("0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"), // Martin
-	// 		common.HexToAddress("0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"), // Zsolt
-	// 		common.HexToAddress("0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"), // Gary
-	// 	},
-	// 	Threshold: 2,
-	// }
+	// RinkebyCheckpointOracle contains a set of configs for the Rinkeby test network oracle.
+	RinkebyCheckpointOracle = &CheckpointOracleConfig{
+		Address: common.HexToAddress("0xebe8eFA441B9302A0d7eaECc277c09d20D684540"),
+		Signers: []common.Address{
+			common.HexToAddress("0xd9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3"), // Peter
+			common.HexToAddress("0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"), // Martin
+			common.HexToAddress("0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"), // Zsolt
+			common.HexToAddress("0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"), // Gary
+		},
+		Threshold: 2,
+	}
 
 	// // GoerliChainConfig contains the chain parameters to run a node on the Görli test network.
 	// GoerliChainConfig = &ChainConfig{

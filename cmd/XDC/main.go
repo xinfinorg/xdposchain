@@ -300,7 +300,7 @@ func main() {
 // XDC is the main entry point into the system if no special subcommand is ran.
 // It creates a default node based on the command line arguments and runs it in
 // blocking mode, waiting for it to be shut down.
-func geth(ctx *cli.Context) error {
+func XDC(ctx *cli.Context) error {
 	if args := ctx.Args(); len(args) > 0 {
 		return fmt.Errorf("invalid command: %q", args[0])
 	}
@@ -331,11 +331,6 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 		cfg.Account.Passwords = utils.MakePasswordList(ctx)
 	}
 
-	for i, account := range cfg.Account.Unlocks {
-		if trimmed := strings.TrimSpace(account); trimmed != "" {
-			unlockAccount(ctx, ks, trimmed, i, cfg.Account.Passwords)
-		}
-	}
 	// Register wallet event handlers to open and auto-derive wallets
 	events := make(chan accounts.WalletEvent, 16)
 	stack.AccountManager().Subscribe(events)
@@ -438,12 +433,12 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 			ok := false
 			var err error
 			if common.IsTestnet {
-				ok, err := ethereum.ValidateMasternodeTestnet()
+				ok, err = ethereum.ValidateMasternodeTestnet()
 				if err != nil {
 					utils.Fatalf("Can't verify masternode permission: %v", err)
 				}
 			} else {
-				ok, err := ethereum.ValidateMasternode()
+				ok, err = ethereum.ValidateMasternode()
 				if err != nil {
 					utils.Fatalf("Can't verify masternode permission: %v", err)
 				}
@@ -451,7 +446,8 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 			if ok {
 				log.Info("Masternode found. Enabling staking mode...")
 				// Use a reduced number of threads if requested
-				if threads := ctx.GlobalInt(utils.StakerThreadsFlag.Name); threads > 0 {
+				threads := ctx.GlobalInt(utils.StakerThreadsFlag.Name)
+				if threads > 0 {
 					type threaded interface {
 						SetThreads(threads int)
 					}
@@ -460,7 +456,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 					}
 				}
 				// Set the gas price to the limits from the CLI and start mining
-				ethereum.TxPool().SetGasPrice(cfg.Eth.GasPrice)
+				ethereum.TxPool().SetGasPrice(cfg.Eth.Miner.GasPrice)
 				if err := ethereum.StartStaking(threads); err != nil {
 					utils.Fatalf("Failed to start staking: %v", err)
 				}
@@ -491,7 +487,8 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 				} else if !started {
 					log.Info("Masternode found. Enabling staking mode...")
 					// Use a reduced number of threads if requested
-					if threads := ctx.GlobalInt(utils.StakerThreadsFlag.Name); threads > 0 {
+					threads := ctx.GlobalInt(utils.StakerThreadsFlag.Name)
+					if threads > 0 {
 						type threaded interface {
 							SetThreads(threads int)
 						}
@@ -500,7 +497,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 						}
 					}
 					// Set the gas price to the limits from the CLI and start mining
-					ethereum.TxPool().SetGasPrice(cfg.Eth.GasPrice)
+					ethereum.TxPool().SetGasPrice(cfg.Eth.Miner.GasPrice)
 					if err := ethereum.StartStaking(threads); err != nil {
 						utils.Fatalf("Failed to start staking: %v", err)
 					}
@@ -547,6 +544,6 @@ func unlockAccounts(ctx *cli.Context, stack *node.Node) {
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
 	passwords := utils.MakePasswordList(ctx)
 	for i, account := range unlocks {
-		unlockAccount(ks, account, i, passwords)
+		unlockAccount(ctx, ks, account, i, passwords)
 	}
 }
