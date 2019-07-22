@@ -770,10 +770,11 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 	isTopCandidate := false // is candidates in top 150
 	status := ""
 	var maxMasternodes int
-	if blockNum < common.ShuffleCheckpointNumber {
-		maxMasternodes = common.MaxMasternodes
-	} else {
+	cfg := s.b.ChainConfig()
+	if cfg.IsTIPRandomizeMechansim(block.Number()) {
 		maxMasternodes = common.MaxMasternodesV2
+	} else {
+		maxMasternodes = common.MaxMasternodes
 	}
 	for i := 0; i < len(candidates); i++ {
 		if candidates[i].Address == coinbaseAddress {

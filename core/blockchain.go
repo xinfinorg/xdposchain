@@ -46,7 +46,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 
@@ -1864,18 +1864,17 @@ func (bc *BlockChain) UpdateM1() error {
 		// upgrade new mechanism masterndoes voting
 		// get shuffle checkpoint
 		header := bc.CurrentHeader()
-		number := header.Number.Uint64()
 		var maxMasternodes int
-		if number < common.ShuffleCheckpointNumber {
+		if bc.chainConfig.IsTIPRandomizeMechansim(header.Number) {
+			maxMasternodes = common.MaxMasternodesV2
+			// mechanism voting using knuth shuffle
+			ms = engine.ShuffleMasternodes(bc, header, ms)
+		} else {
 			maxMasternodes = common.MaxMasternodes
 			// mechaism voting using sort by stake
 			sort.Slice(ms, func(i, j int) bool {
 				return ms[i].Stake.Cmp(ms[j].Stake) >= 0
 			})
-		} else {
-			maxMasternodes = common.MaxMasternodesV2
-			// mechanism voting using knuth shuffle
-			ms = engine.ShuffleMasternodes(bc, header, ms)
 		}
 		log.Info("Shuffle list of masternode candidates")
 		for _, m := range ms {

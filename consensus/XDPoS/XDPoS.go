@@ -46,7 +46,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -215,7 +215,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Ethereum testnet following the Ropsten attacks.
 type XDPoS struct {
 	config *params.XDPoSConfig // Consensus engine configuration parameters
-	db     ethdb.Database     // Database to store and retrieve snapshot checkpoints
+	db     ethdb.Database      // Database to store and retrieve snapshot checkpoints
 
 	recents             *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures          *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -1228,10 +1228,11 @@ func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.He
 		fms = append(fms, m)
 	}
 	var maxMasternodes int
-	if header.Number.Uint64() < common.ShuffleCheckpointNumber {
-		maxMasternodes = common.MaxMasternodes
-	} else {
+	cfg := chain.Config()
+	if cfg.IsTIPRandomizeMechansim(header.Number) {
 		maxMasternodes = common.MaxMasternodesV2
+	} else {
+		maxMasternodes = common.MaxMasternodes
 	}
 	if len(fms) > maxMasternodes {
 		fms = fms[:maxMasternodes]
