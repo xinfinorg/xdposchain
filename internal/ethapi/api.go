@@ -28,13 +28,17 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/consensus/XDPoS"
 	"github.com/ethereum/go-ethereum/consensus/clique"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/contracts"
+	contractValidator "github.com/ethereum/go-ethereum/contracts/validator/contract"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -874,12 +878,6 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 			candidates = append(candidates, XDPoS.Masternode{Address: address, Stake: v})
 		}
 	}
-	// sort candidates by stake descending
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].Stake.Cmp(candidates[j].Stake) >= 0
-	})
-	isTopCandidate := false // is candidates in top 150
-	status := ""
 	var maxMasternodes int
 	cfg := s.b.ChainConfig()
 	if cfg.IsTIPRandomizeMechansim(block.Number()) {
@@ -887,6 +885,14 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 	} else {
 		maxMasternodes = common.MaxMasternodes
 	}
+	// TODO: do later here
+	// maybe need to check shuffle
+	// sort candidates by stake descending
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].Stake.Cmp(candidates[j].Stake) >= 0
+	})
+	isTopCandidate := false // is candidates in top 150
+	status := ""
 	for i := 0; i < len(candidates); i++ {
 		if candidates[i].Address == coinbaseAddress {
 			status = statusProposed

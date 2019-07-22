@@ -21,14 +21,18 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/external"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
+
+type IExternal interface {
+	SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error)
+}
 
 // NewTransactor is a utility method to easily create a transaction signer from
 // an encrypted json key stream and the associated passphrase.
@@ -83,7 +87,7 @@ func NewKeyedTransactor(key *ecdsa.PrivateKey) *TransactOpts {
 
 // NewClefTransactor is a utility method to easily create a transaction signer
 // with a clef backend.
-func NewClefTransactor(clef *external.ExternalSigner, account accounts.Account) *TransactOpts {
+func NewClefTransactor(clef IExternal, account accounts.Account) *TransactOpts {
 	return &TransactOpts{
 		From: account.Address,
 		Signer: func(signer types.Signer, address common.Address, transaction *types.Transaction) (*types.Transaction, error) {
