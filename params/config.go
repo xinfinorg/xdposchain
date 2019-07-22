@@ -418,6 +418,13 @@ func (c *ChainConfig) IsEWASM(num *big.Int) bool {
 	return isForked(c.EWASMBlock, num)
 }
 
+// IsTIPRandomizeMechansim func
+// equal to or greater than the IPRandomizeMechansim fork block
+// using for randomize mechansim shuffle masternodes
+func (c *ChainConfig) IsTIPRandomizeMechansim(num *big.Int) bool {
+	return isForked(common.TIPRandomizeMechansim, num)
+}
+
 // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
 //
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.

@@ -1270,10 +1270,11 @@ func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.He
 		fms = append(fms, m)
 	}
 	var maxMasternodes int
-	if header.Number.Uint64() < common.ShuffleCheckpointNumber {
-		maxMasternodes = common.MaxMasternodes
-	} else {
+	cfg := chain.Config()
+	if cfg.IsTIPRandomizeMechansim(header.Number) {
 		maxMasternodes = common.MaxMasternodesV2
+	} else {
+		maxMasternodes = common.MaxMasternodes
 	}
 	if len(fms) > maxMasternodes {
 		fms = fms[:maxMasternodes]
