@@ -791,7 +791,8 @@ func (s *Ethereum) ValidateMasternode() (bool, error) {
 			return false, fmt.Errorf("Can't verify masternode permission: %v", err)
 		}
 		if _, authorized := snap.Signers[eb]; !authorized {
-			//This miner doesn't belong to set of validators
+			// This miner doesn't belong to set of validators
+			log.Warn("This miner doesn't belong to set of validators")
 			return false, nil
 		}
 	} else {
@@ -800,7 +801,7 @@ func (s *Ethereum) ValidateMasternode() (bool, error) {
 	return true, nil
 }
 
-// ValidateMasternodeTestNet checks if node's address is in set of masternodes in Testnet
+// ValidateMasternodeTestnet checks if node's address is in set of masternodes in Testnet
 func (s *Ethereum) ValidateMasternodeTestnet() (bool, error) {
 	eb, err := s.Etherbase()
 	if err != nil {
@@ -822,7 +823,7 @@ func (s *Ethereum) ValidateMasternodeTestnet() (bool, error) {
 	return false, nil
 }
 
-// StartMining starts the miner with the given number of CPU threads. If mining
+// StartStaking starts the miner with the given number of CPU threads. If mining
 // is already running, this method adjust the number of threads allowed to use
 // and updates the minimum price required by the transaction pool.
 func (s *Ethereum) StartStaking(threads int) error {
@@ -868,6 +869,7 @@ func (s *Ethereum) StartStaking(threads int) error {
 	return nil
 }
 
+// StopStaking starts the miner
 func (s *Ethereum) StopStaking() {
 	// Update the thread count within the consensus engine
 	type threaded interface {
@@ -879,6 +881,7 @@ func (s *Ethereum) StopStaking() {
 	// Stop the block creating itself
 	s.miner.Stop()
 }
+
 func (s *Ethereum) IsStaking() bool     { return s.miner.Mining() }
 func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 

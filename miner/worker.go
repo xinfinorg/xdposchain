@@ -214,6 +214,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		resubmitAdjustCh:   make(chan *intervalAdjust, resubmitAdjustChanSize),
 		announceTxs:        announceTxs,
 	}
+
 	if worker.announceTxs {
 		// Subscribe NewTxsEvent for tx pool
 		worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
@@ -530,9 +531,12 @@ func (w *worker) mainLoop() {
 
 		// System stopped
 		case <-w.exitCh:
+			// fmt.Println("<-w .exitCh")
 			return
-		case <-w.txsSub.Err():
-			return
+		// TODO: do later here
+		// case <-w.txsSub.Err():
+		// 	fmt.Println("<-w.txsSub.Err()")
+		// 	return
 		case <-w.chainHeadSub.Err():
 			return
 		case <-w.chainSideSub.Err():
@@ -737,11 +741,11 @@ func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 			env.family.Add(ancestor.Hash())
 			env.ancestors.Add(ancestor.Hash())
 		}
-
-		// Keep track of transactions which return errors so they can be removed
-		env.tcount = 0
-		w.current = env
 	}
+	// Keep track of transactions which return errors so they can be removed
+	env.tcount = 0
+	w.current = env
+
 	return nil
 }
 

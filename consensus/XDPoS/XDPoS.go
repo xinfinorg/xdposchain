@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -56,6 +57,7 @@ const (
 	M2ByteLength           = 4
 )
 
+// Masternode object
 type Masternode struct {
 	Address common.Address
 	Stake   *big.Int
@@ -144,6 +146,9 @@ var (
 	// on an instant chain (0 second period). It's important to refuse these as the
 	// block reward is zero, so an empty block just bloats the chain... fast.
 	errWaitTransactions = errors.New("waiting for transactions")
+
+	// errEpochCheckpointInvalid is returned if the block number is not checkpoint
+	errEpochCheckpointInvalid = errors.New("This block is not checkpoint block epoc.")
 
 	ErrInvalidCheckpointValidators = errors.New("invalid validators list on checkpoint block")
 )
@@ -1040,7 +1045,7 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, results ch
 
 // SealHash returns the hash of a block prior to it being sealed.
 func (c *XDPoS) SealHash(header *types.Header) common.Hash {
-	return c.SealHash(header)
+	return SealHash(header)
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
@@ -1069,15 +1074,48 @@ func (c *XDPoS) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
-// Close implements consensus.Engine
-func (c *XDPoS) Close() error {
-	return c.Close()
+// SealHash returns the hash of a block prior to it being sealed.
+func SealHash(header *types.Header) (hash common.Hash) {
+	hasher := sha3.NewLegacyKeccak256()
+	encodeSigHeader(hasher, header)
+	hasher.Sum(hash[:0])
+	return hash
 }
 
+func encodeSigHeader(w io.Writer, header *types.Header) {
+	err := rlp.Encode(w, []interface{}{
+		header.ParentHash,
+		header.UncleHash,
+		header.Coinbase,
+		header.Root,
+		header.TxHash,
+		header.ReceiptHash,
+		header.Bloom,
+		header.Difficulty,
+		header.Number,
+		header.GasLimit,
+		header.GasUsed,
+		header.Time,
+		header.Extra[:len(header.Extra)-65], // Yes, this will panic if extra is too short
+		header.MixDigest,
+		header.Nonce,
+	})
+	if err != nil {
+		panic("can't encode: " + err.Error())
+	}
+}
+
+// Close implements consensus.Engine
+func (c *XDPoS) Close() error {
+	return nil
+}
+
+// RecoverSigner returns signer address
 func (c *XDPoS) RecoverSigner(header *types.Header) (common.Address, error) {
 	return ecrecover(header, c.signatures)
 }
 
+// RecoverValidator returns validator address
 func (c *XDPoS) RecoverValidator(header *types.Header) (common.Address, error) {
 	// If the signature's already cached, return that
 	hash := header.Hash()
@@ -1101,6 +1139,7 @@ func (c *XDPoS) RecoverValidator(header *types.Header) (common.Address, error) {
 	return signer, nil
 }
 
+// GetMasternodesFromCheckpointHeader returns list of masterndoes
 // Get master nodes over extra data of previous checkpoint block.
 func (c *XDPoS) GetMasternodesFromCheckpointHeader(preCheckpointHeader *types.Header, n, e uint64) []common.Address {
 	if preCheckpointHeader == nil {
@@ -1161,7 +1200,7 @@ func (c *XDPoS) GetDb() ethdb.Database {
 	return c.db
 }
 
-// Extract validators from byte array.
+// RemovePenaltiesFromBlock Extract validators from byte array.
 func RemovePenaltiesFromBlock(chain consensus.ChainReader, masternodes []common.Address, epochNumber uint64) []common.Address {
 	if epochNumber <= 0 {
 		return masternodes
@@ -1176,7 +1215,7 @@ func RemovePenaltiesFromBlock(chain consensus.ChainReader, masternodes []common.
 	return masternodes
 }
 
-// Get masternodes address from checkpoint Header.
+// GetMasternodesFromCheckpointHeader Get masternodes address from checkpoint Header.
 func GetMasternodesFromCheckpointHeader(checkpointHeader *types.Header) []common.Address {
 	masternodes := make([]common.Address, (len(checkpointHeader.Extra)-extraVanity-extraSeal)/common.AddressLength)
 	for i := 0; i < len(masternodes); i++ {
@@ -1185,10 +1224,10 @@ func GetMasternodesFromCheckpointHeader(checkpointHeader *types.Header) []common
 	return masternodes
 }
 
-// Get m2 list from checkpoint block.
+// GetM1M2FromCheckpointHeader Get m2 list from checkpoint block.
 func GetM1M2FromCheckpointHeader(checkpointHeader *types.Header, currentHeader *types.Header, config *params.ChainConfig) (map[common.Address]common.Address, error) {
 	if checkpointHeader.Number.Uint64()%common.EpocBlockRandomize != 0 {
-		return nil, errors.New("This block is not checkpoint block epoc.")
+		return nil, errEpochCheckpointInvalid
 	}
 	// Get signers from this block.
 	masternodes := GetMasternodesFromCheckpointHeader(checkpointHeader)
@@ -1221,7 +1260,7 @@ func getM1M2(masternodes []common.Address, validators []int64, currentHeader *ty
 	return m1m2, moveM2, nil
 }
 
-// Extract validators from byte array.
+// ExtractValidatorsFromBytes Extract validators from byte array.
 func ExtractValidatorsFromBytes(byteValidators []byte) []int64 {
 	lenValidator := len(byteValidators) / M2ByteLength
 	var validators []int64
@@ -1249,7 +1288,8 @@ func Hop(len, pre, cur int) int {
 	}
 }
 
-/// shuffle the list masternodes with knuth shuffle algorithm
+// ShuffleMasternodes mechansim
+// shuffle the list masternodes with knuth shuffle algorithm
 func (c *XDPoS) ShuffleMasternodes(chain consensus.ChainReader, header *types.Header, ms []Masternode) []Masternode {
 	// get previous hash as random input
 	prevHash := header.ParentHash.Hex()

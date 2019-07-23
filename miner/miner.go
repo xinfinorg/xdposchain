@@ -70,6 +70,7 @@ type Miner struct {
 	shouldStart int32 // should start indicates whether we should start after sync
 }
 
+// New start new worker
 func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool, announceTxs bool) *Miner {
 	miner := &Miner{
 		eth:      eth,
