@@ -147,7 +147,7 @@ func (api *ExternalSigner) SelfDerive(bases []accounts.DerivationPath, chain eth
 	log.Error("operation SelfDerive not supported on external signers")
 }
 
-func (api *ExternalSigner) signHash(account accounts.Account, hash []byte) ([]byte, error) {
+func (api *ExternalSigner) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
 	return []byte{}, fmt.Errorf("operation not supported on external signers")
 }
 

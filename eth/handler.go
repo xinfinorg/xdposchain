@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -778,15 +779,15 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 			return
 		}
 		// Send the block to a subset of our peers
-		// transferLen := int(math.Sqrt(float64(len(peers))))
-		// if transferLen < minBroadcastPeers {
-		// 	transferLen = minBroadcastPeers
-		// }
-		// if transferLen > len(peers) {
-		// 	transferLen = len(peers)
-		// }
-		// transfer := peers[:transferLen]
-		for _, peer := range peers {
+		transferLen := int(math.Sqrt(float64(len(peers))))
+		if transferLen < minBroadcastPeers {
+			transferLen = minBroadcastPeers
+		}
+		if transferLen > len(peers) {
+			transferLen = len(peers)
+		}
+		transfer := peers[:transferLen]
+		for _, peer := range transfer {
 			peer.AsyncSendNewBlock(block, td)
 		}
 		log.Trace("Propagated block", "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))

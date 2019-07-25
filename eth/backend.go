@@ -294,7 +294,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 					return block, false, err
 				}
 				header := block.Header()
-				sighash, err := wallet.SignText(accounts.Account{Address: eb}, XDPoS.SigHash(header).Bytes())
+				sighash, err := wallet.SignHash(accounts.Account{Address: eb}, XDPoS.SealHash(header).Bytes())
 				if err != nil || sighash == nil {
 					log.Error("Can't get signature hash of m2", "sighash", sighash, "err", err)
 					return block, false, err

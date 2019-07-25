@@ -46,7 +46,7 @@ import (
 // Snapshot is the state of the authorization voting at a given point in time.
 type Snapshot struct {
 	config   *params.XDPoSConfig // Consensus engine parameters to fine tune behavior
-	sigcache *lru.ARCCache      // Cache of recent block signatures to speed up ecrecover
+	sigcache *lru.ARCCache       // Cache of recent block signatures to speed up ecrecover
 
 	Number  uint64                          `json:"number"`  // Block number where the snapshot was created
 	Hash    common.Hash                     `json:"hash"`    // Block hash where the snapshot was created
@@ -285,7 +285,7 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 	return snap, nil
 }
 
-// signers retrieves the list of authorized signers in ascending order.
+// GetSigners retrieves the list of authorized signers in ascending order.
 func (s *Snapshot) GetSigners() []common.Address {
 	signers := make([]common.Address, 0, len(s.Signers))
 	for signer := range s.Signers {

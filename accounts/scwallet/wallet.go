@@ -672,10 +672,10 @@ func (w *Wallet) SelfDerive(bases []accounts.DerivationPath, chain ethereum.Chai
 // the needed details via SignDataWithPassphrase, or by other means (e.g. unlock
 // the account in a keystore).
 func (w *Wallet) SignData(account accounts.Account, mimeType string, data []byte) ([]byte, error) {
-	return w.signHash(account, crypto.Keccak256(data))
+	return w.SignHash(account, crypto.Keccak256(data))
 }
 
-func (w *Wallet) signHash(account accounts.Account, hash []byte) ([]byte, error) {
+func (w *Wallet) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
@@ -701,7 +701,7 @@ func (w *Wallet) signHash(account accounts.Account, hash []byte) ([]byte, error)
 func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	signer := types.NewEIP155Signer(chainID)
 	hash := signer.Hash(tx)
-	sig, err := w.signHash(account, hash[:])
+	sig, err := w.SignHash(account, hash[:])
 	if err != nil {
 		return nil, err
 	}
@@ -724,7 +724,7 @@ func (w *Wallet) signHashWithPassphrase(account accounts.Account, passphrase str
 		}
 	}
 
-	return w.signHash(account, hash)
+	return w.SignHash(account, hash)
 }
 
 // SignText requests the wallet to sign the hash of a given piece of data, prefixed
@@ -739,7 +739,7 @@ func (w *Wallet) signHashWithPassphrase(account accounts.Account, passphrase str
 // the needed details via SignHashWithPassphrase, or by other means (e.g. unlock
 // the account in a keystore).
 func (w *Wallet) SignText(account accounts.Account, text []byte) ([]byte, error) {
-	return w.signHash(account, accounts.TextHash(text))
+	return w.SignHash(account, accounts.TextHash(text))
 }
 
 // SignTextWithPassphrase implements accounts.Wallet, attempting to sign the

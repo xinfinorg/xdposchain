@@ -1918,7 +1918,7 @@ func (bc *BlockChain) insertBlock(block *types.Block) ([]interface{}, []*types.L
 	if bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
 		return events, coalescedLogs, nil
 	}
-	status, err := bc.WriteBlockWithState(block, result.receipts, result.state)
+	status, err := bc.writeBlockWithState(block, result.receipts, result.state)
 
 	if err != nil {
 		return events, coalescedLogs, err
@@ -2477,21 +2477,16 @@ func (bc *BlockChain) UpdateM1() error {
 		log.Error("No masternode found. Stopping node")
 		os.Exit(1)
 	} else {
-		// upgrade new mechanism masterndoes voting
-		// get shuffle checkpoint
 		header := bc.CurrentHeader()
 		var maxMasternodes int
 		if bc.chainConfig.IsTIPRandomizeMechansim(header.Number) {
 			maxMasternodes = common.MaxMasternodesV2
-			// mechanism voting using knuth shuffle
-			ms = engine.ShuffleMasternodes(bc, header, ms)
 		} else {
 			maxMasternodes = common.MaxMasternodes
-			// mechaism voting using sort by stake
-			sort.Slice(ms, func(i, j int) bool {
-				return ms[i].Stake.Cmp(ms[j].Stake) >= 0
-			})
 		}
+		sort.Slice(ms, func(i, j int) bool {
+			return ms[i].Stake.Cmp(ms[j].Stake) >= 0
+		})
 		log.Info("Shuffle list of masternode candidates")
 		for _, m := range ms {
 			log.Info("", "address", m.Address.String(), "stake", m.Stake)

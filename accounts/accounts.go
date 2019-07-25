@@ -134,6 +134,19 @@ type Wallet interface {
 	// SignTextWithPassphrase is identical to Signtext, but also takes a password
 	SignTextWithPassphrase(account Account, passphrase string, hash []byte) ([]byte, error)
 
+	// SignHash requests the wallet to sign the given hash.
+	//
+	// It looks up the account specified either solely via its address contained within,
+	// or optionally with the aid of any location metadata from the embedded URL field.
+	//
+	// If the wallet requires additional authentication to sign the request (e.g.
+	// a password to decrypt the account, or a PIN code o verify the transaction),
+	// an AuthNeededError instance will be returned, containing infos for the user
+	// about which fields or actions are needed. The user may retry by providing
+	// the needed details via SignHashWithPassphrase, or by other means (e.g. unlock
+	// the account in a keystore).
+	SignHash(account Account, hash []byte) ([]byte, error)
+
 	// SignTx requests the wallet to sign the given transaction.
 	//
 	// It looks up the account specified either solely via its address contained within,
