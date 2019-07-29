@@ -1026,36 +1026,35 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		if w.chainConfig.XDPoS != nil {
 			// get masternodes set from latest checkpoint
 			c := w.engine.(*XDPoS.XDPoS)
-			inturn, err := c.YourTurn(w.chain, parent.Header(), w.coinbase)
+			len, preIndex, curIndex, inturn, err := c.YourTurn(w.chain, parent.Header(), w.coinbase)
 			if err != nil {
 				log.Warn("Failed when trying to commit new work", "err", err)
 				return
 			}
 			if !inturn {
 				log.Info("Not my turn to commit block. Waiting...")
-				return
-				// // calculate waitted time
-				// if preIndex == -1 {
-				// 	// first block
-				// 	return
-				// }
-				// if curIndex == -1 {
-				// 	// you're not allowed to create this block
-				// 	return
-				// }
-				// h := XDPoS.Hop(len, preIndex, curIndex)
-				// gap := waitPeriod * int64(h)
-				// // Check nearest checkpoint block in hop range.
-				// nearest := w.chainConfig.XDPoS.Epoch - (parent.Header().Number.Uint64() % w.chainConfig.XDPoS.Epoch)
-				// if uint64(h) >= nearest {
-				// 	gap = waitPeriodCheckpoint * int64(h)
-				// }
-				// log.Info("Distance from the parent block", "seconds", gap, "hops", h)
-				// waitedTime := time.Now().Unix() - int64(parent.Header().Time)
-				// if gap > waitedTime {
-				// 	return
-				// }
-				// log.Info("Wait enough. It's my turn", "waited seconds", waitedTime)
+				// calculate waitted time
+				if preIndex == -1 {
+					// first block
+					return
+				}
+				if curIndex == -1 {
+					// you're not allowed to create this block
+					return
+				}
+				h := XDPoS.Hop(len, preIndex, curIndex)
+				gap := waitPeriod * int64(h)
+				// Check nearest checkpoint block in hop range.
+				nearest := w.chainConfig.XDPoS.Epoch - (parent.Header().Number.Uint64() % w.chainConfig.XDPoS.Epoch)
+				if uint64(h) >= nearest {
+					gap = waitPeriodCheckpoint * int64(h)
+				}
+				log.Info("Distance from the parent block", "seconds", gap, "hops", h)
+				waitedTime := time.Now().Unix() - int64(parent.Header().Time)
+				if gap > waitedTime {
+					return
+				}
+				log.Info("Wait enough. It's my turn", "waited seconds", waitedTime)
 			}
 		}
 	}

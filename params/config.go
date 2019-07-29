@@ -69,6 +69,10 @@ var (
 		ConstantinopleBlock: big.NewInt(7280000),
 		PetersburgBlock:     big.NewInt(7280000),
 		Ethash:              new(EthashConfig),
+		XDPoS: &XDPoSConfig{
+			Period: 15,
+			Epoch:  30000,
+		},
 	}
 
 	// MainnetTrustedCheckpoint contains the light client trusted checkpoint for the main network.

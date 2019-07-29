@@ -400,7 +400,7 @@ func (c *XDPoS) verifyCascadingFields(chain consensus.ChainReader, header *types
 		signers := snap.GetSigners()
 		penPenalties := []common.Address{}
 		if c.HookPenalty != nil || c.HookPenaltyTIPSigning != nil {
-			var err error = nil
+			var err error
 			if chain.Config().IsTIPSigning(header.Number) {
 				penPenalties, err = c.HookPenaltyTIPSigning(chain, header, signers)
 			} else {
@@ -511,8 +511,8 @@ func whoIsCreator(snap *Snapshot, header *types.Header) (common.Address, error) 
 
 // YourTurn returns if signer in turn
 // allow signer can commit block
-func (c *XDPoS) YourTurn(chain consensus.ChainReader, parent *types.Header, signer common.Address) (bool, error) {
-	masternodes, offset := c.GetMasternodes(chain, parent), 0
+func (c *XDPoS) YourTurn(chain consensus.ChainReader, parent *types.Header, signer common.Address) (int, int, int, bool, error) {
+	masternodes := c.GetMasternodes(chain, parent)
 	ms := make([]string, len(masternodes))
 	for _, m := range masternodes {
 		ms = append(ms, m.String())
@@ -527,33 +527,29 @@ func (c *XDPoS) YourTurn(chain consensus.ChainReader, parent *types.Header, sign
 		}
 	}
 
-	_, err := c.GetSnapshot(chain, parent)
+	snap, err := c.GetSnapshot(chain, parent)
 	if err != nil {
 		log.Warn("Failed when trying to commit new work", "err", err)
-		return false, err
+		return 0, 0, 0, false, err
 	}
 	if len(masternodes) == 0 {
-		return false, errors.New("Masternodes not found")
+		return 0, 0, 0, false, errors.New("Masternodes not found")
 	}
-	for offset < len(masternodes) && masternodes[offset] != signer {
-		offset++
+	pre := common.Address{}
+	// masternode[0] has chance to create block 1
+	preIndex := -1
+	if parent.Number.Uint64() != 0 {
+		pre, err = whoIsCreator(snap, parent)
+		if err != nil {
+			return 0, 0, 0, false, err
+		}
+		preIndex = position(masternodes, pre)
 	}
-	return (parent.Number.Uint64() % uint64(len(masternodes))) == uint64(offset), nil
-	// pre := common.Address{}
-	// // masternode[0] has chance to create block 1
-	// preIndex := -1
-	// if parent.Number.Uint64() != 0 {
-	// 	pre, err = whoIsCreator(snap, parent)
-	// 	if err != nil {
-	// 		return 0, 0, 0, false, err
-	// 	}
-	// 	preIndex = position(masternodes, pre)
-	// }
-	// curIndex := position(masternodes, signer)
-	// if (preIndex+1)%len(masternodes) == curIndex {
-	// 	return len(masternodes), preIndex, curIndex, true, nil
-	// }
-	// return len(masternodes), preIndex, curIndex, false, nil
+	curIndex := position(masternodes, signer)
+	if (preIndex+1)%len(masternodes) == curIndex {
+		return len(masternodes), preIndex, curIndex, true, nil
+	}
+	return len(masternodes), preIndex, curIndex, false, nil
 }
 
 // snapshot retrieves the authorization snapshot at a given point in time.
@@ -681,7 +677,7 @@ func (c *XDPoS) verifySeal(chain consensus.ChainReader, header *types.Header, pa
 	}
 	// Ensure that the difficulty corresponds to the turn-ness of the signer
 	if !c.fakeDiff {
-		inturn, err := c.YourTurn(chain, parent, creator)
+		_, _, _, inturn, err := c.YourTurn(chain, parent, creator)
 		if err != nil {
 			return err
 		}
@@ -714,7 +710,7 @@ func (c *XDPoS) verifySeal(chain consensus.ChainReader, header *types.Header, pa
 			return errUnauthorizedSigner
 		}
 	}
-	if len(masternodes) > 1 {
+	if len(masternodes) > 3 {
 		for seen, recent := range snap.Recents {
 			if recent == creator {
 				// Signer is among recents, only fail if the current block doesn't shift it out
@@ -992,7 +988,7 @@ func (c *XDPoS) Seal(chain consensus.ChainReader, block *types.Block, results ch
 	}
 	// If we're amongst the recent signers, wait for the next block
 	// only check recent signers if there are more than one signer.
-	if len(masternodes) > 1 {
+	if len(masternodes) > 3 {
 		for seen, recent := range snap.Recents {
 			if recent == signer {
 				// Signer is among recents, only wait if the current block doesn't shift it out
@@ -1065,7 +1061,7 @@ func (c *XDPoS) CalcDifficulty(chain consensus.ChainReader, time uint64, parent 
 // that a new block should have based on the previous blocks in the chain and the
 // current signer.
 func (c *XDPoS) calcDifficulty(chain consensus.ChainReader, parent *types.Header, signer common.Address) *big.Int {
-	if inturn, _ := c.YourTurn(chain, parent, signer); inturn {
+	if _, _, _, inturn, _ := c.YourTurn(chain, parent, signer); inturn {
 		return new(big.Int).Set(diffInTurn)
 	}
 	return new(big.Int).Set(diffNoTurn)
