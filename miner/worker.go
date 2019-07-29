@@ -1011,6 +1011,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 
 	tstart := time.Now()
 	parent := w.chain.CurrentBlock()
+	var signers map[common.Address]struct{}
 
 	// var singers map[common.Address]struct{}
 	if parent.Hash().Hex() == w.lastParentBlockCommit {
@@ -1019,6 +1020,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	if !w.announceTxs && !w.isRunning() {
 		return
 	}
+	waitEnough := false
 	// Only try to commit new work if we are mining
 	if w.isRunning() {
 		// check if we are right after parent's coinbase in the list
@@ -1054,6 +1056,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 				if gap > waitedTime {
 					return
 				}
+				waitEnough = true
 				log.Info("Wait enough. It's my turn", "waited seconds", waitedTime)
 			}
 		}
@@ -1157,16 +1160,12 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 			log.Error("Failed to fetch pending transactions", "err", err)
 			return
 		}
-		// Short circuit if there is no available pending transactions
-		if len(pending) == 0 {
-			w.updateSnapshot()
-			return
-		}
 	}
-
-	// TODO: do later here
-	// come from geth
-
+	// Short circuit if there is no available pending transactions
+	if len(pending) == 0 && !waitEnough {
+		w.updateSnapshot()
+		return
+	}
 	// Split the pending transactions into locals and remotes
 	localTxs, remoteTxs := make(map[common.Address]types.Transactions), pending
 	for _, account := range w.eth.TxPool().Locals() {
@@ -1176,13 +1175,13 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		}
 	}
 	if len(localTxs) > 0 {
-		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs, nil)
+		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs, signers)
 		if w.commitTransactions(txs, specialTxs, w.coinbase, interrupt) {
 			return
 		}
 	}
 	if len(remoteTxs) > 0 {
-		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs, nil)
+		txs, specialTxs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs, signers)
 		if w.commitTransactions(txs, specialTxs, w.coinbase, interrupt) {
 			return
 		}

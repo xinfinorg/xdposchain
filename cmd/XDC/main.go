@@ -479,7 +479,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 				}
 				if !ok {
 					if started {
-						log.Info("Only mas ternode can propose and verify blocks. Cancelling staking on this node...")
+						log.Info("Only masternode can propose and verify blocks. Cancelling staking on this node...")
 						ethereum.StopStaking()
 						started = false
 						log.Info("Cancelled mining mode!!!")
