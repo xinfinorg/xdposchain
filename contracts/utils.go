@@ -307,7 +307,7 @@ func DecryptRandomizeFromSecretsAndOpening(secrets [][32]byte, opening [32]byte)
 	return random, nil
 }
 
-// Calculate reward for reward checkpoint.
+// GetRewardForCheckpoint Calculate reward for reward checkpoint.
 func GetRewardForCheckpoint(c *XDPoS.XDPoS, chain consensus.ChainReader, header *types.Header, rCheckpoint uint64, totalSigner *uint64) (map[common.Address]*rewardLog, error) {
 	// Not reward for singer of genesis block and only calculate reward at checkpoint block.
 	number := header.Number.Uint64()
@@ -327,7 +327,7 @@ func GetRewardForCheckpoint(c *XDPoS.XDPoS, chain consensus.ChainReader, header 
 			block := chain.GetBlock(header.Hash(), i)
 			txs := block.Transactions()
 			if !chain.Config().IsTIPSigning(header.Number) {
-				receipts := rawdb.ReadRawReceipts(c.GetDb(), header.Hash(), i)
+				receipts := rawdb.ReadReceipts(c.GetDb(), header.Hash(), i, chain.Config())
 				signData = c.CacheData(header, txs, receipts)
 			} else {
 				signData = c.CacheSigner(header.Hash(), txs)

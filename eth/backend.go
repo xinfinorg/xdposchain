@@ -591,7 +591,7 @@ func makeExtraData(extra []byte) []byte {
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(ctx *node.ServiceContext, chainConfig *params.ChainConfig, config *ethash.Config, notify []string, noverify bool, db ethdb.Database) consensus.Engine {
-	// If proof-of-authority is requested, set it up
+	// If delegated-proof-of-stake is requested, set it up
 	if chainConfig.XDPoS != nil {
 		return XDPoS.New(chainConfig.XDPoS, db)
 	}
@@ -792,7 +792,7 @@ func (s *Ethereum) ValidateMasternode() (bool, error) {
 		}
 		if _, authorized := snap.Signers[eb]; !authorized {
 			// This miner doesn't belong to set of validators
-			log.Warn("This miner doesn't belong to set of validators")
+			log.Debug("This miner doesn't belong to set of validators")
 			return false, nil
 		}
 	} else {
