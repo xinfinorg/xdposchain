@@ -538,15 +538,16 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 			}
 			continue
 		}
-
 		if len(it.Value) > 0 {
-			_, content, _, err := rlp.Split(it.Value)
-			if err != nil {
-				return err
-			}
-			if !cb(key, common.BytesToHash(content)) {
-				return nil
-			}
+			// using geth ver 1.8 instead of ver 1.9
+			cb(key, common.BytesToHash(it.Value))
+			// _, content, _, err := rlp.Split(it.Value)
+			// if err != nil {
+			// 	return err
+			// }
+			// if !cb(key, common.BytesToHash(content)) {
+			// 	return nil
+			// }
 		}
 	}
 	return nil
