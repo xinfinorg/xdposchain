@@ -426,8 +426,25 @@ func (c *XDPoS) verifyCascadingFields(chain consensus.ChainReader, header *types
 		extraSuffix := len(header.Extra) - extraSeal
 		masternodesFromCheckpointHeader := common.ExtractAddressFromBytes(header.Extra[extraVanity:extraSuffix])
 		validSigners := compareSignersLists(masternodesFromCheckpointHeader, signers)
+
+		// logs masternodes from checkpoint header
+		ms1 := make([]string, len(masternodesFromCheckpointHeader))
+		for _, m := range masternodesFromCheckpointHeader {
+			ms1 = append(ms1, m.String())
+		}
+		// add logs singers from snapshot
+		ms2 := make([]string, len(signers))
+		for _, m := range signers {
+			ms2 = append(ms2, m.String())
+		}
+		// add logs penalties address
+		ms3 := make([]string, len(penPenalties))
+		for _, m := range penPenalties {
+			ms3 = append(ms3, m.String())
+		}
+
 		if !validSigners {
-			log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", masternodesFromCheckpointHeader, "masternodes_in_snapshot", signers, "penList", penPenalties)
+			log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", ms1, "masternodes_in_snapshot", ms2, "penList", ms3)
 			return errInvalidCheckpointSigners
 		}
 		if c.HookVerifyMNs != nil {
@@ -566,7 +583,8 @@ func (c *XDPoS) snapshot(chain consensus.ChainReader, number uint64, hash common
 			break
 		}
 		// If an on-disk checkpoint snapshot can be found, use that
-		if number%checkpointInterval == 0 {
+		// checkpoint snapshot = checkpoint - gap
+		if (number+c.config.Gap)%c.config.Epoch == 0 {
 			if s, err := loadSnapshot(c.config, c.signatures, c.db, hash); err == nil {
 				log.Trace("Loaded voting snapshot from disk", "number", number, "hash", hash)
 				snap = s
@@ -577,9 +595,13 @@ func (c *XDPoS) snapshot(chain consensus.ChainReader, number uint64, hash common
 		// at a checkpoint block without a parent (light client CHT), or we have piled
 		// up more headers than allowed to be reorged (chain reinit from a freezer),
 		// consider the checkpoint trusted and snapshot it.
-		if number == 0 || (number%c.config.Epoch == 0 && (len(headers) > params.ImmutabilityThreshold || chain.GetHeaderByNumber(number-1) == nil)) {
+		// if number == 0 || (number%c.config.Epoch == 0 && (len(headers) > params.ImmutabilityThreshold || chain.GetHeaderByNumber(number-1) == nil)) {
+		if number == 0 {
 			checkpoint := chain.GetHeaderByNumber(number)
 			if checkpoint != nil {
+				if err := c.VerifyHeader(chain, checkpoint, true); err != nil {
+					return nil, err
+				}
 				hash := checkpoint.Hash()
 
 				signers := make([]common.Address, (len(checkpoint.Extra)-extraVanity-extraSeal)/common.AddressLength)
@@ -624,7 +646,7 @@ func (c *XDPoS) snapshot(chain consensus.ChainReader, number uint64, hash common
 	c.recents.Add(snap.Hash, snap)
 
 	// If we've generated a new checkpoint snapshot, save to disk
-	if snap.Number%checkpointInterval == 0 && len(headers) > 0 {
+	if (snap.Number+c.config.Gap)%c.config.Epoch == 0 && len(headers) > 0 {
 		if err = snap.store(c.db); err != nil {
 			return nil, err
 		}
@@ -870,9 +892,9 @@ func (c *XDPoS) Prepare(chain consensus.ChainReader, header *types.Header) error
 	return nil
 }
 
+// UpdateMasternodes returns the validators voting by network
 func (c *XDPoS) UpdateMasternodes(chain consensus.ChainReader, header *types.Header, ms []Masternode) error {
 	number := header.Number.Uint64()
-	log.Trace("take snapshot", "number", number, "hash", header.Hash())
 	// get snapshot
 	snap, err := c.snapshot(chain, number, header.Hash(), nil)
 	if err != nil {
@@ -1088,10 +1110,12 @@ func (c *XDPoS) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
+// RecoverSigner returns block signer
 func (c *XDPoS) RecoverSigner(header *types.Header) (common.Address, error) {
 	return ecrecover(header, c.signatures)
 }
 
+// RecoverValidator returns block validator
 func (c *XDPoS) RecoverValidator(header *types.Header) (common.Address, error) {
 	// If the signature's already cached, return that
 	hash := header.Hash()
@@ -1129,6 +1153,7 @@ func (c *XDPoS) GetMasternodesFromCheckpointHeader(preCheckpointHeader *types.He
 	return masternodes
 }
 
+// CacheData cache transaction data
 func (c *XDPoS) CacheData(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) []*types.Transaction {
 	signTxs := []*types.Transaction{}
 	for _, tx := range txs {
@@ -1159,6 +1184,7 @@ func (c *XDPoS) CacheData(header *types.Header, txs []*types.Transaction, receip
 	return signTxs
 }
 
+// CacheSigner cache block signer
 func (c *XDPoS) CacheSigner(hash common.Hash, txs []*types.Transaction) []*types.Transaction {
 	signTxs := []*types.Transaction{}
 	for _, tx := range txs {
@@ -1252,6 +1278,7 @@ func ExtractValidatorsFromBytes(byteValidators []byte) []int64 {
 	return validators
 }
 
+// Hop returns distance between current time and latest block
 func Hop(len, pre, cur int) int {
 	switch {
 	case pre < cur:
