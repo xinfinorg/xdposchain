@@ -74,7 +74,7 @@ type Backend interface {
 	GetIPCClient() (*ethclient.Client, error)
 	GetEngine() consensus.Engine
 	GetRewardByHash(hash common.Hash) map[string]interface{}
-	
+
 	GetBlocksHashCache(blockNr uint64) []common.Hash
 	AreTwoBlockSamePath(newBlock common.Hash, oldBlock common.Hash) bool
 }
