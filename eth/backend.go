@@ -433,7 +433,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 			return []common.Address{}, nil
 		}
 
-				/*
+		/*
 		   HookGetSignersFromContract return list masternode for current state (block)
 		   This is a solution for work around issue return wrong list signers from snapshot
 		*/

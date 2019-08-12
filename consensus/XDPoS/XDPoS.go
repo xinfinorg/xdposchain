@@ -1,4 +1,4 @@
-// Copyright (c) 2018 XDCchain
+// Copyright (c) 2018 XinFin
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -227,13 +227,13 @@ type XDPoS struct {
 	signFn clique.SignerFn // Signer function to authorize hashes with
 	lock   sync.RWMutex    // Protects the signer fields
 
-	BlockSigners          *lru.Cache
-	HookReward            func(chain consensus.ChainReader, state *state.StateDB, header *types.Header) (error, map[string]interface{})
-	HookPenalty           func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error)
+	BlockSigners               *lru.Cache
+	HookReward                 func(chain consensus.ChainReader, state *state.StateDB, header *types.Header) (error, map[string]interface{})
+	HookPenalty                func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error)
 	HookGetSignersFromContract func(blockHash common.Hash) ([]common.Address, error)
-	HookPenaltyTIPSigning func(chain consensus.ChainReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
-	HookValidator         func(header *types.Header, signers []common.Address) ([]byte, error)
-	HookVerifyMNs         func(header *types.Header, signers []common.Address) error
+	HookPenaltyTIPSigning      func(chain consensus.ChainReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
+	HookValidator              func(header *types.Header, signers []common.Address) ([]byte, error)
+	HookVerifyMNs              func(header *types.Header, signers []common.Address) error
 }
 
 // New creates a XDPoS proof-of-stake-voting consensus engine with the initial
@@ -394,11 +394,12 @@ func (c *XDPoS) verifyCascadingFields(chain consensus.ChainReader, header *types
 	if parent.Time.Uint64()+c.config.Period > header.Time.Uint64() {
 		return ErrInvalidTimestamp
 	}
+
 	if number%c.config.Epoch != 0 {
 		return c.verifySeal(chain, header, parents, fullVerify)
 	}
 
- 	/*
+	/*
 		BUG: snapshot returns wrong signers sometimes
 		when it happens we get the signers list by requesting smart contract
 	*/
@@ -474,6 +475,7 @@ func (c *XDPoS) checkSignersOnCheckpoint(chain consensus.ChainReader, header *ty
 			return err
 		}
 	}
+
 	return nil
 }
 
