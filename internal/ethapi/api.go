@@ -767,6 +767,7 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 	} else {
 		maxMasternodes = common.MaxMasternodes
 	}
+	
 	isTopCandidate := false // is candidates in top 150
 	status := ""
 	for i := 0; i < len(candidates); i++ {
@@ -1054,6 +1055,7 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(b *types.Block, inclTx bool, fullTx
 	fields["uncles"] = uncleHashes
 	return fields, nil
 }
+
 // findNearestSignedBlock finds the nearest checkpoint from input block
 func (s *PublicBlockChainAPI) findNearestSignedBlock(ctx context.Context, b *types.Block) *types.Block {
 	if b.Number().Int64() <= 0 {
@@ -1182,31 +1184,32 @@ func (s *PublicBlockChainAPI) getSigners(ctx context.Context, block *types.Block
 				filterSigners = append(filterSigners, masternode)
 				break
 			}
-func (s *PublicBlockChainAPI) rpcOutputBlockSigners(b *types.Block, ctx context.Context, masternodes []common.Address) ([]common.Address, error) {
-	_, err := s.b.GetIPCClient()
-	if err != nil {
-		log.Error("Fail to connect IPC client for block status", "error", err)
-		return []common.Address{}, err
-	}
-
-	engine, ok := s.b.GetEngine().(*XDPoS.XDPoS)
-	if !ok {
-		log.Error("Undefined POSV consensus engine")
-		return []common.Address{}, nil
-	}
-
-	signedBlock := s.findNearestSignedBlock(ctx, b)
-	if signedBlock == nil {
-		return []common.Address{}, nil
-	}
-
-	return s.getSigners(ctx, signedBlock, engine)
-}
-
+			func (s *PublicBlockChainAPI) rpcOutputBlockSigners(b *types.Block, ctx context.Context, masternodes []common.Address) ([]common.Address, error) {
+				_, err := s.b.GetIPCClient()
+				if err != nil {
+					log.Error("Fail to connect IPC client for block status", "error", err)
+					return []common.Address{}, err
+				}
+			
+				engine, ok := s.b.GetEngine().(*XDPoS.XDPoS)
+				if !ok {
+					log.Error("Undefined POSV consensus engine")
+					return []common.Address{}, nil
+				}
+			
+				signedBlock := s.findNearestSignedBlock(ctx, b)
+				if signedBlock == nil {
+					return []common.Address{}, nil
+				}
+			
+				return s.getSigners(ctx, signedBlock, engine)
+			}
+			
 		}
 	}
 	return filterSigners, nil
 }
+
 func (s *PublicBlockChainAPI) rpcOutputBlockSigners(b *types.Block, ctx context.Context, masternodes []common.Address) ([]common.Address, error) {
 	_, err := s.b.GetIPCClient()
 	if err != nil {
