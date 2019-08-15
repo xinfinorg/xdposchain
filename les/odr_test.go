@@ -127,13 +127,13 @@ func odrContractCall(ctx context.Context, db ethdb.Database, config *params.Chai
 			if err == nil {
 				from := statedb.GetOrNewStateObject(testBankAddress)
 				from.SetBalance(math.MaxBig256)
-
 				feeCapacity := state.GetXRC21FeeCapacityFromState(statedb)
 				var balanceTokenFee *big.Int
 				if value, ok := feeCapacity[testContractAddr]; ok {
 					balanceTokenFee = value
 				}
 				msg := callmsg{types.NewMessage(from.Address(), &testContractAddr, 0, new(big.Int), 100000, new(big.Int), data, false, balanceTokenFee)}
+
 				context := core.NewEVMContext(msg, header, bc, nil)
 				vmenv := vm.NewEVM(context, statedb, config, vm.Config{})
 
