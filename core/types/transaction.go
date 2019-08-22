@@ -252,7 +252,6 @@ func (tx *Transaction) AsMessage(s Signer, balanceFee *big.Int) (Message, error)
 		checkNonce:      true,
 		balanceTokenFee: balanceFee,
 	}
-
 	var err error
 	msg.from, err = Sender(s, tx)
 	if balanceFee != nil {
@@ -279,6 +278,7 @@ func (tx *Transaction) Cost() *big.Int {
 	total.Add(total, tx.data.Amount)
 	return total
 }
+
 // Cost returns amount + gasprice * gaslimit.
 func (tx *Transaction) XRC21Cost() *big.Int {
 	total := new(big.Int).Mul(common.XRC21GasPrice, new(big.Int).SetUint64(tx.data.GasLimit))
