@@ -381,6 +381,7 @@ func (self *worker) wait() {
 				}
 			}
 			self.chain.UpdateBlocksHashCache(block)
+			self.chain.PostChainEvents(events, logs)
 
 			// Insert the block into the set of pending ones to wait for confirmations
 			self.unconfirmed.Insert(block.NumberU64(), block.Hash())
@@ -657,14 +658,12 @@ func (self *worker) commitUncle(work *Work, uncle *types.Header) error {
 
 func (env *Work) commitTransactions(mux *event.TypeMux, balanceFee map[common.Address]*big.Int, txs *types.TransactionsByPriceAndNonce, specialTxs types.Transactions, bc *core.BlockChain, coinbase common.Address) {
 	gp := new(core.GasPool).AddGas(env.header.GasLimit)
-
 	balanceUpdated := map[common.Address]*big.Int{}
 	totalFeeUsed := uint64(0)
-
 	var coalescedLogs []*types.Log
 	// first priority for special Txs
 	for _, tx := range specialTxs {
-		
+
 		//HF number for black-list
 		if env.header.Number.Uint64() >= common.BlackListHFNumber {
 			// check if sender is in black list
@@ -749,10 +748,11 @@ func (env *Work) commitTransactions(mux *event.TypeMux, balanceFee map[common.Ad
 		}
 		// Retrieve the next transaction and abort if all done
 		tx := txs.Peek()
+
 		if tx == nil {
 			break
 		}
-		
+
 		//HF number for black-list
 		if env.header.Number.Uint64() >= common.BlackListHFNumber {
 			// check if sender is in black list
