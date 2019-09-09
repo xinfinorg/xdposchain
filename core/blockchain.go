@@ -46,7 +46,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 
@@ -66,6 +66,9 @@ const (
 
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	BlockChainVersion = 3
+
+	// Maximum length of chain to cache by block's number
+	blocksHashCacheLimit = 900
 )
 
 // CacheConfig contains the configuration values for the trie caching/pruning
@@ -144,6 +147,10 @@ type BlockChain struct {
 	badBlocks   *lru.Cache // Bad block cache
 	IPCEndpoint string
 	Client      *ethclient.Client // Global ipc client instance.
+
+	// Blocks hash array by block number
+	// cache field for tracking finality purpose, can't use for tracking block vs block relationship
+	blocksHashCache *lru.Cache
 }
 
 // NewBlockChain returns a fully initialised block chain using information
@@ -159,6 +166,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	blockCache, _ := lru.New(blockCacheLimit)
+	blocksHashCache, _ := lru.New(blocksHashCacheLimit)
 	futureBlocks, _ := lru.New(maxFutureBlocks)
 	badBlocks, _ := lru.New(badBlockLimit)
 	resultProcess, _ := lru.New(blockCacheLimit)
@@ -181,6 +189,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		engine:           engine,
 		vmConfig:         vmConfig,
 		badBlocks:        badBlocks,
+		blocksHashCache:  blocksHashCache,
 	}
 	bc.SetValidator(NewBlockValidator(chainConfig, bc, engine))
 	bc.SetProcessor(NewStateProcessor(chainConfig, bc, engine))
@@ -300,6 +309,7 @@ func (bc *BlockChain) SetHead(head uint64) error {
 	bc.bodyRLPCache.Purge()
 	bc.blockCache.Purge()
 	bc.futureBlocks.Purge()
+	bc.blocksHashCache.Purge()
 
 	// Rewind the block chain, ensuring we don't end up with a stateless head block
 	if currentBlock := bc.CurrentBlock(); currentBlock != nil && currentHeader.Number.Uint64() < currentBlock.NumberU64() {
@@ -639,6 +649,31 @@ func (bc *BlockChain) GetBlocksFromHash(hash common.Hash, n int) (blocks []*type
 	return
 }
 
+// GetBlocksHashCache get all block's hashes with same level
+// just work with latest blocksHashCacheLimit
+func (bc *BlockChain) GetBlocksHashCache(number uint64) []common.Hash {
+	cached, ok := bc.blocksHashCache.Get(number)
+
+	if ok {
+		return cached.([]common.Hash)
+	}
+	return nil
+}
+
+// AreTwoBlockSamePath check if two blocks are same path
+// Assume block 1 is ahead block 2 so we need to check parentHash
+func (bc *BlockChain) AreTwoBlockSamePath(bh1 common.Hash, bh2 common.Hash) bool {
+	bl1 := bc.GetBlockByHash(bh1)
+	bl2 := bc.GetBlockByHash(bh2)
+	toBlockLevel := bl2.Number().Uint64()
+
+	for bl1.Number().Uint64() > toBlockLevel {
+		bl1 = bc.GetBlockByHash(bl1.ParentHash())
+	}
+
+	return (bl1.Hash() == bl2.Hash())
+}
+
 // GetUnclesInChain retrieves all the uncles from a given block backwards until
 // a specific distance is reached.
 func (bc *BlockChain) GetUnclesInChain(block *types.Block, length int) []*types.Header {
@@ -676,7 +711,6 @@ func (bc *BlockChain) Stop() {
 	//  - HEAD-127: So we have a hard limit on the number of blocks reexecuted
 	if !bc.cacheConfig.Disabled {
 		triedb := bc.stateCache.TrieDB()
-
 		for _, offset := range []uint64{0, 1, triesInMemory - 1} {
 			if number := bc.CurrentBlock().NumberU64(); number > offset {
 				recent := bc.GetBlockByNumber(number - offset)
@@ -1173,18 +1207,19 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 		} else {
 			parent = chain[i-1]
 		}
-		state, err := state.New(parent.Root(), bc.stateCache)
+		statedb, err := state.New(parent.Root(), bc.stateCache)
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}
+		feeCapacity := state.GetXRC21FeeCapacityFromStateWithCache(parent.Root(), statedb)
 		// Process block using the parent state as reference point.
-		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
+		receipts, logs, usedGas, err := bc.processor.Process(block, statedb, bc.vmConfig, feeCapacity)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
 			return i, events, coalescedLogs, err
 		}
 		// Validate the state using the default validator
-		err = bc.Validator().ValidateState(block, parent, state, receipts, usedGas)
+		err = bc.Validator().ValidateState(block, parent, statedb, receipts, usedGas)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
 			return i, events, coalescedLogs, err
@@ -1192,7 +1227,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 		proctime := time.Since(bstart)
 
 		// Write the block to the chain and get the status.
-		status, err := bc.WriteBlockWithState(block, receipts, state)
+		status, err := bc.WriteBlockWithState(block, receipts, statedb)
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}
@@ -1208,13 +1243,14 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 
 			// Only count canonical blocks for GC processing time
 			bc.gcproc += proctime
-
+			bc.UpdateBlocksHashCache(block)
 		case SideStatTy:
 			log.Debug("Inserted forked block from downloader", "number", block.Number(), "hash", block.Hash(), "diff", block.Difficulty(), "elapsed",
 				common.PrettyDuration(time.Since(bstart)), "txs", len(block.Transactions()), "gas", block.GasUsed(), "uncles", len(block.Uncles()))
 
 			blockInsertTimer.UpdateSince(bstart)
 			events = append(events, ChainSideEvent{block})
+			bc.UpdateBlocksHashCache(block)
 		}
 		stats.processed++
 		stats.usedGas += usedGas
@@ -1342,12 +1378,13 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 	// Create a new statedb using the parent block and report an
 	// error if it fails.
 	var parent = bc.GetBlock(block.ParentHash(), block.NumberU64()-1)
-	state, err := state.New(parent.Root(), bc.stateCache)
+	statedb, err := state.New(parent.Root(), bc.stateCache)
 	if err != nil {
 		return nil, err
 	}
+	feeCapacity := state.GetXRC21FeeCapacityFromStateWithCache(parent.Root(), statedb)
 	// Process block using the parent state as reference point.
-	receipts, logs, usedGas, err := bc.processor.ProcessBlockNoValidator(calculatedBlock, state, bc.vmConfig)
+	receipts, logs, usedGas, err := bc.processor.ProcessBlockNoValidator(calculatedBlock, statedb, bc.vmConfig, feeCapacity)
 	process := time.Since(bstart)
 	if err != nil {
 		if err != ErrStopPreparingBlock {
@@ -1356,7 +1393,7 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 		return nil, err
 	}
 	// Validate the state using the default validator
-	err = bc.Validator().ValidateState(block, parent, state, receipts, usedGas)
+	err = bc.Validator().ValidateState(block, parent, statedb, receipts, usedGas)
 	if err != nil {
 		bc.reportBlock(block, receipts, err)
 		return nil, err
@@ -1364,7 +1401,28 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 	proctime := time.Since(bstart)
 	log.Debug("Calculate new block", "number", block.Number(), "hash", block.Hash(), "uncles", len(block.Uncles()),
 		"txs", len(block.Transactions()), "gas", block.GasUsed(), "elapsed", common.PrettyDuration(time.Since(bstart)), "process", process)
-	return &ResultProcessBlock{receipts: receipts, logs: logs, state: state, proctime: proctime, usedGas: usedGas}, nil
+	return &ResultProcessBlock{receipts: receipts, logs: logs, state: statedb, proctime: proctime, usedGas: usedGas}, nil
+}
+
+// UpdateBlocksHashCache update BlocksHashCache by block number
+func (bc *BlockChain) UpdateBlocksHashCache(block *types.Block) []common.Hash {
+	var hashArr []common.Hash
+	blockNumber := block.Number().Uint64()
+	cached, ok := bc.blocksHashCache.Get(blockNumber)
+
+	if ok {
+		hashArr := cached.([]common.Hash)
+		hashArr = append(hashArr, block.Hash())
+		bc.blocksHashCache.Remove(blockNumber)
+		bc.blocksHashCache.Add(blockNumber, hashArr)
+		return hashArr
+	}
+
+	hashArr = []common.Hash{
+		block.Hash(),
+	}
+	bc.blocksHashCache.Add(blockNumber, hashArr)
+	return hashArr
 }
 
 // insertChain will execute the actual chain insertion and event aggregation. The
@@ -1409,12 +1467,15 @@ func (bc *BlockChain) insertBlock(block *types.Block) ([]interface{}, []*types.L
 		// Only count canonical blocks for GC processing time
 		bc.gcproc += result.proctime
 
+		bc.UpdateBlocksHashCache(block)
 	case SideStatTy:
 		log.Debug("Inserted forked block from fetcher", "number", block.Number(), "hash", block.Hash(), "diff", block.Difficulty(), "elapsed",
 			common.PrettyDuration(time.Since(block.ReceivedAt)), "txs", len(block.Transactions()), "gas", block.GasUsed(), "uncles", len(block.Uncles()))
 
 		blockInsertTimer.Update(result.proctime)
 		events = append(events, ChainSideEvent{block})
+
+		bc.UpdateBlocksHashCache(block)
 	}
 	stats.processed++
 	stats.usedGas += result.usedGas
@@ -1870,8 +1931,19 @@ func (bc *BlockChain) UpdateM1() error {
 		}
 		// update masternodes
 		log.Info("Updating new set of masternodes")
-		if len(ms) > common.MaxMasternodes {
-			err = engine.UpdateMasternodes(bc, bc.CurrentHeader(), ms[:common.MaxMasternodes])
+		// get block header
+		header := bc.CurrentHeader()
+		var maxMasternodes int
+		// check if block number is increase ms checkpoint
+		if bc.chainConfig.IsTIPIncreaseMasternodes(header.Number) {
+			// using new masterndoes
+			maxMasternodes = common.MaxMasternodesV2
+		} else {
+			// using old masterndoes
+			maxMasternodes = common.MaxMasternodes
+		}
+		if len(ms) > maxMasternodes {
+			err = engine.UpdateMasternodes(bc, bc.CurrentHeader(), ms[:maxMasternodes])
 		} else {
 			err = engine.UpdateMasternodes(bc, bc.CurrentHeader(), ms)
 		}

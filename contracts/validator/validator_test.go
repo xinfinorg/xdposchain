@@ -177,7 +177,7 @@ func TestRewardBalance(t *testing.T) {
 
 }
 
-func GetRewardBalancesRate(foudationWalletAddr common.Address, masterAddr common.Address, totalReward *big.Int, validator *contractValidator.XDCalidator) (map[common.Address]*big.Int, error) {
+func GetRewardBalancesRate(foudationWalletAddr common.Address, masterAddr common.Address, totalReward *big.Int, validator *contractValidator.XDCValidator) (map[common.Address]*big.Int, error) {
 	owner := GetCandidatesOwnerBySigner(validator, masterAddr)
 	balances := make(map[common.Address]*big.Int)
 	rewardMaster := new(big.Int).Mul(totalReward, new(big.Int).SetInt64(common.RewardMasterPercent))
@@ -233,7 +233,7 @@ func GetRewardBalancesRate(foudationWalletAddr common.Address, masterAddr common
 		log.Error("Fail to parse json holders", "error", err)
 		return nil, err
 	}
-	log.Info("Holders reward", "holders", string(jsonHolders), "master node", masterAddr.String())
+	log.Info("Holders reward", "holders", string(jsonHolders), "masternode", masterAddr.String())
 
 	return balances, nil
 }
