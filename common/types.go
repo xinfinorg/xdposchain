@@ -30,11 +30,11 @@ import (
 const (
 	HashLength          = 32
 	AddressLength       = 20
-	MasternodeVotingSMC = "xdc0000000000000000000000000000000000000088"
-	BlockSigners        = "xdc0000000000000000000000000000000000000089"
-	RandomizeSMC        = "xdc0000000000000000000000000000000000000090"
-	FoudationAddr       = "xdc746249C61f5832C5eEd53172776b460491bDcd5C"
-	TeamAddr            = "xdc0000000000000000000000000000000000000099"
+	BlockSigners        = "0x0000000000000000000000000000000000000089"
+	MasternodeVotingSMC = "0x0000000000000000000000000000000000000088"
+	RandomizeSMC        = "0x0000000000000000000000000000000000000090"
+	FoudationAddr       = "0x0000000000000000000000000000000000000068"
+	TeamAddr            = "0x0000000000000000000000000000000000000099"
 	VoteMethod          = "0x6dd7d8ea"
 	UnvoteMethod        = "0x02aa9be2"
 	ProposeMethod       = "0x01267951"
@@ -49,6 +49,11 @@ var (
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
 type Hash [HashLength]byte
+
+type Vote struct {
+	Masternode Address
+	Voter      Address
+}
 
 func BytesToHash(b []byte) Hash {
 	var h Hash
@@ -160,9 +165,6 @@ func HexToAddress(s string) Address    { return BytesToAddress(FromHex(s)) }
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 // Ethereum address or not.
 func IsHexAddress(s string) bool {
-	if hasXDCPrefix(s) {
-		s = s[3:]
-	}
 	if hasHexPrefix(s) {
 		s = s[2:]
 	}
@@ -194,7 +196,7 @@ func (a Address) Hex() string {
 			result[i] -= 32
 		}
 	}
-	return "xdc" + string(result)
+	return "0x" + string(result)
 }
 
 // String implements the stringer interface and is used also by the logger.
@@ -228,7 +230,7 @@ func (a *Address) Set(other Address) {
 
 // MarshalText returns the hex representation of a.
 func (a Address) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(a[:]).MarshalXDCText()
+	return hexutil.Bytes(a[:]).MarshalText()
 }
 
 // UnmarshalText parses a hash in hex syntax.

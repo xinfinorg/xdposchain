@@ -46,8 +46,9 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	lru "github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
+	lru "github.com/hashicorp/golang-lru"
+
 )
 
 var (
@@ -1669,11 +1670,9 @@ func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, e
 	log.Error(fmt.Sprintf(`
 ########## BAD BLOCK #########
 Chain config: %v
-
 Number: %v
 Hash: 0x%x
 %v
-
 Error: %v
 ##############################
 `, bc.chainConfig, block.Number(), block.Hash(), receiptString, err))
@@ -1853,7 +1852,7 @@ func (bc *BlockChain) UpdateM1() error {
 			return err
 		}
 		//TODO: smart contract shouldn't return "0x0000000000000000000000000000000000000000"
-		if candidate.String() != "xdc0000000000000000000000000000000000000000" {
+		if candidate.String() != "0x0000000000000000000000000000000000000000" {
 			ms = append(ms, XDPoS.Masternode{Address: candidate, Stake: v})
 		}
 	}
