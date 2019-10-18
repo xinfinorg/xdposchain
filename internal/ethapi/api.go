@@ -761,7 +761,7 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 	sort.Slice(candidates, func(i, j int) bool {
 		return candidates[i].Stake.Cmp(candidates[j].Stake) >= 0
 	})
-	var maxMasternodes int
+		var maxMasternodes int
 	if s.b.ChainConfig().IsTIPIncreaseMasternodes(block.Number()) {
 		maxMasternodes = common.MaxMasternodesV2
 	} else {
@@ -779,7 +779,7 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 			break
 		}
 	}
-	if isTopCandidate == false {
+	if !isTopCandidate {
 		return status, nil
 	}
 	// look up recent checkpoint headers to get penalty list
@@ -1184,26 +1184,6 @@ func (s *PublicBlockChainAPI) getSigners(ctx context.Context, block *types.Block
 				filterSigners = append(filterSigners, masternode)
 				break
 			}
-			func (s *PublicBlockChainAPI) rpcOutputBlockSigners(b *types.Block, ctx context.Context, masternodes []common.Address) ([]common.Address, error) {
-				_, err := s.b.GetIPCClient()
-				if err != nil {
-					log.Error("Fail to connect IPC client for block status", "error", err)
-					return []common.Address{}, err
-				}
-			
-				engine, ok := s.b.GetEngine().(*XDPoS.XDPoS)
-				if !ok {
-					log.Error("Undefined POSV consensus engine")
-					return []common.Address{}, nil
-				}
-			
-				signedBlock := s.findNearestSignedBlock(ctx, b)
-				if signedBlock == nil {
-					return []common.Address{}, nil
-				}
-			
-				return s.getSigners(ctx, signedBlock, engine)
-			}
 			
 		}
 	}
@@ -1219,7 +1199,7 @@ func (s *PublicBlockChainAPI) rpcOutputBlockSigners(b *types.Block, ctx context.
 
 	engine, ok := s.b.GetEngine().(*XDPoS.XDPoS)
 	if !ok {
-		log.Error("Undefined POSV consensus engine")
+		log.Error("Undefined XDPoS consensus engine")
 		return []common.Address{}, nil
 	}
 

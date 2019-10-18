@@ -29,7 +29,7 @@ var TIP2019Block = big.NewInt(1)
 var TIPSigning = big.NewInt(3000000)
 var TIPRandomize = big.NewInt(3464000)
 var BlackListHFNumber = uint64(9349100)
-var TIPIncreaseMasternodes = big.NewInt(1199999) // example 10 milions
+var TIPIncreaseMasternodes = big.NewInt(5000000) // Upgrade MN Count at Block.
 var IsTestnet bool = false
 var StoreRewardFolder string
 var RollbackHash Hash
