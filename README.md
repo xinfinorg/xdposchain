@@ -1,9 +1,9 @@
-## XinFin 
+## XinFin Network-XDC Consensus Algorithm White Paper (Updated)
 
-Blockchain for decentralized applications, token issuance and integration
+Updated on March 17, 2021
 
-Website Resource : https://xinFin.org
+XinFin (XDC) Hybrid Blockchain R&amp;D Team
 
-XinFin Mainet URL: http://XinFin.network/ 
+XinFin Hybrid Blockchain Network
 
-XinFin TestNet/Apothem URL: http://apothem.network/
+Email: info@XinFin.org
