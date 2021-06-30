@@ -447,7 +447,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 				// Get signers in blockSigner smartcontract.
 				// Get reward inflation.
 				chainReward := new(big.Int).Mul(new(big.Int).SetUint64(chain.Config().XDPoS.Reward), new(big.Int).SetUint64(params.Ether))
-				chainReward = rewardInflation(chainReward, number, common.BlocksPerYear)
+				chainReward = rewardInflation(chain, chainReward, number, common.BlocksPerYear)
 
 				totalSigner := new(uint64)
 				signers, err := contracts.GetRewardForCheckpoint(c, chain, header, rCheckpoint, totalSigner)
@@ -855,7 +855,11 @@ func GetValidators(bc *core.BlockChain, masternodes []common.Address) ([]byte, e
 	return nil, core.ErrNotFoundM1
 }
 
-func rewardInflation(chainReward *big.Int, number uint64, blockPerYear uint64) *big.Int {
+func rewardInflation(chain consensus.ChainReader, chainReward *big.Int, number uint64, blockPerYear uint64) *big.Int {
+	if (chain != nil && chain.Config().IsTIPNoHalvingMNReward(number)) {
+		return chainReward
+	}
+
 	if blockPerYear*2 <= number && number < blockPerYear*6 {
 		chainReward.Div(chainReward, new(big.Int).SetUint64(2))
 	}

@@ -27,6 +27,7 @@ var TIP2019Block = big.NewInt(1)
 var TIPSigning = big.NewInt(3000000)
 var TIPRandomize = big.NewInt(3464000)
 var TIPIncreaseMasternodes = big.NewInt(5000000) // Upgrade MN Count at Block.
+var TIPNoHalvingMNReward = big.NewInt(31875822) // hardfork no halving masternodes reward
 var IsTestnet bool = false
 var StoreRewardFolder string
 var RollbackHash Hash
