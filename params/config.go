@@ -231,6 +231,10 @@ func (c *ChainConfig) IsTIPIncreaseMasternodes(num *big.Int) bool {
 	return isForked(common.TIPIncreaseMasternodes, num)
 }
 
+func (c *ChainConfig) IsTIPNoHalvingMNReward(num *big.Int) bool {
+	return isForked(common.TIPNoHalvingMNReward, num)
+}
+
 // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
 //
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
