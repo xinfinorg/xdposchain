@@ -34,8 +34,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/consensus/XDPoS"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/bloombits"
@@ -856,7 +856,7 @@ func GetValidators(bc *core.BlockChain, masternodes []common.Address) ([]byte, e
 }
 
 func rewardInflation(chain consensus.ChainReader, chainReward *big.Int, number uint64, blockPerYear uint64) *big.Int {
-	if (chain != nil && chain.Config().IsTIPNoHalvingMNReward(number)) {
+	if chain != nil && chain.Config().IsTIPNoHalvingMNReward(new(big.Int).SetUint64(number)) {
 		return chainReward
 	}
 
