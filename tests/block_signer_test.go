@@ -61,7 +61,7 @@ func debugMessage(backend *backends.SimulatedBackend, signers signersList, t *te
 func getCommonBackend(t *testing.T) *backends.SimulatedBackend {
 
 	// initial helper backend
-	contractBackendForSC := backends.NewXDCSimulatedBackend(core.GenesisAlloc{
+	contractBackendForSC := backends.NewSimulatedBackend(core.GenesisAlloc{
 		voterAddr: {Balance: new(big.Int).SetUint64(10000000000)},
 	}, 10000000)
 
@@ -124,7 +124,7 @@ func getCommonBackend(t *testing.T) *backends.SimulatedBackend {
 	contractBackendForSC.ForEachStorageAt(ctx, validatorSCAddr, nil, f)
 
 	// create test backend with smart contract in it
-	contractBackend2 := backends.NewXDCSimulatedBackend(core.GenesisAlloc{
+	contractBackend2 := backends.NewSimulatedBackend(core.GenesisAlloc{
 		acc1Addr:  {Balance: new(big.Int).SetUint64(10000000000)},
 		acc2Addr:  {Balance: new(big.Int).SetUint64(10000000000)},
 		acc3Addr:  {Balance: new(big.Int).SetUint64(10000000000)},

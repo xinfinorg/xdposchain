@@ -31,7 +31,6 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/accounts/abi/bind"
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/common/math"
-	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS"
 	"github.com/XinFinOrg/XDPoSChain/consensus/ethash"
 	"github.com/XinFinOrg/XDPoSChain/core"
 	"github.com/XinFinOrg/XDPoSChain/core/bloombits"
@@ -66,30 +65,30 @@ type SimulatedBackend struct {
 	config *params.ChainConfig
 }
 
-// XDC simulated backend for testing purpose.
-func NewXDCSimulatedBackend(alloc core.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
-	// database := ethdb.NewMemDatabase()
-	database := rawdb.NewMemoryDatabase()
+// // XDC simulated backend for testing purpose.
+// func NewSimulatedBackend(alloc core.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
+// 	// database := ethdb.NewMemDatabase()
+// 	database := rawdb.NewMemoryDatabase()
 
-	genesis := core.Genesis{
-		GasLimit:  gasLimit, // need this big, support initial smart contract
-		Config:    params.TestXDPoSMockChainConfig,
-		Alloc:     alloc,
-		ExtraData: append(make([]byte, 32), make([]byte, 65)...),
-	}
-	genesis.MustCommit(database)
-	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, XDPoS.NewFaker(database), vm.Config{})
+// 	genesis := core.Genesis{
+// 		GasLimit:  gasLimit, // need this big, support initial smart contract
+// 		Config:    params.TestXDPoSMockChainConfig,
+// 		Alloc:     alloc,
+// 		ExtraData: append(make([]byte, 32), make([]byte, 65)...),
+// 	}
+// 	genesis.MustCommit(database)
+// 	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, XDPoS.NewFaker(database), vm.Config{})
 
-	backend := &SimulatedBackend{
-		database:   database,
-		blockchain: blockchain,
-		config:     genesis.Config,
-		events:     filters.NewEventSystem(new(event.TypeMux), &filterBackend{database, blockchain}, false),
-	}
-	blockchain.Client = backend
-	backend.rollback()
-	return backend
-}
+// 	backend := &SimulatedBackend{
+// 		database:   database,
+// 		blockchain: blockchain,
+// 		config:     genesis.Config,
+// 		events:     filters.NewEventSystem(new(event.TypeMux), &filterBackend{database, blockchain}, false),
+// 	}
+// 	blockchain.Client = backend
+// 	backend.rollback()
+// 	return backend
+// }
 
 // NewSimulatedBackend creates a new binding backend using a simulated blockchain
 // for testing purposes.
