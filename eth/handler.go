@@ -29,9 +29,12 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/consensus"
+	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS"
+	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS/utils"
 	"github.com/XinFinOrg/XDPoSChain/consensus/misc"
 	"github.com/XinFinOrg/XDPoSChain/core"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
+	"github.com/XinFinOrg/XDPoSChain/eth/bft"
 	"github.com/XinFinOrg/XDPoSChain/eth/downloader"
 	"github.com/XinFinOrg/XDPoSChain/eth/fetcher"
 	"github.com/XinFinOrg/XDPoSChain/ethdb"
@@ -80,6 +83,7 @@ type ProtocolManager struct {
 	downloader *downloader.Downloader
 	fetcher    *fetcher.Fetcher
 	peers      *peerSet
+	bfter      *bft.BFT
 
 	SubProtocols []p2p.Protocol
 
@@ -218,6 +222,17 @@ func NewProtocolManager(config *params.ChainConfig, mode downloader.SyncMode, ne
 		return manager.blockchain.PrepareBlock(block)
 	}
 	manager.fetcher = fetcher.New(blockchain.GetBlockByHash, validator, manager.BroadcastBlock, heighter, inserter, prepare, manager.removePeer)
+	//Define bft function
+	broadcasts := bft.BroadcastFns{
+		Vote:     manager.BroadcastVote,
+		Timeout:  manager.BroadcastTimeout,
+		SyncInfo: manager.BroadcastSyncInfo,
+		TC:       manager.BroadcastTC,
+	}
+	if blockchain.Config().XDPoS != nil {
+		XDPoSEngine := engine.(*XDPoS.XDPoS)
+		manager.bfter = bft.New(XDPoSEngine, broadcasts)
+	}
 
 	return manager, nil
 }
@@ -808,6 +823,27 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		if pm.lendingpool != nil {
 			pm.lendingpool.AddRemotes(txs)
 		}
+	case msg.Code == VoteMsg:
+		//var vote []*bft.Vote
+		var vote interface{}
+		if err := msg.Decode(&vote); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+		pm.bfter.Vote(vote)
+	case msg.Code == TimeoutMsg:
+		//var timeout []*bft.Timeout
+		var timeout interface{}
+		if err := msg.Decode(&timeout); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+		pm.bfter.Timeout(timeout)
+	case msg.Code == SyncInfoMsg:
+		//var syncInfo []*bft.SyncInfo
+		var syncInfo interface{}
+		if err := msg.Decode(&syncInfo); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+		pm.bfter.SyncInfo(syncInfo)
 
 	default:
 		return errResp(ErrInvalidMsgCode, "%v", msg.Code)
@@ -857,6 +893,49 @@ func (pm *ProtocolManager) BroadcastTx(hash common.Hash, tx *types.Transaction) 
 		peer.SendTransactions(types.Transactions{tx})
 	}
 	log.Trace("Broadcast transaction", "hash", hash, "recipients", len(peers))
+}
+func (pm *ProtocolManager) BroadcastVote(vote utils.VoteType) {
+	//hash := Vote.Hash()
+	hash := common.Hash{}
+	peers := pm.peers.PeersWithoutVote(hash)
+	for _, peer := range peers {
+		peer.SendVote(vote)
+	}
+	//log.Trace("Propagated block", "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
+	return
+}
+
+func (pm *ProtocolManager) BroadcastTimeout(timeout utils.TimeoutType) {
+	//hash := timeout.Hash()
+	hash := common.Hash{}
+	peers := pm.peers.PeersWithoutTimeout(hash)
+	for _, peer := range peers {
+		peer.SendTimeout(timeout)
+	}
+	//log.Trace("Propagated block", "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
+	return
+}
+
+func (pm *ProtocolManager) BroadcastSyncInfo(syncInfo utils.SyncInfoType) {
+	//hash := syncInfo.Hash()
+	hash := common.Hash{}
+	peers := pm.peers.PeersWithoutSyncInfo(hash)
+	for _, peer := range peers {
+		peer.SendSyncInfo(syncInfo)
+	}
+	//log.Trace("Propagated block", "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
+	return
+}
+func (pm *ProtocolManager) BroadcastTC(TC utils.TCType) {
+	//hash := TC.Hash()
+	hash := common.Hash{}
+	peers := pm.peers.PeersWithoutTC(hash)
+	for _, peer := range peers {
+		peer.SendTC(TC)
+	}
+	//log.Trace("Propagated block", "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
+	return
+
 }
 
 // OrderBroadcastTx will propagate a transaction to all peers which are not known to
