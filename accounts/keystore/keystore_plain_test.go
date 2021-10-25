@@ -27,8 +27,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/crypto"
 )
 
 func tmpKeyStoreIface(t *testing.T, encrypted bool) (dir string, ks keyStore) {
@@ -245,13 +245,13 @@ func loadKeyStoreTestV1(file string, t *testing.T) map[string]KeyStoreTestV1 {
 	return tests
 }
 
-func TestKeyForDirectICAP(t *testing.T) {
-	t.Parallel()
-	key := NewKeyForDirectICAP(rand.Reader)
-	if !strings.HasPrefix(key.Address.Hex(), "0x00") {
-		t.Errorf("Expected first address byte to be zero, have: %s", key.Address.Hex())
-	}
-}
+// func TestKeyForDirectICAP(t *testing.T) {
+// 	t.Parallel()
+// 	key := NewKeyForDirectICAP(rand.Reader)
+// 	if !strings.HasPrefix(key.Address.Hex(), "0x00") {
+// 		t.Errorf("Expected first address byte to be zero, have: %s", key.Address.Hex())
+// 	}
+// }
 
 func TestV3_31_Byte_Key(t *testing.T) {
 	t.Parallel()

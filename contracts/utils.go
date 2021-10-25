@@ -1,4 +1,4 @@
-// Copyright (c) 2018 XDCchain
+// Copyright (c) 2018 XDPoSChain
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -30,20 +30,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/XDPoS"
-	"github.com/ethereum/go-ethereum/contracts/blocksigner/contract"
-	randomizeContract "github.com/ethereum/go-ethereum/contracts/randomize/contract"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/XinFinOrg/XDPoSChain/accounts"
+	"github.com/XinFinOrg/XDPoSChain/accounts/abi/bind"
+	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
+	"github.com/XinFinOrg/XDPoSChain/consensus"
+	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS"
+	"github.com/XinFinOrg/XDPoSChain/contracts/blocksigner/contract"
+	randomizeContract "github.com/XinFinOrg/XDPoSChain/contracts/randomize/contract"
+	"github.com/XinFinOrg/XDPoSChain/core"
+	"github.com/XinFinOrg/XDPoSChain/core/state"
+	stateDatabase "github.com/XinFinOrg/XDPoSChain/core/state"
+	"github.com/XinFinOrg/XDPoSChain/core/types"
+	"github.com/XinFinOrg/XDPoSChain/ethdb"
+	"github.com/XinFinOrg/XDPoSChain/log"
+	"github.com/XinFinOrg/XDPoSChain/params"
 )
 
 const (
@@ -59,17 +60,26 @@ type rewardLog struct {
 var TxSignMu sync.RWMutex
 
 // Send tx sign for block number to smart contract blockSigner.
-func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, manager *accounts.Manager, block *types.Block, chainDb ethdb.Database) error {
+func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, manager *accounts.Manager, block *types.Block, chainDb ethdb.Database, eb common.Address) error {
 	TxSignMu.Lock()
 	defer TxSignMu.Unlock()
 	if chainConfig.XDPoS != nil {
 		// Find active account.
 		account := accounts.Account{}
 		var wallet accounts.Wallet
+		etherbaseAccount := accounts.Account{
+			Address: eb,
+			URL:     accounts.URL{},
+		}
 		if wallets := manager.Wallets(); len(wallets) > 0 {
-			wallet = wallets[0]
-			if accts := wallets[0].Accounts(); len(accts) > 0 {
-				account = accts[0]
+			if w, err := manager.Find(etherbaseAccount); err == nil && w != nil {
+				wallet = w
+				account = etherbaseAccount
+			} else {
+				wallet = wallets[0]
+				if accts := wallets[0].Accounts(); len(accts) > 0 {
+					account = accts[0]
+				}
 			}
 		}
 
@@ -198,8 +208,8 @@ func BuildTxOpeningRandomize(nonce uint64, randomizeAddr common.Address, randomi
 }
 
 // Get signers signed for blockNumber from blockSigner contract.
-func GetSignersFromContract(state *state.StateDB, block *types.Block) ([]common.Address, error) {
-	return GetSigners(state, block), nil
+func GetSignersFromContract(state *stateDatabase.StateDB, block *types.Block) ([]common.Address, error) {
+	return stateDatabase.GetSigners(state, block), nil
 }
 
 // Get signers signed for blockNumber from blockSigner contract.
@@ -404,7 +414,7 @@ func CalculateRewardForSigner(chainReward *big.Int, signers map[common.Address]*
 
 // Get candidate owner by address.
 func GetCandidatesOwnerBySigner(state *state.StateDB, signerAddr common.Address) common.Address {
-	owner := GetCandidateOwner(state, signerAddr)
+	owner := stateDatabase.GetCandidateOwner(state, signerAddr)
 	return owner
 }
 
@@ -423,7 +433,7 @@ func GetRewardBalancesRate(foundationWalletAddr common.Address, state *state.Sta
 	rewardMaster = new(big.Int).Div(rewardMaster, new(big.Int).SetInt64(100))
 	balances[owner] = rewardMaster
 	// Get voters for masternode.
-	voters := GetVoters(state, masterAddr)
+	voters := stateDatabase.GetVoters(state, masterAddr)
 
 	if len(voters) > 0 {
 		totalVoterReward := new(big.Int).Mul(totalReward, new(big.Int).SetUint64(common.RewardVoterPercent))
@@ -435,7 +445,7 @@ func GetRewardBalancesRate(foundationWalletAddr common.Address, state *state.Sta
 			if _, ok := voterCaps[voteAddr]; ok && common.TIP2019Block.Uint64() <= blockNumber {
 				continue
 			}
-			voterCap := GetVoterCap(state, masterAddr, voteAddr)
+			voterCap := stateDatabase.GetVoterCap(state, masterAddr, voteAddr)
 			totalCap.Add(totalCap, voterCap)
 			voterCaps[voteAddr] = voterCap
 		}

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 XDCchain
+// Copyright (c) 2018 XDPoSChain
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -19,11 +19,11 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/clique"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/consensus/clique"
+	"github.com/XinFinOrg/XDPoSChain/core/types"
+	"github.com/XinFinOrg/XDPoSChain/ethdb"
+	"github.com/XinFinOrg/XDPoSChain/params"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -46,7 +46,7 @@ import (
 // Snapshot is the state of the authorization voting at a given point in time.
 type Snapshot struct {
 	config   *params.XDPoSConfig // Consensus engine parameters to fine tune behavior
-	sigcache *lru.ARCCache      // Cache of recent block signatures to speed up ecrecover
+	sigcache *lru.ARCCache       // Cache of recent block signatures to speed up ecrecover
 
 	Number  uint64                          `json:"number"`  // Block number where the snapshot was created
 	Hash    common.Hash                     `json:"hash"`    // Block hash where the snapshot was created

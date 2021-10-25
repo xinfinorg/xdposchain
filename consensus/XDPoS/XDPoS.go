@@ -1,4 +1,4 @@
-// Copyright (c) 2018 XDCchain
+// Copyright (c) 2018 XDPoSChain
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package XDPoS implements the proof-of-stake-voting consensus engine.
+// Package XDPoS implements the delegated-proof-of-stake consensus engine.
 package XDPoS
 
 import (
@@ -31,22 +31,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/clique"
-	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hashicorp/golang-lru"
+	"github.com/XinFinOrg/XDPoSChain/XDCx/tradingstate"
+	"github.com/XinFinOrg/XDPoSChain/XDCxlending/lendingstate"
+	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
+
+	"github.com/XinFinOrg/XDPoSChain/accounts"
+	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
+	"github.com/XinFinOrg/XDPoSChain/consensus"
+	"github.com/XinFinOrg/XDPoSChain/consensus/clique"
+	"github.com/XinFinOrg/XDPoSChain/consensus/misc"
+	"github.com/XinFinOrg/XDPoSChain/core/state"
+	"github.com/XinFinOrg/XDPoSChain/core/types"
+	"github.com/XinFinOrg/XDPoSChain/crypto"
+	"github.com/XinFinOrg/XDPoSChain/crypto/sha3"
+	"github.com/XinFinOrg/XDPoSChain/ethdb"
+	"github.com/XinFinOrg/XDPoSChain/log"
+	"github.com/XinFinOrg/XDPoSChain/params"
+	"github.com/XinFinOrg/XDPoSChain/rlp"
+	"github.com/XinFinOrg/XDPoSChain/rpc"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -60,7 +64,36 @@ type Masternode struct {
 	Stake   *big.Int
 }
 
-// XDPoS proof-of-stake-voting protocol constants.
+type TradingService interface {
+	GetTradingStateRoot(block *types.Block, author common.Address) (common.Hash, error)
+	GetTradingState(block *types.Block, author common.Address) (*tradingstate.TradingStateDB, error)
+	HasTradingState(block *types.Block, author common.Address) bool
+	GetStateCache() tradingstate.Database
+	GetTriegc() *prque.Prque
+	ApplyOrder(header *types.Header, coinbase common.Address, chain consensus.ChainContext, statedb *state.StateDB, XDCXstatedb *tradingstate.TradingStateDB, orderBook common.Hash, order *tradingstate.OrderItem) ([]map[string]string, []*tradingstate.OrderItem, error)
+	UpdateMediumPriceBeforeEpoch(epochNumber uint64, tradingStateDB *tradingstate.TradingStateDB, statedb *state.StateDB) error
+	IsSDKNode() bool
+	SyncDataToSDKNode(takerOrder *tradingstate.OrderItem, txHash common.Hash, txMatchTime time.Time, statedb *state.StateDB, trades []map[string]string, rejectedOrders []*tradingstate.OrderItem, dirtyOrderCount *uint64) error
+	RollbackReorgTxMatch(txhash common.Hash) error
+	GetTokenDecimal(chain consensus.ChainContext, statedb *state.StateDB, tokenAddr common.Address) (*big.Int, error)
+}
+
+type LendingService interface {
+	GetLendingStateRoot(block *types.Block, author common.Address) (common.Hash, error)
+	GetLendingState(block *types.Block, author common.Address) (*lendingstate.LendingStateDB, error)
+	HasLendingState(block *types.Block, author common.Address) bool
+	GetStateCache() lendingstate.Database
+	GetTriegc() *prque.Prque
+	ApplyOrder(header *types.Header, coinbase common.Address, chain consensus.ChainContext, statedb *state.StateDB, lendingStateDB *lendingstate.LendingStateDB, tradingStateDb *tradingstate.TradingStateDB, lendingOrderBook common.Hash, order *lendingstate.LendingItem) ([]*lendingstate.LendingTrade, []*lendingstate.LendingItem, error)
+	GetCollateralPrices(header *types.Header, chain consensus.ChainContext, statedb *state.StateDB, tradingStateDb *tradingstate.TradingStateDB, collateralToken common.Address, lendingToken common.Address) (*big.Int, *big.Int, error)
+	GetMediumTradePriceBeforeEpoch(chain consensus.ChainContext, statedb *state.StateDB, tradingStateDb *tradingstate.TradingStateDB, baseToken common.Address, quoteToken common.Address) (*big.Int, error)
+	ProcessLiquidationData(header *types.Header, chain consensus.ChainContext, statedb *state.StateDB, tradingState *tradingstate.TradingStateDB, lendingState *lendingstate.LendingStateDB) (updatedTrades map[common.Hash]*lendingstate.LendingTrade, liquidatedTrades, autoRepayTrades, autoTopUpTrades, autoRecallTrades []*lendingstate.LendingTrade, err error)
+	SyncDataToSDKNode(chain consensus.ChainContext, state *state.StateDB, block *types.Block, takerOrderInTx *lendingstate.LendingItem, txHash common.Hash, txMatchTime time.Time, trades []*lendingstate.LendingTrade, rejectedOrders []*lendingstate.LendingItem, dirtyOrderCount *uint64) error
+	UpdateLiquidatedTrade(blockTime uint64, result lendingstate.FinalizedResult, trades map[common.Hash]*lendingstate.LendingTrade) error
+	RollbackLendingData(txhash common.Hash) error
+}
+
+// XDPoS delegated-proof-of-stake protocol constants.
 var (
 	epochLength = uint64(900) // Default number of blocks after which to checkpoint and reset the pending votes
 
@@ -151,7 +184,7 @@ var (
 // backing account.
 //type SignerFn func(accounts.Account, []byte) ([]byte, error)
 
-// sigHash returns the hash which is used as input for the proof-of-stake-voting
+// sigHash returns the hash which is used as input for the delegated-proof-of-stake
 // signing. It is the hash of the entire header apart from the 65 byte signature
 // contained at the end of the extra data.
 //
@@ -211,11 +244,11 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 	return signer, nil
 }
 
-// XDPoS is the proof-of-stake-voting consensus engine proposed to support the
+// XDPoS is the delegated-proof-of-stake consensus engine proposed to support the
 // Ethereum testnet following the Ropsten attacks.
 type XDPoS struct {
 	config *params.XDPoSConfig // Consensus engine configuration parameters
-	db     ethdb.Database     // Database to store and retrieve snapshot checkpoints
+	db     ethdb.Database      // Database to store and retrieve snapshot checkpoints
 
 	recents             *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures          *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -227,15 +260,18 @@ type XDPoS struct {
 	signFn clique.SignerFn // Signer function to authorize hashes with
 	lock   sync.RWMutex    // Protects the signer fields
 
-	BlockSigners          *lru.Cache
-	HookReward            func(chain consensus.ChainReader, state *state.StateDB, header *types.Header) (error, map[string]interface{})
-	HookPenalty           func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error)
-	HookPenaltyTIPSigning func(chain consensus.ChainReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
-	HookValidator         func(header *types.Header, signers []common.Address) ([]byte, error)
-	HookVerifyMNs         func(header *types.Header, signers []common.Address) error
+	BlockSigners               *lru.Cache
+	HookReward                 func(chain consensus.ChainReader, state *state.StateDB, parentState *state.StateDB, header *types.Header) (error, map[string]interface{})
+	HookPenalty                func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error)
+	HookPenaltyTIPSigning      func(chain consensus.ChainReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
+	HookValidator              func(header *types.Header, signers []common.Address) ([]byte, error)
+	HookVerifyMNs              func(header *types.Header, signers []common.Address) error
+	GetXDCXService             func() TradingService
+	GetLendingService          func() LendingService
+	HookGetSignersFromContract func(blockHash common.Hash) ([]common.Address, error)
 }
 
-// New creates a XDPoS proof-of-stake-voting consensus engine with the initial
+// New creates a XDPoS delegated-proof-of-stake consensus engine with the initial
 // signers set to the ones provided by the user.
 func New(config *params.XDPoSConfig, db ethdb.Database) *XDPoS {
 	// Set any missing consensus parameters to their defaults
@@ -261,11 +297,40 @@ func New(config *params.XDPoSConfig, db ethdb.Database) *XDPoS {
 	}
 }
 
+// NewFullFaker creates an ethash consensus engine with a full fake scheme that
+// accepts all blocks as valid, without checking any consensus rules whatsoever.
+func NewFaker(db ethdb.Database) *XDPoS {
+	var fakeEngine *XDPoS
+	// Set any missing consensus parameters to their defaults
+	conf := params.TestXDPoSMockChainConfig.XDPoS
+
+	// Allocate the snapshot caches and create the engine
+	BlockSigners, _ := lru.New(blockSignersCacheLimit)
+	recents, _ := lru.NewARC(inmemorySnapshots)
+	signatures, _ := lru.NewARC(inmemorySnapshots)
+	validatorSignatures, _ := lru.NewARC(inmemorySnapshots)
+	verifiedHeaders, _ := lru.NewARC(inmemorySnapshots)
+	fakeEngine = &XDPoS{
+		config:              conf,
+		db:                  db,
+		BlockSigners:        BlockSigners,
+		recents:             recents,
+		signatures:          signatures,
+		verifiedHeaders:     verifiedHeaders,
+		validatorSignatures: validatorSignatures,
+		proposals:           make(map[common.Address]bool),
+	}
+	return fakeEngine
+}
+
 // Author implements consensus.Engine, returning the Ethereum address recovered
 // from the signature in the header's extra-data section.
 func (c *XDPoS) Author(header *types.Header) (common.Address, error) {
 	return ecrecover(header, c.signatures)
 }
+
+// Get signer coinbase
+func (c *XDPoS) Signer() common.Address { return c.signer }
 
 // VerifyHeader checks whether a header conforms to the consensus rules.
 func (c *XDPoS) VerifyHeader(chain consensus.ChainReader, header *types.Header, fullVerify bool) error {
@@ -310,6 +375,10 @@ func (c *XDPoS) verifyHeaderWithCache(chain consensus.ChainReader, header *types
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
 func (c *XDPoS) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header, fullVerify bool) error {
+	// If we're running a engine faking, accept any block as valid
+	if c.config.SkipValidation {
+		return nil
+	}
 	if common.IsTestnet {
 		fullVerify = false
 	}
@@ -393,55 +462,86 @@ func (c *XDPoS) verifyCascadingFields(chain consensus.ChainReader, header *types
 	if parent.Time.Uint64()+c.config.Period > header.Time.Uint64() {
 		return ErrInvalidTimestamp
 	}
+
+	if number%c.config.Epoch != 0 {
+		return c.verifySeal(chain, header, parents, fullVerify)
+	}
+
+	/*
+		BUG: snapshot returns wrong signers sometimes
+		when it happens we get the signers list by requesting smart contract
+	*/
 	// Retrieve the snapshot needed to verify this header and cache it
 	snap, err := c.snapshot(chain, number-1, header.ParentHash, parents)
 	if err != nil {
 		return err
 	}
-	// If the block is a checkpoint block, verify the signer list
-	if number%c.config.Epoch == 0 {
-		signers := snap.GetSigners()
-		penPenalties := []common.Address{}
-		if c.HookPenalty != nil || c.HookPenaltyTIPSigning != nil {
-			var err error = nil
-			if chain.Config().IsTIPSigning(header.Number) {
-				penPenalties, err = c.HookPenaltyTIPSigning(chain, header, signers)
-			} else {
-				penPenalties, err = c.HookPenalty(chain, number)
-			}
-			if err != nil {
-				return err
-			}
-			for _, address := range penPenalties {
-				log.Debug("Penalty Info", "address", address, "number", number)
-			}
-			bytePenalties := common.ExtractAddressToBytes(penPenalties)
-			if !bytes.Equal(header.Penalties, bytePenalties) {
-				return errInvalidCheckpointPenalties
-			}
+
+	signers := snap.GetSigners()
+	err = c.checkSignersOnCheckpoint(chain, header, signers)
+	if err == nil {
+		return c.verifySeal(chain, header, parents, fullVerify)
+	}
+
+	signers, err = c.GetSignersFromContract(chain, header)
+	if err != nil {
+		return err
+	}
+	err = c.checkSignersOnCheckpoint(chain, header, signers)
+	if err == nil {
+		return c.verifySeal(chain, header, parents, fullVerify)
+	}
+
+	return err
+}
+
+func (c *XDPoS) checkSignersOnCheckpoint(chain consensus.ChainReader, header *types.Header, signers []common.Address) error {
+	number := header.Number.Uint64()
+	// ignore signerCheck at checkpoint block 14458500 due to wrong snapshot at gap 14458495
+	if number == common.IgnoreSignerCheckBlock {
+		return nil
+	}
+	penPenalties := []common.Address{}
+	if c.HookPenalty != nil || c.HookPenaltyTIPSigning != nil {
+		var err error
+		if chain.Config().IsTIPSigning(header.Number) {
+			penPenalties, err = c.HookPenaltyTIPSigning(chain, header, signers)
+		} else {
+			penPenalties, err = c.HookPenalty(chain, number)
 		}
-		signers = common.RemoveItemFromArray(signers, penPenalties)
-		for i := 1; i <= common.LimitPenaltyEpoch; i++ {
-			if number > uint64(i)*c.config.Epoch {
-				signers = RemovePenaltiesFromBlock(chain, signers, number-uint64(i)*c.config.Epoch)
-			}
+		if err != nil {
+			return err
 		}
-		extraSuffix := len(header.Extra) - extraSeal
-		masternodesFromCheckpointHeader := common.ExtractAddressFromBytes(header.Extra[extraVanity:extraSuffix])
-		validSigners := compareSignersLists(masternodesFromCheckpointHeader, signers)
-		if !validSigners {
-			log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", masternodesFromCheckpointHeader, "masternodes_in_snapshot", signers, "penList", penPenalties)
-			return errInvalidCheckpointSigners
+		for _, address := range penPenalties {
+			log.Debug("Penalty Info", "address", address, "number", number)
 		}
-		if c.HookVerifyMNs != nil {
-			err := c.HookVerifyMNs(header, signers)
-			if err != nil {
-				return err
-			}
+		bytePenalties := common.ExtractAddressToBytes(penPenalties)
+		if !bytes.Equal(header.Penalties, bytePenalties) {
+			return errInvalidCheckpointPenalties
 		}
 	}
-	// All basic checks passed, verify the seal and return
-	return c.verifySeal(chain, header, parents, fullVerify)
+	signers = common.RemoveItemFromArray(signers, penPenalties)
+	for i := 1; i <= common.LimitPenaltyEpoch; i++ {
+		if number > uint64(i)*c.config.Epoch {
+			signers = RemovePenaltiesFromBlock(chain, signers, number-uint64(i)*c.config.Epoch)
+		}
+	}
+	extraSuffix := len(header.Extra) - extraSeal
+	masternodesFromCheckpointHeader := common.ExtractAddressFromBytes(header.Extra[extraVanity:extraSuffix])
+	validSigners := compareSignersLists(masternodesFromCheckpointHeader, signers)
+
+	if !validSigners {
+		log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", masternodesFromCheckpointHeader, "masternodes_in_snapshot", signers, "penList", penPenalties)
+		return errInvalidCheckpointSigners
+	}
+	if c.HookVerifyMNs != nil {
+		err := c.HookVerifyMNs(header, signers)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // compare 2 signers lists
@@ -512,14 +612,14 @@ func whoIsCreator(snap *Snapshot, header *types.Header) (common.Address, error) 
 func (c *XDPoS) YourTurn(chain consensus.ChainReader, parent *types.Header, signer common.Address) (int, int, int, bool, error) {
 	masternodes := c.GetMasternodes(chain, parent)
 
-	if common.IsTestnet {
-		// Only three mns hard code for XDC testnet.
-		masternodes = []common.Address{
-			common.HexToAddress("0xfFC679Dcdf444D2eEb0491A998E7902B411CcF20"),
-			common.HexToAddress("0xd76fd76F7101811726DCE9E43C2617706a4c45c8"),
-			common.HexToAddress("0x8A97753311aeAFACfd76a68Cf2e2a9808d3e65E8"),
-		}
-	}
+	// if common.IsTestnet {
+	// 	// Only three mns hard code for XDC testnet.
+	// 	masternodes = []common.Address{
+	// 		common.HexToAddress("0x3Ea0A3555f9B1dE983572BfF6444aeb1899eC58C"),
+	// 		common.HexToAddress("0x4F7900282F3d371d585ab1361205B0940aB1789C"),
+	// 		common.HexToAddress("0x942a5885A8844Ee5587C8AC5e371Fc39FFE61896"),
+	// 	}
+	// }
 
 	snap, err := c.GetSnapshot(chain, parent)
 	if err != nil {
@@ -888,7 +988,7 @@ func (c *XDPoS) UpdateMasternodes(chain consensus.ChainReader, header *types.Hea
 
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given, and returns the final block.
-func (c *XDPoS) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+func (c *XDPoS) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, parentState *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// set block reward
 	number := header.Number.Uint64()
 	rCheckpoint := chain.Config().XDPoS.RewardCheckpoint
@@ -896,7 +996,7 @@ func (c *XDPoS) Finalize(chain consensus.ChainReader, header *types.Header, stat
 	// _ = c.CacheData(header, txs, receipts)
 
 	if c.HookReward != nil && number%rCheckpoint == 0 {
-		err, rewards := c.HookReward(chain, state, header)
+		err, rewards := c.HookReward(chain, state, parentState, header)
 		if err != nil {
 			return nil, err
 		}
@@ -1014,6 +1114,10 @@ func (c *XDPoS) CalcDifficulty(chain consensus.ChainReader, time uint64, parent 
 }
 
 func (c *XDPoS) calcDifficulty(chain consensus.ChainReader, parent *types.Header, signer common.Address) *big.Int {
+	// If we're running a engine faking, skip calculation
+	if c.config.SkipValidation {
+		return big.NewInt(1)
+	}
 	len, preIndex, curIndex, _, err := c.YourTurn(chain, parent, signer)
 	if err != nil {
 		return big.NewInt(int64(len + curIndex - preIndex))
@@ -1028,7 +1132,7 @@ func (c *XDPoS) APIs(chain consensus.ChainReader) []rpc.API {
 		Namespace: "XDPoS",
 		Version:   "1.0",
 		Service:   &API{chain: chain, XDPoS: c},
-		Public:    false,
+		Public:    true,
 	}}
 }
 
@@ -1205,4 +1309,54 @@ func Hop(len, pre, cur int) int {
 	default:
 		return len - 1
 	}
+}
+
+func (c *XDPoS) CheckMNTurn(chain consensus.ChainReader, parent *types.Header, signer common.Address) bool {
+	masternodes := c.GetMasternodes(chain, parent)
+
+	if common.IsTestnet {
+		// Only three mns hard code for XDC testnet.
+		masternodes = []common.Address{
+			common.HexToAddress("0x3Ea0A3555f9B1dE983572BfF6444aeb1899eC58C"),
+			common.HexToAddress("0x4F7900282F3d371d585ab1361205B0940aB1789C"),
+			common.HexToAddress("0x942a5885A8844Ee5587C8AC5e371Fc39FFE61896"),
+		}
+	}
+
+	snap, err := c.GetSnapshot(chain, parent)
+	if err != nil {
+		log.Warn("Failed when trying to commit new work", "err", err)
+		return false
+	}
+	if len(masternodes) == 0 {
+		return false
+	}
+	pre := common.Address{}
+	// masternode[0] has chance to create block 1
+	preIndex := -1
+	if parent.Number.Uint64() != 0 {
+		pre, err = whoIsCreator(snap, parent)
+		if err != nil {
+			return false
+		}
+		preIndex = position(masternodes, pre)
+	}
+	curIndex := position(masternodes, signer)
+	if (preIndex)%len(masternodes) == curIndex {
+		return true
+	}
+	return false
+}
+
+func (c *XDPoS) GetSignersFromContract(chain consensus.ChainReader, checkpointHeader *types.Header) ([]common.Address, error) {
+	startGapBlockHeader := checkpointHeader
+	number := checkpointHeader.Number.Uint64()
+	for step := uint64(1); step <= chain.Config().XDPoS.Gap; step++ {
+		startGapBlockHeader = chain.GetHeader(startGapBlockHeader.ParentHash, number-step)
+	}
+	signers, err := c.HookGetSignersFromContract(startGapBlockHeader.Hash())
+	if err != nil {
+		return []common.Address{}, fmt.Errorf("Can't get signers from Smart Contract . Err: %v", err)
+	}
+	return signers, nil
 }
