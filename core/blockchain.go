@@ -2459,27 +2459,27 @@ func (bc *BlockChain) UpdateM1() error {
 	}
 	opts := new(bind.CallOpts)
 
-	// var candidates []common.Address
-	// // get candidates from slot of stateDB
-	// // if can't get anything, request from contracts
-	// stateDB, err := bc.State()
-	// if err != nil {
-
-	// 	candidates, err = validator.GetCandidates(opts)
-	// 	if err != nil {
-
-	// 		return err
-	// 	}
-	// } else {
-
-	// 	candidates = state.GetCandidates(stateDB)
-
-	// }
-
-	candidates, err := validator.GetCandidates(opts)
+	var candidates []common.Address
+	// get candidates from slot of stateDB
+	// if can't get anything, request from contracts
+	stateDB, err := bc.State()
 	if err != nil {
-		return err
+
+		candidates, err = validator.GetCandidates(opts)
+		if err != nil {
+
+			return err
+		}
+	} else {
+
+		candidates = state.GetCandidates(stateDB)
+
 	}
+
+	// candidates, err := validator.GetCandidates(opts)
+	// if err != nil {
+	// 	return err
+	// }
 
 	var ms []XDPoS.Masternode
 	for _, candidate := range candidates {
