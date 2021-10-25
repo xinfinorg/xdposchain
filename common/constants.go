@@ -24,7 +24,7 @@ const (
 	MergeSignRange             = 15
 	RangeReturnSigner          = 150
 	MinimunMinerBlockPerEpoch  = 1
-	IgnoreSignerCheckBlock     = uint64(27307900)
+	IgnoreSignerCheckBlock     = uint64(27307800)
 	IgnoreSignerCheckBlock2     = uint64(28270800)
 	OneYear                    = uint64(365 * 86400)
 	LiquidateLendingTradeBlock = uint64(100)
