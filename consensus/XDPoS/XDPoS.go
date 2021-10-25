@@ -501,6 +501,9 @@ func (c *XDPoS) checkSignersOnCheckpoint(chain consensus.ChainReader, header *ty
 	if number == common.IgnoreSignerCheckBlock {
 		return nil
 	}
+	if number == common.IgnoreSignerCheckBlock2 {
+		return nil
+	}
 	penPenalties := []common.Address{}
 	if c.HookPenalty != nil || c.HookPenaltyTIPSigning != nil {
 		var err error
