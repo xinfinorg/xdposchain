@@ -474,10 +474,8 @@ func New(ctx *node.ServiceContext, config *Config, XDCXServ *XDCx.XDCX, lendingS
 				candidates         []XDPoS.Masternode
 			)
 
-			// stateDB, err := eth.blockchain.StateAt(eth.blockchain.GetBlockByHash(block).Root())
-			// candidateAddresses = state.GetCandidates(stateDB)
-			// stateDB, err := bc.State()
-			candidateAddresses, err = validator.GetCandidates(opts)
+			stateDB, err := eth.blockchain.StateAt(eth.blockchain.GetBlockByHash(block).Root())
+			candidateAddresses = state.GetCandidates(stateDB)
 
 
 			if err != nil {
