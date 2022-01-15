@@ -93,7 +93,7 @@ func New(config *params.XDPoSConfig, db ethdb.Database) *XDPoS_v2 {
 		highestCommitBlock: nil,
 	}
 	// Add callback to the timer
-	timer.OnTimeoutFn = engine.onCountdownTimeout
+	timer.OnTimeoutFn = engine.OnCountdownTimeout
 
 	return engine
 }
@@ -519,8 +519,8 @@ func (x *XDPoS_v2) VerifySyncInfoMessage(syncInfo *utils.SyncInfo) error {
 }
 
 func (x *XDPoS_v2) SyncInfoHandler(chain consensus.ChainReader, syncInfo *utils.SyncInfo) error {
-	x.signLock.Lock()
-	defer x.signLock.Unlock()
+	x.lock.Lock()
+	defer x.lock.Unlock()
 	/*
 		1. processQC
 		2. processTC
@@ -948,7 +948,7 @@ func (x *XDPoS_v2) verifyMsgSignature(signedHashToBeVerified common.Hash, signat
 	Function that will be called by timer when countdown reaches its threshold.
 	In the engine v2, we would need to broadcast timeout messages to other peers
 */
-func (x *XDPoS_v2) onCountdownTimeout(time time.Time) error {
+func (x *XDPoS_v2) OnCountdownTimeout(time time.Time) error {
 	x.lock.Lock()
 	defer x.lock.Unlock()
 
@@ -1058,13 +1058,15 @@ func (x *XDPoS_v2) SetNewRoundFaker(newRound utils.Round, resetTimer bool) {
 
 // Utils for test to check currentRound value
 func (x *XDPoS_v2) GetCurrentRound() utils.Round {
+	x.lock.RLock()
+	defer x.lock.RUnlock()
 	return x.currentRound
 }
 
 // Utils for test to check currentRound value
 func (x *XDPoS_v2) GetProperties() (utils.Round, *utils.QuorumCert, *utils.QuorumCert, utils.Round, *utils.BlockInfo) {
-	x.lock.Lock()
-	defer x.lock.Unlock()
+	x.lock.RLock()
+	defer x.lock.RUnlock()
 	return x.currentRound, x.lockQuorumCert, x.highestQuorumCert, x.highestVotedRound, x.highestCommitBlock
 }
 
