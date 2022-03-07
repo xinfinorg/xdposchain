@@ -56,7 +56,7 @@ var errProtocolReturned = errors.New("protocol returned")
 
 var ErrAddPairPeer = errors.New("add a pair peer")
 
-type DiscReason uint
+type DiscReason uint8
 
 const (
 	DiscRequested DiscReason = iota
