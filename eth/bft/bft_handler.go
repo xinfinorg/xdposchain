@@ -8,10 +8,6 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/log"
 )
 
-const (
-	messageLimit = 1024
-)
-
 //Define Boradcast Group functions
 type broadcastVoteFn func(*utils.Vote)
 type broadcastTimeoutFn func(*utils.Timeout)
