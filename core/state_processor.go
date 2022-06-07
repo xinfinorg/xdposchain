@@ -484,6 +484,17 @@ func ApplyEmptyTransaction(config *params.ChainConfig, statedb *state.StateDB, h
 	} else {
 		root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
 	}
+	from, err := types.Sender(types.MakeSigner(config, header.Number), tx)
+	if err != nil {
+		return nil, 0, err, false // here should be safe error handling
+	}
+	nonce := statedb.GetNonce(from)
+	if nonce < tx.Nonce() {
+		return nil, 0, ErrNonceTooHigh, false
+	} else if nonce > tx.Nonce() {
+		return nil, 0, ErrNonceTooLow, false
+	}
+	statedb.SetNonce(from, nonce+1)
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
 	// based on the eip phase, we're passing wether the root touch-delete accounts.
 	receipt := types.NewReceipt(root, false, *usedGas)
