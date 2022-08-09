@@ -418,6 +418,7 @@ func (f *Forensics) ProcessVoteEquivocation(chain consensus.ChainReader, engine 
 	isVoteBlamed, parentQC, err := f.isVoteBlamed(chain, highestCommittedQCs, incomingVote)
 	if err != nil {
 		log.Error("[ProcessVoteEquivocation] Error while trying to call isVoteBlamed", "error", err)
+		return err
 	}
 	if isVoteBlamed {
 		signer, err := GetVoteSignerAddresses(incomingVote)
@@ -430,6 +431,7 @@ func (f *Forensics) ProcessVoteEquivocation(chain consensus.ChainReader, engine 
 			signerFromQC, err := GetVoteSignerAddresses(voteFromQC)
 			if err != nil {
 				log.Error("[ProcessVoteEquivocation] GetVoteSignerAddresses", "error", err)
+				return err
 			}
 			if signerFromQC == signer {
 				f.SendVoteEquivocationProof(incomingVote, voteFromQC, signer)
