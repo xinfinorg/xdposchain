@@ -33,18 +33,18 @@ const (
 var Rewound = uint64(0)
 
 var TIP2019Block = big.NewInt(1)
-var TIPSigning = big.NewInt(3000000)
-var TIPRandomize = big.NewInt(3464000)
+var TIPSigning = big.NewInt(225000)
+var TIPRandomize = big.NewInt(225000)
 
-var TIPIncreaseMasternodes = big.NewInt(5000000) // Upgrade MN Count at Block.
-var TIPNoHalvingMNReward = big.NewInt(38383838)  // hardfork no halving masternodes reward
-var BlackListHFNumber = uint64(38383838)
-var TIPXDCX = big.NewInt(38383838)
-var TIPXDCXLending = big.NewInt(38383838)
-var TIPXDCXCancellationFee = big.NewInt(38383838)
-var TIPXDCXCancellationFeeTestnet = big.NewInt(38383838)
+var TIPIncreaseMasternodes = big.NewInt(225000) // Upgrade MN Count at Block.
+var TIPNoHalvingMNReward = big.NewInt(429987)   // hardfork no halving masternodes reward
+var BlackListHFNumber = uint64(225000)
+var TIPXDCX = big.NewInt(225000)
+var TIPXDCXLending = big.NewInt(225000)
+var TIPXDCXCancellationFee = big.NewInt(225000)
+var TIPXDCXCancellationFeeTestnet = big.NewInt(225000)
 
-var TIPXDCXTestnet = big.NewInt(38383838)
+var TIPXDCXTestnet = big.NewInt(0)
 var IsTestnet bool = false
 var StoreRewardFolder string
 var RollbackHash Hash
@@ -72,8 +72,8 @@ var TRC21GasPrice = big.NewInt(250000000)
 var RateTopUp = big.NewInt(90) // 90%
 var BaseTopUp = big.NewInt(100)
 var BaseRecall = big.NewInt(100)
-var TIPTRC21Fee = big.NewInt(38383838)
-var TIPTRC21FeeTestnet = big.NewInt(38383838)
+var TIPTRC21Fee = big.NewInt(13523400)
+var TIPTRC21FeeTestnet = big.NewInt(225000)
 var LimitTimeFinality = uint64(30) // limit in 30 block
 
 var IgnoreSignerCheckBlockArray = map[uint64]bool{
