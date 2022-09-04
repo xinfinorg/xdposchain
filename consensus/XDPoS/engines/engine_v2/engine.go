@@ -525,12 +525,12 @@ func (x *XDPoS_v2) VerifySyncInfoMessage(chain consensus.ChainReader, syncInfo *
 
 	err := x.verifyQC(chain, syncInfo.HighestQuorumCert, nil)
 	if err != nil {
-		log.Warn("[VerifySyncInfoMessage] SyncInfo message verification failed due to QC", "error", err)
+		log.Warn("[VerifySyncInfoMessage] SyncInfo message verification failed due to QC", "blockNum", syncInfo.HighestQuorumCert.ProposedBlockInfo.Number, "round", syncInfo.HighestQuorumCert.ProposedBlockInfo.Round, "error", err)
 		return false, err
 	}
 	err = x.verifyTC(chain, syncInfo.HighestTimeoutCert)
 	if err != nil {
-		log.Warn("[VerifySyncInfoMessage] SyncInfo message verification failed due to TC", "error", err)
+		log.Warn("[VerifySyncInfoMessage] SyncInfo message verification failed due to TC", "gapNum", syncInfo.HighestTimeoutCert.GapNumber, "round", syncInfo.HighestTimeoutCert.Round, "error", err)
 		return false, err
 	}
 	return true, nil
