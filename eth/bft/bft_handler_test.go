@@ -49,6 +49,7 @@ func newTester() *bfterTester {
 
 	tester := &bfterTester{}
 	tester.bfter = New(broadcasts, blockChain, chainHeight)
+	tester.bfter.InitGapNumber()
 	tester.bfter.SetConsensusFuns(testConsensus)
 	tester.bfter.broadcastCh = make(chan interface{})
 	tester.bfter.Start()
@@ -166,7 +167,7 @@ func TestBoardcastButNotProcessDisqualifiedTimeout(t *testing.T) {
 		atomic.AddUint32(&broadcastCounter, 1)
 	}
 
-	timeout := types.Timeout{}
+	timeout := types.Timeout{GapNumber: 450}
 	tester.bfter.Timeout(peerID, &timeout)
 
 	time.Sleep(50 * time.Millisecond)
@@ -223,7 +224,7 @@ func TestTimeoutHandler(t *testing.T) {
 		atomic.AddUint32(&broadcastCounter, 1)
 	}
 
-	timeoutMsg := &types.Timeout{}
+	timeoutMsg := &types.Timeout{GapNumber: 450}
 
 	err := tester.bfter.Timeout(peerID, timeoutMsg)
 	if err != nil {
