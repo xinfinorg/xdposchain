@@ -27,6 +27,7 @@ type XDPoS_v2 struct {
 	config       *params.XDPoSConfig // Consensus engine configuration parameters
 	db           ethdb.Database      // Database to store and retrieve snapshot checkpoints
 	isInitilised bool                // status of v2 variables
+	whosTurn     common.Address      // Record waiting for who to mine
 
 	snapshots       *lru.ARCCache // Snapshots for gap block
 	signatures      *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -875,7 +876,7 @@ func (x *XDPoS_v2) commitBlocks(blockChainReader consensus.ChainReader, proposed
 		return false, err
 	}
 	if *proposedBlockRound-1 != round {
-		log.Info("[commitBlocks] Rounds not continuous(parent) found when committing block", "proposedBlockRound", proposedBlockRound, "decodedExtraField.Round", round, "proposedBlockHeaderHash", proposedBlockHeader.Hash())
+		log.Info("[commitBlocks] Rounds not continuous(parent) found when committing block", "proposedBlockRound", *proposedBlockRound, "decodedExtraField.Round", round, "proposedBlockHeaderHash", proposedBlockHeader.Hash())
 		return false, nil
 	}
 
@@ -887,7 +888,7 @@ func (x *XDPoS_v2) commitBlocks(blockChainReader consensus.ChainReader, proposed
 		return false, err
 	}
 	if *proposedBlockRound-2 != round {
-		log.Info("[commitBlocks] Rounds not continuous(grand parent) found when committing block", "proposedBlockRound", proposedBlockRound, "decodedExtraField.Round", round, "proposedBlockHeaderHash", proposedBlockHeader.Hash())
+		log.Info("[commitBlocks] Rounds not continuous(grand parent) found when committing block", "proposedBlockRound", *proposedBlockRound, "decodedExtraField.Round", round, "proposedBlockHeaderHash", proposedBlockHeader.Hash())
 		return false, nil
 	}
 

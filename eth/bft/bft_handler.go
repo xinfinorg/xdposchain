@@ -49,8 +49,6 @@ type BroadcastFns struct {
 
 func New(broadcasts BroadcastFns, blockChainReader *core.BlockChain, chainHeight chainHeightFn) *Bfter {
 	return &Bfter{
-		gapNumber: blockChainReader.Config().XDPoS.Gap,
-
 		broadcast:        broadcasts,
 		blockChainReader: blockChainReader,
 		chainHeight:      chainHeight,
@@ -58,6 +56,11 @@ func New(broadcasts BroadcastFns, blockChainReader *core.BlockChain, chainHeight
 		quit:        make(chan struct{}),
 		broadcastCh: make(chan interface{}),
 	}
+}
+
+// Create this function to avoid massive test change
+func (b *Bfter) InitGapNumber() {
+	b.gapNumber = b.blockChainReader.Config().XDPoS.Gap
 }
 
 func (b *Bfter) SetConsensusFuns(engine consensus.Engine) {
