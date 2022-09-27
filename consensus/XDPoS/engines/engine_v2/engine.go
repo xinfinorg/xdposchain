@@ -137,8 +137,6 @@ func (x *XDPoS_v2) Initial(chain consensus.ChainReader, header *types.Header) er
 }
 
 func (x *XDPoS_v2) initial(chain consensus.ChainReader, header *types.Header) error {
-	log.Info("initial")
-
 	log.Info("[initial] initial v2 related parameters")
 
 	if x.highestQuorumCert.ProposedBlockInfo.Hash != (common.Hash{}) { // already initialized
