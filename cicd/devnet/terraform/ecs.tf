@@ -25,7 +25,7 @@ resource "aws_ecs_task_definition" "devnet_task_definition_group" {
   # This is due to sync is resource heavy. Recommending set to below if doing sync:
   # CPU = 2048, Memory = 4096
   # Please set it back to cpu 512 and memory of 2048 after sync is done to save the cost
-  cpu = 512
+  cpu = 256
   memory = 2048
   volume {
     name = "efs"
