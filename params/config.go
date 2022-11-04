@@ -53,13 +53,49 @@ var (
 		MinePeriod:           2,
 		SkipV2Validation:     true,
 	}
-	DevnetXDPoSV2Config = &V2{
+	DevnetXDPoSV2Config = &V2Config{
 		SwitchBlock:          big.NewInt(7060500),
 		CertThreshold:        4,
 		TimeoutSyncThreshold: 5,
 		TimeoutPeriod:        10,
 		WaitPeriod:           5,
 		MinePeriod:           5,
+	}
+
+	DevnetV2Configs = map[uint64]*V2Config{
+		0: {
+			SwitchBlock:          big.NewInt(7060500),
+			CertThreshold:        4,
+			TimeoutSyncThreshold: 5,
+			TimeoutPeriod:        10,
+			WaitPeriod:           5,
+			MinePeriod:           5,
+		},
+		7060500: {
+			SwitchBlock:          big.NewInt(7060500),
+			CertThreshold:        4,
+			TimeoutSyncThreshold: 5,
+			TimeoutPeriod:        10,
+			WaitPeriod:           5,
+			MinePeriod:           5,
+		},
+		9900000: {
+			SwitchBlock:          big.NewInt(9900000),
+			CertThreshold:        8,
+			TimeoutSyncThreshold: 5,
+			TimeoutPeriod:        10,
+			WaitPeriod:           5,
+			MinePeriod:           5,
+		},
+		10000000: {
+			SwitchBlock:          big.NewInt(9900000),
+			CertThreshold:        8,
+			TimeoutSyncThreshold: 5,
+			TimeoutPeriod:        10,
+			WaitPeriod:           5,
+			MinePeriod:           5,
+			SkipV2Validation:     false,
+		},
 	}
 
 	// XDPoSChain mainnet config
@@ -120,7 +156,7 @@ var (
 		},
 	}
 
-	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
+	// DevnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
 	DevnetChainConfig = &ChainConfig{
 		ChainId:        big.NewInt(551),
 		HomesteadBlock: big.NewInt(1),
@@ -136,7 +172,8 @@ var (
 			RewardCheckpoint:    900,
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("0x746249c61f5832c5eed53172776b460491bdcd5c"),
-			V2:                  DevnetXDPoSV2Config,
+			V2:                  DevnetV2Configs[0],
+			V2all:               DevnetV2Configs,
 		},
 	}
 
@@ -242,6 +279,12 @@ type XDPoSConfig struct {
 }
 
 type V2 struct {
+	FirstSwitchBlock *big.Int             `json:"switchBlock"`
+	Config           *V2Config            `json: "config"`
+	AllConfigs       map[uint64]*V2Config `json:"allConfigs"`
+}
+
+type V2Config struct {
 	WaitPeriod           int      `json:"waitPeriod"`           // Miner wait period to check mine event
 	MinePeriod           int      `json:"minePeriod"`           // Miner mine period to mine a block
 	SwitchBlock          *big.Int `json:"switchBlock"`          // v1 to v2 switch block number
@@ -256,8 +299,15 @@ func (c *XDPoSConfig) String() string {
 	return "XDPoS"
 }
 
+func (c *XDPoSConfig) updateV2Config(num uint64) {
+	if c.V2.AllConfigs[num] != nil {
+		c.V2.Config = c.V2.AllConfigs[num]
+	}
+}
+
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, skipExtraCheck bool) string {
 	if c.V2 != nil && c.V2.SwitchBlock != nil && num.Cmp(c.V2.SwitchBlock) > 0 {
+		c.updateV2Config(num.Uint64() - 1)
 		if skipExtraCheck {
 			return ConsensusEngineVersion2
 		}
