@@ -851,7 +851,6 @@ func (x *XDPoS_v2) setNewRound(blockChainReader consensus.ChainReader, round typ
 	x.timeoutWorker.Reset(blockChainReader)
 	//TODO: vote pools
 	x.timeoutPool.Clear()
-	x.votePoolCollectionTime = time.Time{}
 }
 
 func (x *XDPoS_v2) broadcastToBftChannel(msg interface{}) {
