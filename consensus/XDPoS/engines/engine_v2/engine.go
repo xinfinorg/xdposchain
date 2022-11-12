@@ -64,7 +64,7 @@ type XDPoS_v2 struct {
 
 func New(config *params.XDPoSConfig, db ethdb.Database, waitPeriodCh chan int) *XDPoS_v2 {
 	// Setup timeoutTimer
-	duration := time.Duration(config.V2.TimeoutPeriod) * time.Second
+	duration := time.Duration(config.V2.CurrentConfig.TimeoutPeriod) * time.Second
 	timeoutTimer := countdown.NewCountDown(duration)
 
 	snapshots, _ := lru.NewARC(utils.InmemorySnapshots)
@@ -72,8 +72,8 @@ func New(config *params.XDPoSConfig, db ethdb.Database, waitPeriodCh chan int) *
 	epochSwitches, _ := lru.NewARC(int(utils.InmemoryEpochs))
 	verifiedHeaders, _ := lru.NewARC(utils.InmemorySnapshots)
 
-	timeoutPool := utils.NewPool(config.V2.CertThreshold)
-	votePool := utils.NewPool(config.V2.CertThreshold)
+	timeoutPool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
+	votePool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
 	engine := &XDPoS_v2{
 		config:       config,
 		db:           db,
@@ -127,6 +127,22 @@ sigHash returns the hash which is used as input for the delegated-proof-of-stake
 signing. It is the hash of the entire header apart from the 65 byte signature
 contained at the end of the extra data.
 */
+
+func (x *XDPoS_v2) Renew(config *params.XDPoSConfig) {
+	// Setup timeoutTimer
+	duration := time.Duration(config.V2.CurrentConfig.TimeoutPeriod) * time.Second
+	timeoutTimer := countdown.NewCountDown(duration)
+
+	timeoutPool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
+	votePool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
+	x.timeoutWorker = timeoutTimer
+	x.timeoutPool = timeoutPool
+	x.votePool = votePool
+
+	// Add callback to the timer
+	timeoutTimer.OnTimeoutFn = x.OnCountdownTimeout
+}
+
 func (x *XDPoS_v2) SignHash(header *types.Header) (hash common.Hash) {
 	return sigHash(header)
 }
@@ -751,7 +767,7 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 	if quorumCert == nil {
 		log.Warn("[verifyQC] QC is Nil")
 		return utils.ErrInvalidQC
-	} else if (quorumCert.ProposedBlockInfo.Number.Uint64() > x.config.V2.SwitchBlock.Uint64()) && (signatures == nil || (len(signatures) < x.config.V2.CertThreshold)) {
+	} else if (quorumCert.ProposedBlockInfo.Number.Uint64() > x.config.V2.FirstSwitchBlock.Uint64()) && (signatures == nil || (len(signatures) < x.config.V2.CertThreshold)) {
 		//First V2 Block QC, QC Signatures is initial nil
 		log.Warn("[verifyHeader] Invalid QC Signature is nil or empty", "QC", quorumCert, "QCNumber", quorumCert.ProposedBlockInfo.Number, "Signatures len", len(signatures))
 		return utils.ErrInvalidQC
@@ -808,7 +824,7 @@ func (x *XDPoS_v2) processQC(blockChainReader consensus.ChainReader, incomingQuo
 		log.Error("[processQC] Block not found using the QC", "quorumCert.ProposedBlockInfo.Hash", incomingQuorumCert.ProposedBlockInfo.Hash, "incomingQuorumCert.ProposedBlockInfo.Number", incomingQuorumCert.ProposedBlockInfo.Number)
 		return fmt.Errorf("block not found, number: %v, hash: %v", incomingQuorumCert.ProposedBlockInfo.Number, incomingQuorumCert.ProposedBlockInfo.Hash)
 	}
-	if proposedBlockHeader.Number.Cmp(x.config.V2.SwitchBlock) > 0 {
+	if proposedBlockHeader.Number.Cmp(x.config.V2.FirstSwitchBlock) > 0 {
 		// Extra field contain parent information
 		proposedBlockQuorumCert, round, _, err := x.getExtraFields(proposedBlockHeader)
 		if err != nil {
@@ -864,7 +880,7 @@ func (x *XDPoS_v2) getSyncInfo() *types.SyncInfo {
 //Find parent and grandparent, check round number, if so, commit grandparent(grandGrandParent of currentBlock)
 func (x *XDPoS_v2) commitBlocks(blockChainReader consensus.ChainReader, proposedBlockHeader *types.Header, proposedBlockRound *types.Round, incomingQc *types.QuorumCert) (bool, error) {
 	// XDPoS v1.0 switch to v2.0, skip commit
-	if big.NewInt(0).Sub(proposedBlockHeader.Number, big.NewInt(2)).Cmp(x.config.V2.SwitchBlock) <= 0 {
+	if big.NewInt(0).Sub(proposedBlockHeader.Number, big.NewInt(2)).Cmp(x.config.V2.FirstSwitchBlock) <= 0 {
 		return false, nil
 	}
 	// Find the last two parent block and check their rounds are the continuous
@@ -941,7 +957,7 @@ func (x *XDPoS_v2) calcMasternodes(chain consensus.ChainReader, blockNum *big.In
 	}
 	candidates := snap.NextEpochMasterNodes
 
-	if blockNum.Uint64() == x.config.V2.SwitchBlock.Uint64()+1 {
+	if blockNum.Uint64() == x.config.V2.FirstSwitchBlock.Uint64()+1 {
 		log.Info("[calcMasternodes] examing first v2 block")
 		return candidates, []common.Address{}, nil
 	}
@@ -1023,4 +1039,9 @@ func (x *XDPoS_v2) periodicJob() {
 
 func (x *XDPoS_v2) GetLatestCommittedBlockInfo() *types.BlockInfo {
 	return x.highestCommitBlock
+}
+
+//TODO
+func (x *XDPoS_v2) getCertThreshold(blockNumber *big.Int) int {
+	return 6
 }

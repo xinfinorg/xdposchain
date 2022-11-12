@@ -280,7 +280,7 @@ type XDPoSConfig struct {
 
 type V2 struct {
 	FirstSwitchBlock *big.Int             `json:"switchBlock"`
-	Config           *V2Config            `json: "config"`
+	CurrentConfig    *V2Config            `json:"config"`
 	AllConfigs       map[uint64]*V2Config `json:"allConfigs"`
 }
 

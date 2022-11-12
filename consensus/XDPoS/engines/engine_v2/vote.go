@@ -99,7 +99,7 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, pooledVotes map[common.Hash]utils.PoolObj, currentVoteMsg utils.PoolObj, proposedBlockHeader *types.Header) error {
 
 	masternodes := x.GetMasternodes(chain, proposedBlockHeader)
-
+	certThreshold := x.getCertThreshold(proposedBlockHeader.Number)
 	// Filter out non-Master nodes signatures
 	var wg sync.WaitGroup
 	wg.Add(len(pooledVotes))
