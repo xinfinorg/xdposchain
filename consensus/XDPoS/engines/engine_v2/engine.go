@@ -164,7 +164,7 @@ func (x *XDPoS_v2) initial(chain consensus.ChainReader, header *types.Header) er
 	var quorumCert *types.QuorumCert
 	var err error
 
-	if header.Number.Int64() == x.config.V2.SwitchBlock.Int64() {
+	if header.Number.Int64() == x.config.V2.FirstSwitchBlock.Int64() {
 		log.Info("[initial] highest QC for consensus v2 first block")
 		blockInfo := &types.BlockInfo{
 			Hash:   header.Hash(),
@@ -194,13 +194,13 @@ func (x *XDPoS_v2) initial(chain consensus.ChainReader, header *types.Header) er
 	}
 
 	// Initial first v2 snapshot
-	lastGapNum := x.config.V2.SwitchBlock.Uint64() - x.config.Gap
+	lastGapNum := x.config.V2.FirstSwitchBlock.Uint64() - x.config.Gap
 	lastGapHeader := chain.GetHeaderByNumber(lastGapNum)
 
 	snap, _ := loadSnapshot(x.db, lastGapHeader.Hash())
 
 	if snap == nil {
-		checkpointHeader := chain.GetHeaderByNumber(x.config.V2.SwitchBlock.Uint64())
+		checkpointHeader := chain.GetHeaderByNumber(x.config.V2.FirstSwitchBlock.Uint64())
 
 		log.Info("[initial] init first snapshot")
 		_, _, masternodes, err := x.getExtraFields(checkpointHeader)
@@ -218,10 +218,10 @@ func (x *XDPoS_v2) initial(chain consensus.ChainReader, header *types.Header) er
 	}
 
 	// Initial timeout
-	log.Info("[initial] miner wait period", "period", x.config.V2.WaitPeriod)
+	log.Info("[initial] miner wait period", "period", x.config.V2.CurrentConfig.WaitPeriod)
 	// avoid deadlock
 	go func() {
-		x.waitPeriodCh <- x.config.V2.WaitPeriod
+		x.waitPeriodCh <- x.config.V2.CurrentConfig.WaitPeriod
 	}()
 
 	// Kick-off the countdown timer
@@ -247,8 +247,8 @@ func (x *XDPoS_v2) YourTurn(chain consensus.ChainReader, parent *types.Header, s
 	}
 
 	waitedTime := time.Now().Unix() - parent.Time.Int64()
-	if waitedTime < int64(x.config.V2.MinePeriod) {
-		log.Trace("[YourTurn] wait after mine period", "minePeriod", x.config.V2.MinePeriod, "waitedTime", waitedTime)
+	if waitedTime < int64(x.config.V2.CurrentConfig.MinePeriod) {
+		log.Trace("[YourTurn] wait after mine period", "minePeriod", x.config.V2.CurrentConfig.MinePeriod, "waitedTime", waitedTime)
 		return false, nil
 	}
 
@@ -719,7 +719,7 @@ func (x *XDPoS_v2) VerifyBlockInfo(blockChainReader consensus.ChainReader, block
 	}
 
 	// Switch block is a v1 block, there is no valid extra to decode, nor its round
-	if blockInfo.Number.Cmp(x.config.V2.SwitchBlock) == 0 {
+	if blockInfo.Number.Cmp(x.config.V2.CurrentConfig.SwitchBlock) == 0 {
 		if blockInfo.Round != 0 {
 			log.Error("[VerifyBlockInfo] Switch block round is not 0", "BlockInfoHash", blockInfo.Hash.Hex(), "BlockInfoNum", blockInfo.Number, "BlockInfoRound", blockInfo.Round, "blockHeaderNum", blockHeader.Number)
 			return fmt.Errorf("[VerifyBlockInfo] switch block round have to be 0")
@@ -767,7 +767,7 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 	if quorumCert == nil {
 		log.Warn("[verifyQC] QC is Nil")
 		return utils.ErrInvalidQC
-	} else if (quorumCert.ProposedBlockInfo.Number.Uint64() > x.config.V2.FirstSwitchBlock.Uint64()) && (signatures == nil || (len(signatures) < x.config.V2.CertThreshold)) {
+	} else if (quorumCert.ProposedBlockInfo.Number.Uint64() > x.config.V2.FirstSwitchBlock.Uint64()) && (signatures == nil || (len(signatures) < x.config.V2.CurrentConfig.CertThreshold)) {
 		//First V2 Block QC, QC Signatures is initial nil
 		log.Warn("[verifyHeader] Invalid QC Signature is nil or empty", "QC", quorumCert, "QCNumber", quorumCert.ProposedBlockInfo.Number, "Signatures len", len(signatures))
 		return utils.ErrInvalidQC

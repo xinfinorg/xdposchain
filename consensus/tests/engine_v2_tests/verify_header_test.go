@@ -28,7 +28,7 @@ func TestShouldVerifyBlock(t *testing.T) {
 	// Enable verify
 	config.XDPoS.V2.SkipV2Validation = false
 	// Skip the mining time validation by set mine time to 0
-	config.XDPoS.V2.MinePeriod = 0
+	config.XDPoS.V2.CurrentConfig.MinePeriod = 0
 	// Block 901 is the first v2 block with round of 1
 	blockchain, _, _, signer, signFn, _ := PrepareXDCTestBlockChainForV2Engine(t, 910, &config, nil)
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
@@ -180,7 +180,7 @@ func TestShouldFailIfNotEnoughQCSignatures(t *testing.T) {
 	// Enable verify
 	config.XDPoS.V2.SkipV2Validation = false
 	// Skip the mining time validation by set mine time to 0
-	config.XDPoS.V2.MinePeriod = 0
+	config.XDPoS.V2.CurrentConfig.MinePeriod = 0
 	// Block 901 is the first v2 block with round of 1
 	blockchain, _, currentBlock, signer, signFn, _ := PrepareXDCTestBlockChainForV2Engine(t, 902, &config, nil)
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
@@ -233,7 +233,7 @@ func TestShouldVerifyHeaders(t *testing.T) {
 	// Enable verify
 	config.XDPoS.V2.SkipV2Validation = false
 	// Skip the mining time validation by set mine time to 0
-	config.XDPoS.V2.MinePeriod = 0
+	config.XDPoS.V2.CurrentConfig.MinePeriod = 0
 	// Block 901 is the first v2 block with round of 1
 	blockchain, _, _, _, _, _ := PrepareXDCTestBlockChainForV2Engine(t, 910, &config, nil)
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
@@ -274,7 +274,7 @@ func TestShouldVerifyHeadersEvenIfParentsNotYetWrittenIntoDB(t *testing.T) {
 	// Enable verify
 	config.XDPoS.V2.SkipV2Validation = false
 	// Skip the mining time validation by set mine time to 0
-	config.XDPoS.V2.MinePeriod = 0
+	config.XDPoS.V2.CurrentConfig.MinePeriod = 0
 	// Block 901 is the first v2 block with round of 1
 	blockchain, _, block910, signer, signFn, _ := PrepareXDCTestBlockChainForV2Engine(t, 910, &config, nil)
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
@@ -283,12 +283,12 @@ func TestShouldVerifyHeadersEvenIfParentsNotYetWrittenIntoDB(t *testing.T) {
 
 	// Create block 911 but don't write into DB
 	blockNumber := 911
-	roundNumber := int64(blockNumber) - config.XDPoS.V2.SwitchBlock.Int64()
+	roundNumber := int64(blockNumber) - config.XDPoS.V2.FirstSwitchBlock.Int64()
 	block911 := CreateBlock(blockchain, &config, block910, blockNumber, roundNumber, signer.Hex(), signer, signFn, nil, nil)
 
 	// Create block 912 and not write into DB as well
 	blockNumber = 912
-	roundNumber = int64(blockNumber) - config.XDPoS.V2.SwitchBlock.Int64()
+	roundNumber = int64(blockNumber) - config.XDPoS.V2.FirstSwitchBlock.Int64()
 	block912 := CreateBlock(blockchain, &config, block911, blockNumber, roundNumber, signer.Hex(), signer, signFn, nil, nil)
 
 	headersTobeVerified = append(headersTobeVerified, block910.Header(), block911.Header(), block912.Header())

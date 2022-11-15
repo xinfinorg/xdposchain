@@ -36,30 +36,41 @@ var (
 )
 
 var (
-	XDPoSV2Config = &V2{
-		SwitchBlock:          big.NewInt(9999999999),
-		CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
-		TimeoutSyncThreshold: 3,
-		TimeoutPeriod:        60,
-		WaitPeriod:           10,
-		MinePeriod:           10,
+	MainnetV2Configs = map[uint64]*V2Config{
+		0: {
+			SwitchBlock:          big.NewInt(9999999999),
+			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
+			TimeoutSyncThreshold: 3,
+			TimeoutPeriod:        60,
+			WaitPeriod:           10,
+			MinePeriod:           10,
+		},
+		9999999999: {
+			SwitchBlock:          big.NewInt(9999999999),
+			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
+			TimeoutSyncThreshold: 3,
+			TimeoutPeriod:        60,
+			WaitPeriod:           10,
+			MinePeriod:           10,
+		},
 	}
-	TestXDPoSV2Config = &V2{
-		SwitchBlock:          big.NewInt(900),
-		CertThreshold:        3,
-		TimeoutSyncThreshold: 2,
-		TimeoutPeriod:        10,
-		WaitPeriod:           1,
-		MinePeriod:           2,
-		SkipV2Validation:     true,
-	}
-	DevnetXDPoSV2Config = &V2Config{
-		SwitchBlock:          big.NewInt(7060500),
-		CertThreshold:        4,
-		TimeoutSyncThreshold: 5,
-		TimeoutPeriod:        10,
-		WaitPeriod:           5,
-		MinePeriod:           5,
+	TestV2Configs = map[uint64]*V2Config{
+		0: {
+			SwitchBlock:          big.NewInt(900),
+			CertThreshold:        3,
+			TimeoutSyncThreshold: 2,
+			TimeoutPeriod:        10,
+			WaitPeriod:           1,
+			MinePeriod:           2,
+		},
+		900: {
+			SwitchBlock:          big.NewInt(900),
+			CertThreshold:        3,
+			TimeoutSyncThreshold: 2,
+			TimeoutPeriod:        10,
+			WaitPeriod:           1,
+			MinePeriod:           2,
+		},
 	}
 
 	DevnetV2Configs = map[uint64]*V2Config{
@@ -94,7 +105,6 @@ var (
 			TimeoutPeriod:        10,
 			WaitPeriod:           5,
 			MinePeriod:           5,
-			SkipV2Validation:     false,
 		},
 	}
 
@@ -114,7 +124,11 @@ var (
 			RewardCheckpoint:    900,
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("xdc92a289fe95a85c53b8d0d113cbaef0c1ec98ac65"),
-			V2:                  XDPoSV2Config,
+			V2: &V2{
+				FirstSwitchBlock: MainnetV2Configs[0].SwitchBlock,
+				CurrentConfig:    MainnetV2Configs[0],
+				AllConfigs:       MainnetV2Configs,
+			},
 		},
 	}
 
@@ -152,7 +166,12 @@ var (
 			RewardCheckpoint:    900,
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("xdc746249c61f5832c5eed53172776b460491bdcd5c"),
-			V2:                  TestXDPoSV2Config,
+			V2: &V2{
+				FirstSwitchBlock: TestV2Configs[0].SwitchBlock,
+				CurrentConfig:    TestV2Configs[0],
+				AllConfigs:       TestV2Configs,
+				SkipV2Validation: true,
+			},
 		},
 	}
 
@@ -172,8 +191,11 @@ var (
 			RewardCheckpoint:    900,
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("0x746249c61f5832c5eed53172776b460491bdcd5c"),
-			V2:                  DevnetV2Configs[0],
-			V2all:               DevnetV2Configs,
+			V2: &V2{
+				FirstSwitchBlock: DevnetV2Configs[0].SwitchBlock,
+				CurrentConfig:    DevnetV2Configs[0],
+				AllConfigs:       DevnetV2Configs,
+			},
 		},
 	}
 
@@ -192,7 +214,11 @@ var (
 		XDPoS: &XDPoSConfig{
 			Period: 15,
 			Epoch:  30000,
-			V2:     XDPoSV2Config,
+			V2: &V2{
+				FirstSwitchBlock: MainnetV2Configs[0].SwitchBlock,
+				CurrentConfig:    MainnetV2Configs[0],
+				AllConfigs:       MainnetV2Configs,
+			},
 		},
 	}
 
@@ -212,7 +238,32 @@ var (
 	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil}
 
 	// XDPoS config with v2 engine after block 901
-	TestXDPoSMockChainConfig = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, &XDPoSConfig{Epoch: 900, Gap: 450, SkipV1Validation: true, V2: TestXDPoSV2Config, FoudationWalletAddr: common.HexToAddress("0x0000000000000000000000000000000000000068"), Reward: 250}}
+	TestXDPoSMockChainConfig = &ChainConfig{
+		big.NewInt(1337),
+		big.NewInt(0),
+		nil,
+		false,
+		big.NewInt(0),
+		common.Hash{},
+		big.NewInt(0),
+		big.NewInt(0),
+		big.NewInt(0),
+		nil,
+		new(EthashConfig),
+		nil,
+		&XDPoSConfig{
+			Epoch:               900,
+			Gap:                 450,
+			SkipV1Validation:    true,
+			FoudationWalletAddr: common.HexToAddress("0x0000000000000000000000000000000000000068"),
+			Reward:              250,
+			V2: &V2{
+				FirstSwitchBlock: TestV2Configs[0].SwitchBlock,
+				CurrentConfig:    TestV2Configs[0],
+				AllConfigs:       TestV2Configs,
+			},
+		},
+	}
 
 	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
@@ -282,6 +333,7 @@ type V2 struct {
 	FirstSwitchBlock *big.Int             `json:"switchBlock"`
 	CurrentConfig    *V2Config            `json:"config"`
 	AllConfigs       map[uint64]*V2Config `json:"allConfigs"`
+	SkipV2Validation bool                 //Skip Block Validation for testing purpose, V2 consensus only
 }
 
 type V2Config struct {
@@ -291,7 +343,6 @@ type V2Config struct {
 	TimeoutSyncThreshold int      `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
 	TimeoutPeriod        int      `json:"timeoutPeriod"`        // Duration in ms
 	CertThreshold        int      `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
-	SkipV2Validation     bool     //Skip Block Validation for testing purpose, V2 consensus only
 }
 
 // String implements the stringer interface, returning the consensus engine details.
@@ -301,12 +352,12 @@ func (c *XDPoSConfig) String() string {
 
 func (c *XDPoSConfig) updateV2Config(num uint64) {
 	if c.V2.AllConfigs[num] != nil {
-		c.V2.Config = c.V2.AllConfigs[num]
+		c.V2.CurrentConfig = c.V2.AllConfigs[num]
 	}
 }
 
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, skipExtraCheck bool) string {
-	if c.V2 != nil && c.V2.SwitchBlock != nil && num.Cmp(c.V2.SwitchBlock) > 0 {
+	if c.V2 != nil && c.V2.FirstSwitchBlock != nil && num.Cmp(c.V2.FirstSwitchBlock) > 0 {
 		c.updateV2Config(num.Uint64() - 1)
 		if skipExtraCheck {
 			return ConsensusEngineVersion2

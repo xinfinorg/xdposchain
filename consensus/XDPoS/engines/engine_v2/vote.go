@@ -99,7 +99,8 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, pooledVotes map[common.Hash]utils.PoolObj, currentVoteMsg utils.PoolObj, proposedBlockHeader *types.Header) error {
 
 	masternodes := x.GetMasternodes(chain, proposedBlockHeader)
-	certThreshold := x.getCertThreshold(proposedBlockHeader.Number)
+	//TODO
+	//certThreshold := x.getCertThreshold(proposedBlockHeader.Number)
 	// Filter out non-Master nodes signatures
 	var wg sync.WaitGroup
 	wg.Add(len(pooledVotes))
@@ -131,7 +132,7 @@ func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, poole
 	}
 
 	// Skip and wait for the next vote to process again if valid votes is less than what we required
-	if len(validSignatureSlice) < x.config.V2.CertThreshold {
+	if len(validSignatureSlice) < x.config.V2.CurrentConfig.CertThreshold {
 		log.Warn("[onVotePoolThresholdReached] Not enough valid signatures to generate QC", "VotesSignaturesAfterFilter", validSignatureSlice, "NumberOfValidVotes", len(validSignatureSlice), "NumberOfVotes", len(pooledVotes))
 		return nil
 	}
