@@ -60,6 +60,8 @@ type XDPoS_v2 struct {
 	HookPenalty func(chain consensus.ChainReader, number *big.Int, parentHash common.Hash, candidates []common.Address) ([]common.Address, error)
 
 	ForensicsProcessor *Forensics
+
+	votePoolCollectionTime time.Time
 }
 
 func New(config *params.XDPoSConfig, db ethdb.Database, waitPeriodCh chan int) *XDPoS_v2 {
@@ -773,6 +775,7 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 		log.Warn("[verifyHeader] Invalid QC Signature is nil or empty", "QC", quorumCert, "QCNumber", quorumCert.ProposedBlockInfo.Number, "Signatures len", len(signatures))
 		return utils.ErrInvalidQC
 	}
+	start := time.Now()
 
 	var wg sync.WaitGroup
 	fmt.Println("signatures", len(signatures))
@@ -799,6 +802,8 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 		}(signature)
 	}
 	wg.Wait()
+	elapsed := time.Since(start)
+	log.Info("[verifyQC] time verify message signatures of qc", "elapsed", elapsed)
 	if haveError != nil {
 		return haveError
 	}

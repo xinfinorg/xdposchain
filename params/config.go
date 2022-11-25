@@ -85,36 +85,36 @@ var (
 
 	DevnetV2Configs = map[uint64]*V2Config{
 		Default: {
-			SwitchBlock:          big.NewInt(7060500),
+			SwitchBlock:          big.NewInt(7074000),
 			CertThreshold:        4,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        10,
 			WaitPeriod:           5,
 			MinePeriod:           5,
 		},
-		7060500: {
-			SwitchBlock:          big.NewInt(7060500),
-			CertThreshold:        4,
+		7074000: {
+			SwitchBlock:          big.NewInt(7074000),
+			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
-			TimeoutPeriod:        10,
-			WaitPeriod:           5,
-			MinePeriod:           5,
+			TimeoutPeriod:        25,
+			WaitPeriod:           10,
+			MinePeriod:           10,
 		},
 		9900000: {
 			SwitchBlock:          big.NewInt(9900000),
-			CertThreshold:        8,
+			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
-			TimeoutPeriod:        10,
-			WaitPeriod:           5,
-			MinePeriod:           5,
+			TimeoutPeriod:        25,
+			WaitPeriod:           10,
+			MinePeriod:           10,
 		},
 		10000000: {
 			SwitchBlock:          big.NewInt(9900000),
-			CertThreshold:        8,
+			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
-			TimeoutPeriod:        10,
-			WaitPeriod:           5,
-			MinePeriod:           5,
+			TimeoutPeriod:        25,
+			WaitPeriod:           10,
+			MinePeriod:           10,
 		},
 	}
 
