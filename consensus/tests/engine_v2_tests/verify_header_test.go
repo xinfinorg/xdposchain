@@ -179,7 +179,6 @@ func TestConfigSwitchOnDifferentCertThreshold(t *testing.T) {
 	// Enable verify
 	config.XDPoS.V2.SkipV2Validation = false
 	// Block 901 is the first v2 block with round of 1
-	//blockchain, _, _, signer, signFn, _ := PrepareXDCTestBlockChainForV2Engine(t, 910, &config, nil)
 	blockchain, _, _, _, _, _ := PrepareXDCTestBlockChainForV2Engine(t, 915, &config, nil)
 
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
@@ -352,7 +351,6 @@ func TestShouldVerifyHeadersEvenIfParentsNotYetWrittenIntoDB(t *testing.T) {
 		select {
 		case result := <-results:
 			if result != nil {
-				fmt.Println(result)
 				panic("Error received while verifying headers")
 			}
 			verified = append(verified, true)

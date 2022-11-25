@@ -131,19 +131,15 @@ signing. It is the hash of the entire header apart from the 65 byte signature
 contained at the end of the extra data.
 */
 
-func (x *XDPoS_v2) Renew(config *params.XDPoSConfig) {
+func (x *XDPoS_v2) UpdateParams() {
 	// Setup timeoutTimer
-	duration := time.Duration(config.V2.CurrentConfig.TimeoutPeriod) * time.Second
-	timeoutTimer := countdown.NewCountDown(duration)
+	duration := time.Duration(x.config.V2.CurrentConfig.TimeoutPeriod) * time.Second
+	x.timeoutWorker.SetTimeoutDuration(duration)
 
-	timeoutPool := utils.NewPool()
-	votePool := utils.NewPool()
-	x.timeoutWorker = timeoutTimer
-	x.timeoutPool = timeoutPool
-	x.votePool = votePool
-
-	// Add callback to the timer
-	timeoutTimer.OnTimeoutFn = x.OnCountdownTimeout
+	// avoid deadlock
+	go func() {
+		x.waitPeriodCh <- x.config.V2.CurrentConfig.WaitPeriod
+	}()
 }
 
 func (x *XDPoS_v2) SignHash(header *types.Header) (hash common.Hash) {
@@ -778,7 +774,6 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 	start := time.Now()
 
 	var wg sync.WaitGroup
-	fmt.Println("signatures", len(signatures))
 	wg.Add(len(signatures))
 	var haveError error
 
@@ -1046,9 +1041,4 @@ func (x *XDPoS_v2) periodicJob() {
 
 func (x *XDPoS_v2) GetLatestCommittedBlockInfo() *types.BlockInfo {
 	return x.highestCommitBlock
-}
-
-//TODO
-func (x *XDPoS_v2) getCertThreshold(blockNumber *big.Int) int {
-	return 6
 }

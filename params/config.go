@@ -21,7 +21,6 @@ import (
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -61,7 +60,7 @@ var (
 			SwitchBlock:          big.NewInt(900),
 			CertThreshold:        3,
 			TimeoutSyncThreshold: 2,
-			TimeoutPeriod:        10,
+			TimeoutPeriod:        4,
 			WaitPeriod:           1,
 			MinePeriod:           2,
 		},
@@ -69,12 +68,20 @@ var (
 			SwitchBlock:          big.NewInt(900),
 			CertThreshold:        3,
 			TimeoutSyncThreshold: 2,
-			TimeoutPeriod:        10,
+			TimeoutPeriod:        4,
 			WaitPeriod:           1,
 			MinePeriod:           2,
 		},
 		910: {
 			SwitchBlock:          big.NewInt(910),
+			CertThreshold:        5,
+			TimeoutSyncThreshold: 2,
+			TimeoutPeriod:        4,
+			WaitPeriod:           2,
+			MinePeriod:           3,
+		},
+		1799: {
+			SwitchBlock:          big.NewInt(1799),
 			CertThreshold:        5,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
@@ -343,8 +350,7 @@ type V2 struct {
 	FirstSwitchBlock *big.Int             `json:"switchBlock"`
 	CurrentConfig    *V2Config            `json:"config"`
 	AllConfigs       map[uint64]*V2Config `json:"allConfigs"`
-	configList       []uint64             //list of switch block of configs
-	configLRU        *lru.Cache           //cache for each block's config
+	configIndex      []uint64             //list of switch block of configs
 	SkipV2Validation bool                 //Skip Block Validation for testing purpose, V2 consensus only
 }
 
@@ -373,7 +379,7 @@ func (c *XDPoSConfig) BuildConfigIndex() {
 			}
 		}
 	}
-	c.V2.configList = list
+	c.V2.configIndex = list
 }
 
 func (c *XDPoSConfig) String() string {
@@ -384,30 +390,28 @@ func (c *XDPoSConfig) updateV2Config(num uint64) {
 	var index uint64
 
 	//find the right config
-	for i := range c.V2.configList {
-		if c.V2.configList[i] < num {
-			index = c.V2.configList[i]
+	for i := range c.V2.configIndex {
+		if c.V2.configIndex[i] <= num {
+			index = c.V2.configIndex[i]
 		} else {
 			break
 		}
 	}
 	// update to current config
-	// WARN: maybe this has race condition
 	c.V2.CurrentConfig = c.V2.AllConfigs[index]
 }
 
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, skipExtraCheck bool) string {
 	if !skipExtraCheck && (len(extraByte) == 0 || extraByte[0] != 2) {
-		//fmt.Println("v1")
 		return ConsensusEngineVersion1
 	}
 
 	if c.V2 != nil && c.V2.FirstSwitchBlock != nil && num.Cmp(c.V2.FirstSwitchBlock) > 0 {
+		// We have to check each block configuration due to reorg chain case
+		// Block may get rollback and old config need to apply to verify block
 		c.updateV2Config(num.Uint64() - 1)
-		//fmt.Println("v2")
 		return ConsensusEngineVersion2
 	}
-	//fmt.Println("v1")
 	return ConsensusEngineVersion1
 }
 
