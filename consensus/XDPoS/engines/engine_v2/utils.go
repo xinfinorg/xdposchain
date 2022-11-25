@@ -119,7 +119,7 @@ func (x *XDPoS_v2) verifyMsgSignature(signedHashToBeVerified common.Hash, signat
 		}
 	}
 
-	return false, signerAddress, fmt.Errorf("Masternodes list does not contain signer address, Signer address: %v", signerAddress.Hex())
+	return false, signerAddress, nil
 }
 
 func (x *XDPoS_v2) getExtraFields(header *types.Header) (*types.QuorumCert, types.Round, []common.Address, error) {

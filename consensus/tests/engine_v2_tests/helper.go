@@ -41,6 +41,8 @@ var (
 	acc1Key, _  = crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
 	acc2Key, _  = crypto.HexToECDSA("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
 	acc3Key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	acc4Key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f292")
+	acc5Key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f293")
 	voterKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee04aefe388d1e14474d32c45c72ce7b7a")
 	acc1Addr    = crypto.PubkeyToAddress(acc1Key.PublicKey)  //xdc703c4b2bD70c169f5717101CaeE543299Fc946C7
 	acc2Addr    = crypto.PubkeyToAddress(acc2Key.PublicKey)  //xdc0D3ab14BBaD3D99F4203bd7a11aCB94882050E7e
@@ -522,7 +524,7 @@ func createBlockFromHeader(bc *BlockChain, customHeader *types.Header, txs []*ty
 		Difficulty:  difficulty,
 		Number:      customHeader.Number,
 		GasLimit:    1200000000,
-		Time:        big.NewInt(time.Now().Unix()),
+		Time:        big.NewInt(time.Now().Unix() - 1000000 + int64(customHeader.Number.Uint64()*10)),
 		Extra:       customHeader.Extra,
 		Validator:   customHeader.Validator,
 		Validators:  customHeader.Validators,
@@ -659,7 +661,7 @@ func generateV2Extra(roundNumber int64, currentBlock *types.Block, signer common
 	var signatures []types.Signature
 	if len(accKeys) == 0 {
 		// Sign from acc 1, 2, 3 by default
-		accKeys = append(accKeys, acc1Key, acc2Key, acc3Key)
+		accKeys = append(accKeys, acc1Key, acc2Key, acc3Key, voterKey)
 	}
 	for _, acc := range accKeys {
 		h := SignHashByPK(acc, types.VoteSigHash(voteForSign).Bytes())

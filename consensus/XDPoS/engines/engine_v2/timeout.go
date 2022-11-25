@@ -24,11 +24,11 @@ func (x *XDPoS_v2) timeoutHandler(blockChainReader consensus.ChainReader, timeou
 		}
 	}
 	// Collect timeout, generate TC
-	isThresholdReached, numberOfTimeoutsInPool, pooledTimeouts := x.timeoutPool.Add(timeout)
+	numberOfTimeoutsInPool, pooledTimeouts := x.timeoutPool.Add(timeout)
 	log.Debug("[timeoutHandler] collect timeout", "number", numberOfTimeoutsInPool)
 
 	// Threshold reached
-	// if isThresholdReached() {}
+	isThresholdReached := numberOfTimeoutsInPool >= x.config.V2.CurrentConfig.CertThreshold
 	if isThresholdReached {
 		log.Info(fmt.Sprintf("Timeout pool threashold reached: %v, number of items in the pool: %v", isThresholdReached, numberOfTimeoutsInPool))
 		err := x.onTimeoutPoolThresholdReached(blockChainReader, pooledTimeouts, timeout, timeout.GapNumber)

@@ -45,7 +45,7 @@ func TestCountdownTimeoutNotToSendTimeoutMessageIfNotInMasternodeList(t *testing
 	}
 }
 
-func TestSyncInfoAfterReachTimeoutSnycThreadhold(t *testing.T) {
+func TestSyncInfoAfterReachTimeoutSyncThreadhold(t *testing.T) {
 	blockchain, _, _, _, _, _ := PrepareXDCTestBlockChainForV2Engine(t, 901, params.TestXDPoSMockChainConfig, nil)
 	engineV2 := blockchain.Engine().(*XDPoS.XDPoS).EngineV2
 	engineV2.SetNewRoundFaker(blockchain, 1, true)

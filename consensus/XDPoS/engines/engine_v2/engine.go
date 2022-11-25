@@ -72,8 +72,8 @@ func New(config *params.XDPoSConfig, db ethdb.Database, waitPeriodCh chan int) *
 	epochSwitches, _ := lru.NewARC(int(utils.InmemoryEpochs))
 	verifiedHeaders, _ := lru.NewARC(utils.InmemorySnapshots)
 
-	timeoutPool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
-	votePool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
+	timeoutPool := utils.NewPool()
+	votePool := utils.NewPool()
 	engine := &XDPoS_v2{
 		config:       config,
 		db:           db,
@@ -114,6 +114,7 @@ func New(config *params.XDPoSConfig, db ethdb.Database, waitPeriodCh chan int) *
 	timeoutTimer.OnTimeoutFn = engine.OnCountdownTimeout
 
 	engine.periodicJob()
+	config.BuildConfigIndex()
 
 	return engine
 }
@@ -133,8 +134,8 @@ func (x *XDPoS_v2) Renew(config *params.XDPoSConfig) {
 	duration := time.Duration(config.V2.CurrentConfig.TimeoutPeriod) * time.Second
 	timeoutTimer := countdown.NewCountDown(duration)
 
-	timeoutPool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
-	votePool := utils.NewPool(config.V2.CurrentConfig.CertThreshold)
+	timeoutPool := utils.NewPool()
+	votePool := utils.NewPool()
 	x.timeoutWorker = timeoutTimer
 	x.timeoutPool = timeoutPool
 	x.votePool = votePool
@@ -719,7 +720,7 @@ func (x *XDPoS_v2) VerifyBlockInfo(blockChainReader consensus.ChainReader, block
 	}
 
 	// Switch block is a v1 block, there is no valid extra to decode, nor its round
-	if blockInfo.Number.Cmp(x.config.V2.CurrentConfig.SwitchBlock) == 0 {
+	if blockInfo.Number.Cmp(x.config.V2.FirstSwitchBlock) == 0 {
 		if blockInfo.Round != 0 {
 			log.Error("[VerifyBlockInfo] Switch block round is not 0", "BlockInfoHash", blockInfo.Hash.Hex(), "BlockInfoNum", blockInfo.Number, "BlockInfoRound", blockInfo.Round, "blockHeaderNum", blockHeader.Number)
 			return fmt.Errorf("[VerifyBlockInfo] switch block round have to be 0")
@@ -774,6 +775,7 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 	}
 
 	var wg sync.WaitGroup
+	fmt.Println("signatures", len(signatures))
 	wg.Add(len(signatures))
 	var haveError error
 

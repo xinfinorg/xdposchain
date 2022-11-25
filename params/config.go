@@ -21,11 +21,13 @@ import (
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
 	ConsensusEngineVersion1 = "v1"
 	ConsensusEngineVersion2 = "v2"
+	Default                 = 0
 )
 
 var (
@@ -37,7 +39,7 @@ var (
 
 var (
 	MainnetV2Configs = map[uint64]*V2Config{
-		0: {
+		Default: {
 			SwitchBlock:          big.NewInt(9999999999),
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 3,
@@ -55,7 +57,7 @@ var (
 		},
 	}
 	TestV2Configs = map[uint64]*V2Config{
-		0: {
+		Default: {
 			SwitchBlock:          big.NewInt(900),
 			CertThreshold:        3,
 			TimeoutSyncThreshold: 2,
@@ -71,10 +73,18 @@ var (
 			WaitPeriod:           1,
 			MinePeriod:           2,
 		},
+		910: {
+			SwitchBlock:          big.NewInt(910),
+			CertThreshold:        5,
+			TimeoutSyncThreshold: 4,
+			TimeoutPeriod:        5,
+			WaitPeriod:           2,
+			MinePeriod:           3,
+		},
 	}
 
 	DevnetV2Configs = map[uint64]*V2Config{
-		0: {
+		Default: {
 			SwitchBlock:          big.NewInt(7060500),
 			CertThreshold:        4,
 			TimeoutSyncThreshold: 5,
@@ -333,6 +343,8 @@ type V2 struct {
 	FirstSwitchBlock *big.Int             `json:"switchBlock"`
 	CurrentConfig    *V2Config            `json:"config"`
 	AllConfigs       map[uint64]*V2Config `json:"allConfigs"`
+	configList       []uint64             //list of switch block of configs
+	configLRU        *lru.Cache           //cache for each block's config
 	SkipV2Validation bool                 //Skip Block Validation for testing purpose, V2 consensus only
 }
 
@@ -346,27 +358,56 @@ type V2Config struct {
 }
 
 // String implements the stringer interface, returning the consensus engine details.
+func (c *XDPoSConfig) BuildConfigIndex() {
+	var list []uint64
+
+	for i := range c.V2.AllConfigs {
+		list = append(list, i)
+	}
+
+	// sort, sort lib doesn't support type uint64, it's ok to have O(n^2)  because only few items in the list
+	for i := 0; i < len(list)-1; i++ {
+		for j := i + 1; j < len(list); j++ {
+			if list[i] > list[j] {
+				list[i], list[j] = list[j], list[i]
+			}
+		}
+	}
+	c.V2.configList = list
+}
+
 func (c *XDPoSConfig) String() string {
 	return "XDPoS"
 }
 
 func (c *XDPoSConfig) updateV2Config(num uint64) {
-	if c.V2.AllConfigs[num] != nil {
-		c.V2.CurrentConfig = c.V2.AllConfigs[num]
+	var index uint64
+
+	//find the right config
+	for i := range c.V2.configList {
+		if c.V2.configList[i] < num {
+			index = c.V2.configList[i]
+		} else {
+			break
+		}
 	}
+	// update to current config
+	// WARN: maybe this has race condition
+	c.V2.CurrentConfig = c.V2.AllConfigs[index]
 }
 
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, skipExtraCheck bool) string {
+	if !skipExtraCheck && (len(extraByte) == 0 || extraByte[0] != 2) {
+		//fmt.Println("v1")
+		return ConsensusEngineVersion1
+	}
+
 	if c.V2 != nil && c.V2.FirstSwitchBlock != nil && num.Cmp(c.V2.FirstSwitchBlock) > 0 {
 		c.updateV2Config(num.Uint64() - 1)
-		if skipExtraCheck {
-			return ConsensusEngineVersion2
-		}
-		if len(extraByte) == 0 || extraByte[0] != 2 {
-			return ConsensusEngineVersion1
-		}
+		//fmt.Println("v2")
 		return ConsensusEngineVersion2
 	}
+	//fmt.Println("v1")
 	return ConsensusEngineVersion1
 }
 

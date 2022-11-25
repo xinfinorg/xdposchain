@@ -65,10 +65,12 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 	}
 
 	// Collect vote
-	thresholdReached, numberOfVotesInPool, pooledVotes := x.votePool.Add(voteMsg)
+	numberOfVotesInPool, pooledVotes := x.votePool.Add(voteMsg)
 	log.Debug("[voteHandler] collect votes", "number", numberOfVotesInPool)
 	go x.ForensicsProcessor.DetectEquivocationInVotePool(voteMsg, x.votePool)
 	go x.ForensicsProcessor.ProcessVoteEquivocation(chain, x, voteMsg)
+
+	thresholdReached := numberOfVotesInPool >= x.config.V2.CurrentConfig.CertThreshold
 	if thresholdReached {
 		log.Info(fmt.Sprintf("[voteHandler] Vote pool threashold reached: %v, number of items in the pool: %v", thresholdReached, numberOfVotesInPool))
 
@@ -113,8 +115,10 @@ func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, poole
 				ProposedBlockInfo: v.ProposedBlockInfo,
 				GapNumber:         v.GapNumber,
 			}), v.Signature, masternodes)
-			if !verified || err != nil {
-				log.Warn("[onVotePoolThresholdReached] Skip not verified vote signatures when building QC", "Error", err.Error(), "verified", verified)
+			if err != nil {
+				log.Warn("[onVotePoolThresholdReached] Skip not verified vote signatures when building QC", "Error", err.Error())
+			} else if !verified {
+				log.Warn("[onVotePoolThresholdReached] Skip not verified vote signatures when building QC", "verified", verified)
 			} else {
 				signatureSlice[i] = v.Signature
 			}
