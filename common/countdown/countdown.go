@@ -34,7 +34,6 @@ func (t *CountdownTimer) StopTimer() {
 	<-q
 }
 
-// Completely stop the countdown timer from running.
 func (t *CountdownTimer) SetTimeoutDuration(duration time.Duration) {
 	t.timeoutDuration = duration
 }
