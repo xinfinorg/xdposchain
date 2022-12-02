@@ -109,14 +109,14 @@ var (
 		},
 		9900000: {
 			SwitchBlock:          big.NewInt(9900000),
-			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
+			CertThreshold:        common.MaxMasternodesV2*3/5 + 1,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        25,
-			WaitPeriod:           10,
-			MinePeriod:           10,
+			WaitPeriod:           5,
+			MinePeriod:           20,
 		},
 		10000000: {
-			SwitchBlock:          big.NewInt(9900000),
+			SwitchBlock:          big.NewInt(10000000),
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        25,
