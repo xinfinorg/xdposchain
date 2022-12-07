@@ -37,8 +37,8 @@ import (
 )
 
 const (
-	ExtraFieldCheck     = false
-	SkipExtraFieldCheck = true
+	ExtraFieldCheck     = true
+	SkipExtraFieldCheck = false
 )
 
 func (x *XDPoS) SigHash(header *types.Header) (hash common.Hash) {
@@ -145,8 +145,8 @@ func NewFaker(db ethdb.Database, chainConfig *params.ChainConfig) *XDPoS {
 }
 
 // Reset parameters after checkpoint due to config may change
-func (x *XDPoS) UpdateParams() {
-	x.EngineV2.UpdateParams()
+func (x *XDPoS) UpdateParams(header *types.Header) {
+	x.EngineV2.UpdateParams(header)
 }
 
 func (x *XDPoS) Initial(chain consensus.ChainReader, header *types.Header) error {

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitialFirstV2Blcok(t *testing.T) {
+func TestInitialFirstV2Block(t *testing.T) {
 	blockchain, _, currentBlock, _, _, _ := PrepareXDCTestBlockChainForV2Engine(t, 900, params.TestXDPoSMockChainConfig, nil)
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
 	header := currentBlock.Header()

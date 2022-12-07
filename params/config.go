@@ -21,6 +21,7 @@ import (
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/log"
 )
 
 const (
@@ -93,11 +94,11 @@ var (
 	DevnetV2Configs = map[uint64]*V2Config{
 		Default: {
 			SwitchBlock:          big.NewInt(7074000),
-			CertThreshold:        4,
+			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
-			TimeoutPeriod:        10,
-			WaitPeriod:           5,
-			MinePeriod:           5,
+			TimeoutPeriod:        25,
+			WaitPeriod:           10,
+			MinePeriod:           10,
 		},
 		7074000: {
 			SwitchBlock:          big.NewInt(7074000),
@@ -363,11 +364,57 @@ type V2Config struct {
 	CertThreshold        int      `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
 }
 
-// String implements the stringer interface, returning the consensus engine details.
-func (c *XDPoSConfig) BuildConfigIndex() {
+func (c *XDPoSConfig) String() string {
+	return "XDPoS"
+}
+
+func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, extraCheck bool) string {
+	if extraCheck && (len(extraByte) == 0 || extraByte[0] != 2) {
+		return ConsensusEngineVersion1
+	}
+
+	if c.V2 != nil && c.V2.FirstSwitchBlock != nil && num.Cmp(c.V2.FirstSwitchBlock) > 0 {
+		return ConsensusEngineVersion2
+	}
+	return ConsensusEngineVersion1
+}
+
+func (v *V2) UpdateConfig(num uint64) {
+	configNum := num
+	var index uint64
+
+	//find the right config
+	for i := range v.configIndex {
+		if v.configIndex[i] <= configNum {
+			index = v.configIndex[i]
+		} else {
+			break
+		}
+	}
+	// update to current config
+	log.Info("[updateV2Config] Update config", "index", index, "block", num, "switchBlock", v.AllConfigs[index].SwitchBlock)
+	v.CurrentConfig = v.AllConfigs[index]
+}
+
+func (v *V2) Config(num uint64) *V2Config {
+	configNum := num - 1 //start from next block from switchblock number
+	var index uint64
+
+	//find the right config
+	for i := range v.configIndex {
+		if v.configIndex[i] <= configNum {
+			index = v.configIndex[i]
+		} else {
+			break
+		}
+	}
+	return v.AllConfigs[index]
+}
+
+func (v *V2) BuildConfigIndex() {
 	var list []uint64
 
-	for i := range c.V2.AllConfigs {
+	for i := range v.AllConfigs {
 		list = append(list, i)
 	}
 
@@ -379,40 +426,12 @@ func (c *XDPoSConfig) BuildConfigIndex() {
 			}
 		}
 	}
-	c.V2.configIndex = list
+	log.Info("[BuildConfigIndex] config list", "list", list)
+	v.configIndex = list
 }
 
-func (c *XDPoSConfig) String() string {
-	return "XDPoS"
-}
-
-func (c *XDPoSConfig) updateV2Config(num uint64) {
-	var index uint64
-
-	//find the right config
-	for i := range c.V2.configIndex {
-		if c.V2.configIndex[i] <= num {
-			index = c.V2.configIndex[i]
-		} else {
-			break
-		}
-	}
-	// update to current config
-	c.V2.CurrentConfig = c.V2.AllConfigs[index]
-}
-
-func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, skipExtraCheck bool) string {
-	if !skipExtraCheck && (len(extraByte) == 0 || extraByte[0] != 2) {
-		return ConsensusEngineVersion1
-	}
-
-	if c.V2 != nil && c.V2.FirstSwitchBlock != nil && num.Cmp(c.V2.FirstSwitchBlock) > 0 {
-		// We have to check each block configuration due to reorg chain case
-		// Block may get rollback and old config need to apply to verify block
-		c.updateV2Config(num.Uint64() - 1)
-		return ConsensusEngineVersion2
-	}
-	return ConsensusEngineVersion1
+func (v *V2) ConfigIndex() []uint64 {
+	return v.configIndex
 }
 
 // String implements the fmt.Stringer interface.

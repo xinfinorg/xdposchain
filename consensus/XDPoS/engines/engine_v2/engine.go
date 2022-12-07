@@ -116,7 +116,7 @@ func New(config *params.XDPoSConfig, db ethdb.Database, waitPeriodCh chan int) *
 	timeoutTimer.OnTimeoutFn = engine.OnCountdownTimeout
 
 	engine.periodicJob()
-	config.BuildConfigIndex()
+	config.V2.BuildConfigIndex()
 
 	return engine
 }
@@ -131,7 +131,9 @@ signing. It is the hash of the entire header apart from the 65 byte signature
 contained at the end of the extra data.
 */
 
-func (x *XDPoS_v2) UpdateParams() {
+func (x *XDPoS_v2) UpdateParams(header *types.Header) {
+	x.config.V2.UpdateConfig(header.Number.Uint64())
+
 	// Setup timeoutTimer
 	duration := time.Duration(x.config.V2.CurrentConfig.TimeoutPeriod) * time.Second
 	x.timeoutWorker.SetTimeoutDuration(duration)
@@ -246,7 +248,8 @@ func (x *XDPoS_v2) YourTurn(chain consensus.ChainReader, parent *types.Header, s
 	}
 
 	waitedTime := time.Now().Unix() - parent.Time.Int64()
-	if waitedTime < int64(x.config.V2.CurrentConfig.MinePeriod) {
+	minePeriod := x.config.V2.Config(parent.Number.Uint64() + 1).MinePeriod // plus 1 means current block
+	if waitedTime < int64(minePeriod) {
 		log.Trace("[YourTurn] wait after mine period", "minePeriod", x.config.V2.CurrentConfig.MinePeriod, "waitedTime", waitedTime)
 		return false, nil
 	}
@@ -751,6 +754,12 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 		4. Verify gapNumber = epochSwitchNumber - epochSwitchNumber%Epoch - Gap
 		5. Verify blockInfo
 	*/
+
+	if quorumCert == nil {
+		log.Warn("[verifyQC] QC is Nil")
+		return utils.ErrInvalidQC
+	}
+
 	epochInfo, err := x.getEpochSwitchInfo(blockChainReader, parentHeader, quorumCert.ProposedBlockInfo.Hash)
 	if err != nil {
 		log.Error("[verifyQC] Error when getting epoch switch Info to verify QC", "Error", err)
@@ -763,13 +772,13 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 			log.Warn("[verifyQC] duplicated signature in QC", "duplicate", common.Bytes2Hex(d))
 		}
 	}
-	if quorumCert == nil {
-		log.Warn("[verifyQC] QC is Nil")
-		return utils.ErrInvalidQC
-	} else if (quorumCert.ProposedBlockInfo.Number.Uint64() > x.config.V2.FirstSwitchBlock.Uint64()) && (signatures == nil || (len(signatures) < x.config.V2.CurrentConfig.CertThreshold)) {
+
+	qcNumber := quorumCert.ProposedBlockInfo.Number.Uint64()
+	certThreshold := x.config.V2.Config(qcNumber).CertThreshold
+	if (qcNumber > x.config.V2.FirstSwitchBlock.Uint64()) && (signatures == nil || (len(signatures) < certThreshold)) {
 		//First V2 Block QC, QC Signatures is initial nil
-		log.Warn("[verifyHeader] Invalid QC Signature is nil or empty", "QC", quorumCert, "QCNumber", quorumCert.ProposedBlockInfo.Number, "Signatures len", len(signatures))
-		return utils.ErrInvalidQC
+		log.Warn("[verifyHeader] Invalid QC Signature is nil or less then config", "QC", quorumCert, "QCNumber", quorumCert.ProposedBlockInfo.Number, "Signatures len", len(signatures), "CertThreshold", certThreshold)
+		return utils.ErrInvalidQCSignatures
 	}
 	start := time.Now()
 
@@ -798,7 +807,7 @@ func (x *XDPoS_v2) verifyQC(blockChainReader consensus.ChainReader, quorumCert *
 	}
 	wg.Wait()
 	elapsed := time.Since(start)
-	log.Info("[verifyQC] time verify message signatures of qc", "elapsed", elapsed)
+	log.Debug("[verifyQC] time verify message signatures of qc", "elapsed", elapsed)
 	if haveError != nil {
 		return haveError
 	}
