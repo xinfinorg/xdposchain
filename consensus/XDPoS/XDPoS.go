@@ -88,9 +88,9 @@ func New(config *params.XDPoSConfig, db ethdb.Database) *XDPoS {
 	// For testing and testing project, default to mainnet config
 	if config.V2 == nil {
 		config.V2 = &params.V2{
-			FirstSwitchBlock: params.MainnetV2Configs[0].SwitchBlock,
-			CurrentConfig:    params.MainnetV2Configs[0],
-			AllConfigs:       params.MainnetV2Configs,
+			SwitchBlock:   params.XDCMainnetChainConfig.XDPoS.V2.SwitchBlock,
+			CurrentConfig: params.MainnetV2Configs[0],
+			AllConfigs:    params.MainnetV2Configs,
 		}
 	}
 

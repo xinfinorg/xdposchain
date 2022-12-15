@@ -87,11 +87,11 @@ func TestUpdateV2Config(t *testing.T) {
 	c := TestnetChainConfig.XDPoS.V2.CurrentConfig
 	assert.Equal(t, 3, c.CertThreshold)
 
-	TestnetChainConfig.XDPoS.V2.UpdateConfig(910)
+	TestnetChainConfig.XDPoS.V2.UpdateConfig(10)
 	c = TestnetChainConfig.XDPoS.V2.CurrentConfig
 	assert.Equal(t, 5, c.CertThreshold)
 
-	TestnetChainConfig.XDPoS.V2.UpdateConfig(1799)
+	TestnetChainConfig.XDPoS.V2.UpdateConfig(899)
 	c = TestnetChainConfig.XDPoS.V2.CurrentConfig
 	assert.Equal(t, 4, c.TimeoutSyncThreshold)
 }

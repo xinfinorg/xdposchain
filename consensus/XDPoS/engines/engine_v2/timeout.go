@@ -28,7 +28,7 @@ func (x *XDPoS_v2) timeoutHandler(blockChainReader consensus.ChainReader, timeou
 	log.Debug("[timeoutHandler] collect timeout", "number", numberOfTimeoutsInPool)
 
 	// Threshold reached
-	certThreshold := x.config.V2.Config(blockChainReader.CurrentHeader().Number.Uint64()).CertThreshold
+	certThreshold := x.config.V2.Config(uint64(x.currentRound)).CertThreshold
 	isThresholdReached := numberOfTimeoutsInPool >= certThreshold
 	if isThresholdReached {
 		log.Info(fmt.Sprintf("Timeout pool threashold reached: %v, number of items in the pool: %v", isThresholdReached, numberOfTimeoutsInPool))
@@ -103,7 +103,7 @@ func (x *XDPoS_v2) verifyTC(chain consensus.ChainReader, timeoutCert *types.Time
 		}
 	}
 
-	certThreshold := x.config.V2.Config(chain.CurrentHeader().Number.Uint64()).CertThreshold
+	certThreshold := x.config.V2.Config(uint64(timeoutCert.Round)).CertThreshold
 	if len(signatures) < certThreshold {
 		log.Warn("[verifyTC] Invalid TC Signature is nil or empty", "timeoutCert.Round", timeoutCert.Round, "timeoutCert.GapNumber", timeoutCert.GapNumber, "Signatures len", len(timeoutCert.Signatures), "CertThreshold", certThreshold)
 		return utils.ErrInvalidTCSignatures
