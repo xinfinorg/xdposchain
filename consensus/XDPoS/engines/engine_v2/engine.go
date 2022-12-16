@@ -134,7 +134,7 @@ contained at the end of the extra data.
 func (x *XDPoS_v2) UpdateParams(header *types.Header) {
 	_, round, _, err := x.getExtraFields(header)
 	if err != nil {
-		log.Error("[UpdateParams] retrieve round failed", "block", header.Number.Uint64())
+		log.Error("[UpdateParams] retrieve round failed", "block", header.Number.Uint64(), "err", err)
 	}
 	x.config.V2.UpdateConfig(uint64(round))
 
