@@ -146,7 +146,13 @@ func NewFaker(db ethdb.Database, chainConfig *params.ChainConfig) *XDPoS {
 
 // Reset parameters after checkpoint due to config may change
 func (x *XDPoS) UpdateParams(header *types.Header) {
-	x.EngineV2.UpdateParams(header)
+	switch x.config.BlockConsensusVersion(header.Number, header.Extra, ExtraFieldCheck) {
+	case params.ConsensusEngineVersion2:
+		x.EngineV2.UpdateParams(header)
+		return
+	default: // Default "v1"
+		return
+	}
 }
 
 func (x *XDPoS) Initial(chain consensus.ChainReader, header *types.Header) error {
