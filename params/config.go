@@ -19,6 +19,7 @@ package params
 import (
 	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/log"
@@ -40,7 +41,7 @@ var (
 var (
 	MainnetV2Configs = map[uint64]*V2Config{
 		Default: {
-			SwitchRound:          big.NewInt(0),
+			SwitchRound:          0,
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
@@ -48,7 +49,7 @@ var (
 			MinePeriod:           10,
 		},
 		9999999999: {
-			SwitchRound:          big.NewInt(9999999999),
+			SwitchRound:          9999999999,
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
@@ -58,7 +59,7 @@ var (
 	}
 	TestV2Configs = map[uint64]*V2Config{
 		Default: {
-			SwitchRound:          big.NewInt(0),
+			SwitchRound:          0,
 			CertThreshold:        3,
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
@@ -66,7 +67,7 @@ var (
 			MinePeriod:           2,
 		},
 		10: {
-			SwitchRound:          big.NewInt(10),
+			SwitchRound:          10,
 			CertThreshold:        5,
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
@@ -74,7 +75,7 @@ var (
 			MinePeriod:           3,
 		},
 		899: {
-			SwitchRound:          big.NewInt(899),
+			SwitchRound:          899,
 			CertThreshold:        5,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
@@ -85,7 +86,7 @@ var (
 
 	DevnetV2Configs = map[uint64]*V2Config{
 		Default: {
-			SwitchRound:          big.NewInt(0),
+			SwitchRound:          0,
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        25,
@@ -93,7 +94,7 @@ var (
 			MinePeriod:           10,
 		},
 		151919: {
-			SwitchRound:          big.NewInt(151919),
+			SwitchRound:          151919,
 			CertThreshold:        common.MaxMasternodesV2*1/2 + 1,
 			TimeoutSyncThreshold: 8,
 			TimeoutPeriod:        50,
@@ -101,7 +102,7 @@ var (
 			MinePeriod:           20,
 		},
 		171000: {
-			SwitchRound:          big.NewInt(171000),
+			SwitchRound:          171000,
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        25,
@@ -332,20 +333,23 @@ type XDPoSConfig struct {
 }
 
 type V2 struct {
-	SwitchBlock      *big.Int             `json:"SwitchRound"`
-	CurrentConfig    *V2Config            `json:"config"`
-	AllConfigs       map[uint64]*V2Config `json:"allConfigs"`
-	configIndex      []uint64             //list of switch block of configs
-	SkipV2Validation bool                 //Skip Block Validation for testing purpose, V2 consensus only
+	lock sync.RWMutex // Protects the signer fields
+
+	SwitchBlock   *big.Int             `json:"switchBlock"`
+	CurrentConfig *V2Config            `json:"config"`
+	AllConfigs    map[uint64]*V2Config `json:"allConfigs"`
+	configIndex   []uint64             //list of switch block of configs
+
+	SkipV2Validation bool //Skip Block Validation for testing purpose, V2 consensus only
 }
 
 type V2Config struct {
-	SwitchRound          *big.Int `json:"switchRound"`          // v1 to v2 switch block number
-	WaitPeriod           int      `json:"waitPeriod"`           // Miner wait period to check mine event
-	MinePeriod           int      `json:"minePeriod"`           // Miner mine period to mine a block
-	TimeoutSyncThreshold int      `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
-	TimeoutPeriod        int      `json:"timeoutPeriod"`        // Duration in ms
-	CertThreshold        int      `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
+	SwitchRound          uint64 `json:"switchRound"`          // v1 to v2 switch block number
+	WaitPeriod           int    `json:"waitPeriod"`           // Miner wait period to check mine event
+	MinePeriod           int    `json:"minePeriod"`           // Miner mine period to mine a block
+	TimeoutSyncThreshold int    `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
+	TimeoutPeriod        int    `json:"timeoutPeriod"`        // Duration in ms
+	CertThreshold        int    `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
 }
 
 func (c *XDPoSConfig) String() string {
@@ -364,6 +368,9 @@ func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, extr
 }
 
 func (v *V2) UpdateConfig(round uint64) {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
 	var index uint64
 
 	//find the right config
