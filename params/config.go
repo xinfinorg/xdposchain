@@ -386,13 +386,13 @@ func (v *V2) UpdateConfig(round uint64) {
 	v.CurrentConfig = v.AllConfigs[index]
 }
 
-func (v *V2) Config(num uint64) *V2Config {
-	configNum := num - 1 //start from next block from SwitchRound number
+func (v *V2) Config(round uint64) *V2Config {
+	configRound := round - 1 //start from next block from SwitchRound number
 	var index uint64
 
 	//find the right config
 	for i := range v.configIndex {
-		if v.configIndex[i] <= configNum {
+		if v.configIndex[i] <= configRound {
 			index = v.configIndex[i]
 		} else {
 			break

@@ -98,22 +98,22 @@ func TestUpdateV2Config(t *testing.T) {
 
 func TestV2Config(t *testing.T) {
 	TestnetChainConfig.XDPoS.V2.BuildConfigIndex()
-	c := TestnetChainConfig.XDPoS.V2.Config(500)
+	c := TestnetChainConfig.XDPoS.V2.Config(1)
 	assert.Equal(t, 3, c.CertThreshold)
 
-	c = TestnetChainConfig.XDPoS.V2.Config(900)
+	c = TestnetChainConfig.XDPoS.V2.Config(5)
 	assert.Equal(t, 3, c.CertThreshold)
 
-	c = TestnetChainConfig.XDPoS.V2.Config(910)
+	c = TestnetChainConfig.XDPoS.V2.Config(10)
 	assert.Equal(t, 3, c.CertThreshold)
 
-	c = TestnetChainConfig.XDPoS.V2.Config(911)
+	c = TestnetChainConfig.XDPoS.V2.Config(11)
 	assert.Equal(t, 5, c.CertThreshold)
 }
 
 func TestBuildConfigIndex(t *testing.T) {
 	TestnetChainConfig.XDPoS.V2.BuildConfigIndex()
 	index := TestnetChainConfig.XDPoS.V2.ConfigIndex()
-	expected := []uint64{0, 900, 910, 1799}
+	expected := []uint64{0, 10, 899}
 	assert.Equal(t, expected, index)
 }
