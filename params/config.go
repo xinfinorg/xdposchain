@@ -92,16 +92,16 @@ var (
 			WaitPeriod:           10,
 			MinePeriod:           10,
 		},
-		36000: {
-			SwitchRound:          big.NewInt(36000),
+		151919: {
+			SwitchRound:          big.NewInt(151919),
 			CertThreshold:        common.MaxMasternodesV2*1/2 + 1,
 			TimeoutSyncThreshold: 8,
 			TimeoutPeriod:        50,
 			WaitPeriod:           5,
 			MinePeriod:           20,
 		},
-		45000: {
-			SwitchRound:          big.NewInt(45000),
+		170426: {
+			SwitchRound:          big.NewInt(170426),
 			CertThreshold:        common.MaxMasternodesV2*2/3 + 1,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        25,
