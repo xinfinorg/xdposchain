@@ -18,6 +18,7 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -2313,6 +2314,15 @@ func (bc *BlockChain) addBadBlock(block *types.Block) {
 func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, err error) {
 	bc.addBadBlock(block)
 
+	// V2 specific logs
+	v2JsonConfig, _ := json.Marshal(bc.chainConfig.XDPoS.V2)
+
+	var roundNumber = types.Round(0)
+	engine, ok := bc.Engine().(*XDPoS.XDPoS)
+	if ok {
+		roundNumber, err = engine.EngineV2.GetRoundNumber(block.Header())
+	}
+
 	var receiptString string
 	for _, receipt := range receipts {
 		receiptString += fmt.Sprintf("\t%v\n", receipt)
@@ -2320,14 +2330,16 @@ func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, e
 	log.Error(fmt.Sprintf(`
 ########## BAD BLOCK #########
 Chain config: %v
+V2 consensus config: %#v
 
 Number: %v
 Hash: 0x%x
 %v
 
+Round: %v
 Error: %v
 ##############################
-`, bc.chainConfig, block.Number(), block.Hash(), receiptString, err))
+`, bc.chainConfig, string(v2JsonConfig), block.Number(), block.Hash(), receiptString, roundNumber, err))
 }
 
 // InsertHeaderChain attempts to insert the given header chain in to the local
