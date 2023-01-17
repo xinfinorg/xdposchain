@@ -2315,7 +2315,7 @@ func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, e
 	bc.addBadBlock(block)
 
 	// V2 specific logs
-	v2JsonConfig, _ := json.Marshal(bc.chainConfig.XDPoS.V2)
+	config, _ := json.Marshal(bc.chainConfig)
 
 	var roundNumber = types.Round(0)
 	engine, ok := bc.Engine().(*XDPoS.XDPoS)
@@ -2330,7 +2330,6 @@ func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, e
 	log.Error(fmt.Sprintf(`
 ########## BAD BLOCK #########
 Chain config: %v
-V2 consensus config: %#v
 
 Number: %v
 Hash: 0x%x
@@ -2339,7 +2338,7 @@ Hash: 0x%x
 Round: %v
 Error: %v
 ##############################
-`, bc.chainConfig, string(v2JsonConfig), block.Number(), block.Hash(), receiptString, roundNumber, err))
+`, string(config), block.Number(), block.Hash(), receiptString, roundNumber, err))
 }
 
 // InsertHeaderChain attempts to insert the given header chain in to the local
