@@ -16,12 +16,14 @@
 package XDPoS
 
 import (
+	"encoding/base64"
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/consensus"
 	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS/utils"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
+	"github.com/XinFinOrg/XDPoSChain/rlp"
 	"github.com/XinFinOrg/XDPoSChain/rpc"
 )
 
@@ -38,6 +40,7 @@ type V2BlockInfo struct {
 	Number     *big.Int
 	ParentHash common.Hash
 	Committed  bool
+	EncodedRLP string
 	Error      string
 }
 
@@ -128,12 +131,21 @@ func (api *API) GetV2BlockByHeader(header *types.Header, uncle bool) *V2BlockInf
 		}
 	}
 
+	encodeBytes, err := rlp.EncodeToBytes(header)
+	if err != nil {
+		return &V2BlockInfo{
+			Hash:  header.Hash(),
+			Error: err.Error(),
+		}
+	}
+
 	block := &V2BlockInfo{
 		Hash:       header.Hash(),
 		ParentHash: header.ParentHash,
 		Number:     header.Number,
 		Round:      round,
 		Committed:  committed,
+		EncodedRLP: base64.StdEncoding.EncodeToString(encodeBytes),
 	}
 	return block
 }
@@ -142,9 +154,20 @@ func (api *API) GetV2BlockByNumber(number *rpc.BlockNumber) *V2BlockInfo {
 	var header *types.Header
 	if number == nil || *number == rpc.LatestBlockNumber {
 		header = api.chain.CurrentHeader()
+	} else if *number == rpc.CommittedBlockNumber {
+		hash := api.XDPoS.EngineV2.GetLatestCommittedBlockInfo().Hash
+		header = api.chain.GetHeaderByHash(hash)
 	} else {
 		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
 	}
+
+	if header == nil {
+		return &V2BlockInfo{
+			Number: big.NewInt(number.Int64()),
+			Error:  "can not find block from this number",
+		}
+	}
+
 	uncle := false
 	return api.GetV2BlockByHeader(header, uncle)
 }
