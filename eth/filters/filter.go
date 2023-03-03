@@ -103,11 +103,13 @@ func (f *Filter) Logs(ctx context.Context) ([]*types.Log, error) {
 	head := header.Number.Uint64()
 
 	if f.begin == -1 {
-		f.begin = int64(head)
+		// f.begin minus one to bypass issue #232
+		f.begin = int64(head) - 1
 	}
 	end := uint64(f.end)
 	if f.end == -1 {
-		end = head
+		// end minus one to bypass issue #232
+		end = head - 1
 	}
 	// Gather all indexed logs, and finish with non indexed ones
 	var (
