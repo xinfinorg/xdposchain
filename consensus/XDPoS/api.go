@@ -96,6 +96,20 @@ func (api *API) GetLatestCommittedBlockHeader() *types.BlockInfo {
 	return api.XDPoS.EngineV2.GetLatestCommittedBlockInfo()
 }
 
+// Get current vote pool and timeout pool content and missing messages
+func (api *API) GetLatestPoolStatus() *types.BlockInfo {
+	votes := nil
+	timeouts := nil
+
+	header := api.chain.CurrentHeader()
+	masternodes := api.XDPoS.EngineV2.GetMasternodes(api.chain, header)
+
+	MissingVote
+	missingTimeot
+
+	return api.XDPoS.EngineV2.GetLatestCommittedBlockInfo()
+}
+
 func (api *API) NetworkInformation() NetworkInformation {
 	info := NetworkInformation{}
 	info.NetworkId = api.chain.Config().ChainId

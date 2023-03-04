@@ -26,6 +26,15 @@ type Vote struct {
 	GapNumber         uint64
 }
 
+func (v *Vote) Hash() common.Hash {
+	return rlpHash(v)
+}
+
+func (v *Vote) PoolKey() string {
+	// return the voted block hash
+	return fmt.Sprint(v.ProposedBlockInfo.Round, ":", v.GapNumber, ":", v.ProposedBlockInfo.Number, ":", v.ProposedBlockInfo.Hash.Hex())
+}
+
 // Timeout message in XDPoS 2.0
 type Timeout struct {
 	Round     Round
@@ -33,10 +42,23 @@ type Timeout struct {
 	GapNumber uint64
 }
 
+func (t *Timeout) Hash() common.Hash {
+	return rlpHash(t)
+}
+
+func (t *Timeout) PoolKey() string {
+	// timeout pool key is round:gapNumber
+	return fmt.Sprint(t.Round, ":", t.GapNumber)
+}
+
 // BFT Sync Info message in XDPoS 2.0
 type SyncInfo struct {
 	HighestQuorumCert  *QuorumCert
 	HighestTimeoutCert *TimeoutCert
+}
+
+func (s *SyncInfo) Hash() common.Hash {
+	return rlpHash(s)
 }
 
 // Quorum Certificate struct in XDPoS 2.0
@@ -60,12 +82,6 @@ type ExtraFields_v2 struct {
 	QuorumCert *QuorumCert
 }
 
-type EpochSwitchInfo struct {
-	Masternodes                []common.Address
-	EpochSwitchBlockInfo       *BlockInfo
-	EpochSwitchParentBlockInfo *BlockInfo
-}
-
 // Encode XDPoS 2.0 extra fields into bytes
 func (e *ExtraFields_v2) EncodeToBytes() ([]byte, error) {
 	bytes, err := rlp.EncodeToBytes(e)
@@ -76,16 +92,10 @@ func (e *ExtraFields_v2) EncodeToBytes() ([]byte, error) {
 	return append(versionByte, bytes...), nil
 }
 
-func (m *Vote) Hash() common.Hash {
-	return rlpHash(m)
-}
-
-func (m *Timeout) Hash() common.Hash {
-	return rlpHash(m)
-}
-
-func (m *SyncInfo) Hash() common.Hash {
-	return rlpHash(m)
+type EpochSwitchInfo struct {
+	Masternodes                []common.Address
+	EpochSwitchBlockInfo       *BlockInfo
+	EpochSwitchParentBlockInfo *BlockInfo
 }
 
 type VoteForSign struct {
@@ -104,14 +114,4 @@ type TimeoutForSign struct {
 
 func TimeoutSigHash(m *TimeoutForSign) common.Hash {
 	return rlpHash(m)
-}
-
-func (m *Vote) PoolKey() string {
-	// return the voted block hash
-	return fmt.Sprint(m.ProposedBlockInfo.Round, ":", m.GapNumber, ":", m.ProposedBlockInfo.Number, ":", m.ProposedBlockInfo.Hash.Hex())
-}
-
-func (m *Timeout) PoolKey() string {
-	// timeout pool key is round:gapNumber
-	return fmt.Sprint(m.Round, ":", m.GapNumber)
 }
