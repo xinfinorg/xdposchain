@@ -21,6 +21,9 @@ type BlockInfo struct {
 
 // Vote message in XDPoS 2.0
 type Vote struct {
+	Verified bool
+	Signer   common.Address
+
 	ProposedBlockInfo *BlockInfo
 	Signature         Signature
 	GapNumber         uint64

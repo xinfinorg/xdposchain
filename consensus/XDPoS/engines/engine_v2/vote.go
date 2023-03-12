@@ -103,46 +103,50 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 	return nil
 }
 
+func (x *XDPoS_v2) verifyVotes(chain consensus.ChainReader, votes map[common.Hash]utils.PoolObj, header *types.Header) {
+	masternodes := x.GetMasternodes(chain, header)
+	start := time.Now()
+	// Filter out non-Master nodes signatures
+	var wg sync.WaitGroup
+	wg.Add(len(votes))
+	for h, vote := range votes {
+		go func(hash common.Hash, v *types.Vote) {
+			defer wg.Done()
+			signedVote := types.VoteSigHash(&types.VoteForSign{
+				ProposedBlockInfo: v.ProposedBlockInfo,
+				GapNumber:         v.GapNumber,
+			})
+			verified, masterNode, err := x.verifyMsgSignature(signedVote, v.Signature, masternodes)
+			if err != nil {
+				log.Warn("[verifyVotes] error while verifying vote signature", "error", err.Error())
+				return
+			}
+
+			v.Verified = verified
+			if !verified {
+				log.Warn("[verifyVotes] non-verified vote signature", "verified", verified)
+				return
+			}
+			v.Signer = masterNode
+		}(h, vote.(*types.Vote))
+	}
+	wg.Wait()
+	elapsed := time.Since(start)
+	log.Debug("[verifyVotes] verify message signatures of vote pool took", "elapsed", elapsed)
+}
+
 /*
 	Function that will be called by votePool when it reached threshold.
 	In the engine v2, we will need to generate and process QC
 */
 func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, pooledVotes map[common.Hash]utils.PoolObj, currentVoteMsg utils.PoolObj, proposedBlockHeader *types.Header) error {
 
-	masternodes := x.GetMasternodes(chain, proposedBlockHeader)
-	start := time.Now()
-	// Filter out non-Master nodes signatures
-	var wg sync.WaitGroup
-	wg.Add(len(pooledVotes))
-	signatures := make([]types.Signature, len(pooledVotes))
-	counter := 0
-	for h, vote := range pooledVotes {
-		go func(hash common.Hash, v *types.Vote, i int) {
-			defer wg.Done()
-			signedVote := types.VoteSigHash(&types.VoteForSign{
-				ProposedBlockInfo: v.ProposedBlockInfo,
-				GapNumber:         v.GapNumber,
-			})
-			verified, _, err := x.verifyMsgSignature(signedVote, v.Signature, masternodes)
-			if err != nil {
-				log.Warn("[onVotePoolThresholdReached] Skip not verified vote signatures when building QC", "error", err.Error())
-			} else if !verified {
-				log.Warn("[onVotePoolThresholdReached] Skip not verified vote signatures when building QC", "verified", verified)
-			} else {
-				signatures[i] = v.Signature
-			}
-		}(h, vote.(*types.Vote), counter)
-		counter++
-	}
-	wg.Wait()
-	elapsed := time.Since(start)
-	log.Debug("[onVotePoolThresholdReached] verify message signatures of vote pool took", "elapsed", elapsed)
-
+	x.verifyVotes(chain, pooledVotes, proposedBlockHeader)
 	// The signature list may contain empty entey. we only care the ones with values
 	var validSignatures []types.Signature
-	for _, v := range signatures {
-		if len(v) != 0 {
-			validSignatures = append(validSignatures, v)
+	for _, vote := range pooledVotes {
+		if vote.(*types.Vote).Verified {
+			validSignatures = append(validSignatures, vote.(*types.Vote).Signature)
 		}
 	}
 
@@ -246,4 +250,8 @@ func (x *XDPoS_v2) hygieneVotePool() {
 			x.votePool.ClearByPoolKey(k)
 		}
 	}
+}
+
+func (x *XDPoS_v2) ReceivedVotes() {
+	votes := x.votePool.Get()
 }
