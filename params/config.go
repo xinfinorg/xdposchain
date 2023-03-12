@@ -118,6 +118,14 @@ var (
 			WaitPeriod:           10,
 			MinePeriod:           10,
 		},
+		843800: {
+			SwitchRound:          843800,
+			CertThreshold:        13, // based on masternode is 18, 2/3*18 +1 = 13
+			TimeoutSyncThreshold: 5,
+			TimeoutPeriod:        25,
+			WaitPeriod:           2,
+			MinePeriod:           2,
+		},
 	}
 
 	UnitTestV2Configs = map[uint64]*V2Config{
