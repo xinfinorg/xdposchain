@@ -29,6 +29,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"runtime/pprof"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -73,6 +74,42 @@ func (*HandlerT) MemStats() *runtime.MemStats {
 	s := new(runtime.MemStats)
 	runtime.ReadMemStats(s)
 	return s
+}
+
+func (h *HandlerT) PeriodicComputeProfiling() {
+	ticker := time.NewTicker(60 * time.Second)
+	go func() {
+		for range ticker.C {
+			h.computeProfiling()
+		}
+	}()
+}
+
+// MemStats returns detailed runtime memory statistics.
+func (h *HandlerT) computeProfiling() error {
+	s := new(runtime.MemStats)
+	runtime.ReadMemStats(s)
+	currentTime := strconv.FormatInt(time.Now().Unix(), 10)
+
+	systemMem := float64(s.Alloc) / float64(s.HeapSys) * 100
+	// Trigger the profiling if memory usage is above 75%
+	if systemMem > float64(75) {
+		memoryFileName := currentTime + "-memory-profile"
+		err := h.WriteMemProfile(memoryFileName)
+		if err != nil {
+			log.Error("Fail to write mem profile when doing periodic compute check during high memory usage: " + err.Error())
+			return err
+		}
+		log.Info("Successfully wrote the memory profile with name: " + memoryFileName)
+		cpuFileName := currentTime + "-cpu-profile"
+		err = h.CpuProfile(cpuFileName, 10)
+		if err != nil {
+			log.Error("Fail to write cpu profile when doing periodic compute check during high memory usage: " + err.Error())
+			return err
+		}
+		log.Info("Successfully wrote the cpu profile with name: " + cpuFileName)
+	}
+	return nil
 }
 
 // GcStats returns GC statistics.
