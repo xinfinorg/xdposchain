@@ -242,7 +242,8 @@ func New(ctx *node.ServiceContext, config *Config, XDCXServ *XDCx.XDCX, lendingS
 			if !ok {
 				return nil
 			}
-			if block.NumberU64()%common.MergeSignRange == 0 || !eth.chainConfig.IsTIP2019(block.Number()) {
+			// fix issue #228: block.NumberU64()%chainConfig.XDPoS.Epoch < common.MergeSignRange
+			if block.NumberU64()%chainConfig.XDPoS.Epoch < common.MergeSignRange || block.NumberU64()%common.MergeSignRange == 0 || !eth.chainConfig.IsTIP2019(block.Number()) {
 				if err := contracts.CreateTransactionSign(chainConfig, eth.txPool, eth.accountManager, block, chainDb, eb); err != nil {
 					return fmt.Errorf("Fail to create tx sign for importing block: %v", err)
 				}

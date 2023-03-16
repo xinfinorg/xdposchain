@@ -364,8 +364,10 @@ func GetRewardForCheckpoint(c *XDPoS.XDPoS, chain consensus.ChainReader, header 
 	header = chain.GetHeader(header.ParentHash, prevCheckpoint)
 	masternodes := c.GetMasternodesFromCheckpointHeader(header)
 
+	epoch := chain.Config().XDPoS.Epoch
 	for i := startBlockNumber; i <= endBlockNumber; i++ {
-		if i%common.MergeSignRange == 0 || !chain.Config().IsTIP2019(big.NewInt(int64(i))) {
+		// fix issue #228: i%epoch < common.MergeSignRange
+		if i%epoch < common.MergeSignRange || i%common.MergeSignRange == 0 || !chain.Config().IsTIP2019(big.NewInt(int64(i))) {
 			addrs := data[mapBlkHash[i]]
 			// Filter duplicate address.
 			if len(addrs) > 0 {

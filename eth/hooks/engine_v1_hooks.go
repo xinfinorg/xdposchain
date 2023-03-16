@@ -38,7 +38,8 @@ func AttachConsensusV1Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 			if len(penSigners) > 0 {
 				// Loop for each block to check missing sign.
 				for i := prevEpoc; i < blockNumberEpoc; i++ {
-					if i%common.MergeSignRange == 0 || !chainConfig.IsTIP2019(big.NewInt(int64(i))) {
+					// fix issue #228: i%epoch < common.MergeSignRange
+					if i%epoch < common.MergeSignRange || i%common.MergeSignRange == 0 || !chainConfig.IsTIP2019(big.NewInt(int64(i))) {
 						bheader := chain.GetHeaderByNumber(i)
 						bhash := bheader.Hash()
 						block := chain.GetBlock(bhash, i)
@@ -141,7 +142,8 @@ func AttachConsensusV1Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 				if len(penComebacks) > 0 {
 					blockNumber := header.Number.Uint64() - uint64(i) - 1
 					bhash := listBlockHash[i]
-					if blockNumber%common.MergeSignRange == 0 {
+					// fix issue #228: blockNumber%epoch < common.MergeSignRange
+					if blockNumber%epoch < common.MergeSignRange || blockNumber%common.MergeSignRange == 0 {
 						mapBlockHash[bhash] = true
 					}
 					signData, ok := adaptor.GetCachedSigningTxs(bhash)
