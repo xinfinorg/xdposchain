@@ -144,7 +144,7 @@ func (h *HandlerT) StartCPUProfile(file string) error {
 	var f *os.File
 	var err error
 	if h.filePath != "" {
-		f, err = os.Create(h.filePath + "/" + file)
+		f, err = os.Create(filepath.Join(h.filePath, file))
 	} else {
 		f, err = os.Create(expandHome(file))
 	}
@@ -260,7 +260,7 @@ func writeProfile(name, file, path string) error {
 	var f *os.File
 	var err error
 	if path != "" {
-		f, err = os.Create(path + "/" + file)
+		f, err = os.Create(filepath.Join(path, file))
 	} else {
 		f, err = os.Create(expandHome(file))
 	}
