@@ -87,17 +87,25 @@ func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, m
 
 		// Create and send tx to smart contract for sign validate block.
 		nonce := pool.State().GetNonce(account.Address)
-		tx := CreateTxSign(block.Number(), block.Hash(), nonce, common.HexToAddress(common.BlockSigners))
-		txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainId)
-		if err != nil {
-			log.Error("Fail to create tx sign", "error", err)
-			return err
-		}
-		// Add tx signed to local tx pool.
-		err = pool.AddLocal(txSigned)
-		if err != nil {
-			log.Error("Fail to add tx sign to local pool.", "error", err, "number", block.NumberU64(), "hash", block.Hash().Hex(), "from", account.Address, "nonce", nonce)
-			return err
+		for retryCount := 1; ; retryCount++ {
+			tx := CreateTxSign(block.Number(), block.Hash(), nonce, common.HexToAddress(common.BlockSigners))
+			txSigned, err := wallet.SignTx(account, tx, chainConfig.ChainId)
+			if err != nil {
+				log.Error("Fail to create tx sign", "error", err)
+				return err
+			}
+			// Add tx signed to local tx pool.
+			err = pool.AddLocal(txSigned)
+			if err == nil {
+				break
+			}
+			newNonce := pool.State().GetNonce(account.Address)
+			if retryCount >= 10 {
+				log.Error("Fail to add signed tx to local pool", "number", block.NumberU64(), "hash", block.Hash().Hex(), "from", account.Address, "nonce", nonce, "error", err)
+				return err
+			}
+			log.Warn("CreateTransactionSign", "number", block.NumberU64(), "from", account.Address, "nonce", nonce, "newNonce", newNonce, "retry", retryCount, "error", err)
+			nonce = newNonce
 		}
 
 		// Create secret tx.
