@@ -29,7 +29,8 @@ func AttachConsensusV1Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 		if canonicalState == nil || err != nil {
 			log.Crit("Can't get state at head of canonical chain", "head number", bc.CurrentHeader().Number.Uint64(), "err", err)
 		}
-		prevEpoc := blockNumberEpoc - chain.Config().XDPoS.Epoch
+		epoch := chain.Config().XDPoS.Epoch
+		prevEpoc := blockNumberEpoc - epoch
 		if prevEpoc >= 0 {
 			start := time.Now()
 			prevHeader := chain.GetHeaderByNumber(prevEpoc)
@@ -71,23 +72,24 @@ func AttachConsensusV1Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 
 	// Hook scans for bad masternodes and decide to penalty them
 	adaptor.EngineV1.HookPenaltyTIPSigning = func(chain consensus.ChainReader, header *types.Header, candidates []common.Address) ([]common.Address, error) {
-		prevEpoc := header.Number.Uint64() - chain.Config().XDPoS.Epoch
+		epoch := chain.Config().XDPoS.Epoch
+		prevEpoc := header.Number.Uint64() - epoch
 		combackEpoch := uint64(0)
-		comebackLength := (common.LimitPenaltyEpoch + 1) * chain.Config().XDPoS.Epoch
+		comebackLength := (common.LimitPenaltyEpoch + 1) * epoch
 		if header.Number.Uint64() > comebackLength {
 			combackEpoch = header.Number.Uint64() - comebackLength
 		}
 		if prevEpoc >= 0 {
 			start := time.Now()
 
-			listBlockHash := make([]common.Hash, chain.Config().XDPoS.Epoch)
+			listBlockHash := make([]common.Hash, epoch)
 
 			// get list block hash & stats total created block
 			statMiners := make(map[common.Address]int)
 			listBlockHash[0] = header.ParentHash
 			parentnumber := header.Number.Uint64() - 1
 			parentHash := header.ParentHash
-			for i := uint64(1); i < chain.Config().XDPoS.Epoch; i++ {
+			for i := uint64(1); i < epoch; i++ {
 				parentHeader := chain.GetHeader(parentHash, parentnumber)
 				miner, _ := adaptor.RecoverSigner(parentHeader)
 				value, exist := statMiners[miner]
