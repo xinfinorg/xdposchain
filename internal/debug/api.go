@@ -94,9 +94,9 @@ func (h *HandlerT) computeProfiling() error {
 
 	systemMem := float64(s.Alloc) / float64(s.HeapSys) * 100
 	// Trigger the profiling if memory usage is above 75%
-	log.Info("[computeProfiling] current systemMem", "mem", systemMem)
+	log.Info("[computeProfiling] current systemMem", "mem", systemMem, "memAlloc", float64(s.Alloc), "heapSys", float64(s.HeapSys))
 
-	if systemMem > float64(1) {
+	if systemMem > float64(75) {
 		memoryFileName := currentTime + "-memory-profile"
 		err := h.WriteMemProfile(memoryFileName)
 		if err != nil {
