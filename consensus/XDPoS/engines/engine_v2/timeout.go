@@ -259,3 +259,7 @@ func (x *XDPoS_v2) hygieneTimeoutPool() {
 		}
 	}
 }
+
+func (x *XDPoS_v2) ReceivedTimeouts() map[string]map[common.Hash]utils.PoolObj {
+	return x.timeoutPool.Get()
+}

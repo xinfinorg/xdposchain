@@ -122,7 +122,6 @@ func (x *XDPoS_v2) verifyVotes(chain consensus.ChainReader, votes map[common.Has
 				return
 			}
 
-			v.Verified = verified
 			if !verified {
 				log.Warn("[verifyVotes] non-verified vote signature", "verified", verified)
 				return
@@ -140,14 +139,10 @@ func (x *XDPoS_v2) verifyVotes(chain consensus.ChainReader, votes map[common.Has
 	In the engine v2, we will need to generate and process QC
 */
 func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, pooledVotes map[common.Hash]utils.PoolObj, currentVoteMsg utils.PoolObj, proposedBlockHeader *types.Header) error {
-
-	x.verifyVotes(chain, pooledVotes, proposedBlockHeader)
 	// The signature list may contain empty entey. we only care the ones with values
 	var validSignatures []types.Signature
 	for _, vote := range pooledVotes {
-		if vote.(*types.Vote).Verified {
-			validSignatures = append(validSignatures, vote.(*types.Vote).Signature)
-		}
+		validSignatures = append(validSignatures, vote.(*types.Vote).Signature)
 	}
 
 	// Skip and wait for the next vote to process again if valid votes is less than what we required
@@ -252,6 +247,6 @@ func (x *XDPoS_v2) hygieneVotePool() {
 	}
 }
 
-func (x *XDPoS_v2) ReceivedVotes() {
-	votes := x.votePool.Get()
+func (x *XDPoS_v2) ReceivedVotes() map[string]map[common.Hash]utils.PoolObj {
+	return x.votePool.Get()
 }

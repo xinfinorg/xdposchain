@@ -142,6 +142,10 @@ web3._extend({
 			name: 'getLatestCommittedBlockInfo',
 			call: 'XDPoS_getLatestCommittedBlockHeader'
 		}),
+		new web3._extend.Method({
+			name: 'getLatestPoolStatus',
+			call: 'XDPoS_getLatestPoolStatus'
+		}),
 	],
 	properties: [
 		new web3._extend.Property({

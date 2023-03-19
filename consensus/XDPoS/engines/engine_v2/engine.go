@@ -596,7 +596,7 @@ func (x *XDPoS_v2) VerifyVoteMessage(chain consensus.ChainReader, vote *types.Vo
 		log.Error("[VerifyVoteMessage] fail to get snapshot for a vote message", "blockNum", vote.ProposedBlockInfo.Number, "blockHash", vote.ProposedBlockInfo.Hash, "voteHash", vote.Hash(), "error", err.Error())
 		return false, err
 	}
-	verified, _, err := x.verifyMsgSignature(types.VoteSigHash(&types.VoteForSign{
+	verified, signer, err := x.verifyMsgSignature(types.VoteSigHash(&types.VoteForSign{
 		ProposedBlockInfo: vote.ProposedBlockInfo,
 		GapNumber:         vote.GapNumber,
 	}), vote.Signature, snapshot.NextEpochMasterNodes)
@@ -606,6 +606,8 @@ func (x *XDPoS_v2) VerifyVoteMessage(chain consensus.ChainReader, vote *types.Vo
 		}
 		log.Warn("[VerifyVoteMessage] Error while verifying vote message", "votedBlockNum", vote.ProposedBlockInfo.Number.Uint64(), "votedBlockHash", vote.ProposedBlockInfo.Hash.Hex(), "voteHash", vote.Hash(), "error", err.Error())
 	}
+	vote.Signer = signer
+
 	return verified, err
 }
 
@@ -630,18 +632,26 @@ func (x *XDPoS_v2) VoteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 */
 func (x *XDPoS_v2) VerifyTimeoutMessage(chain consensus.ChainReader, timeoutMsg *types.Timeout) (bool, error) {
 	snap, err := x.getSnapshot(chain, timeoutMsg.GapNumber, true)
-	if err != nil {
-		log.Error("[VerifyTimeoutMessage] Fail to get snapshot when verifying timeout message!", "messageGapNumber", timeoutMsg.GapNumber)
+	if err != nil || snap == nil {
+		log.Error("[VerifyTimeoutMessage] Fail to get snapshot when verifying timeout message!", "messageGapNumber", timeoutMsg.GapNumber, "err", err)
+		return false, err
 	}
-	if snap == nil || len(snap.NextEpochMasterNodes) == 0 {
-		log.Error("[VerifyTimeoutMessage] Something wrong with the snapshot from gapNumber", "messageGapNumber", timeoutMsg.GapNumber, "snapshot", snap)
+	if len(snap.NextEpochMasterNodes) == 0 {
+		log.Error("[VerifyTimeoutMessage] cannot find nextEpochMasterNodes from snapshot", "messageGapNumber", timeoutMsg.GapNumber)
 		return false, fmt.Errorf("Empty master node lists from snapshot")
 	}
 
-	verified, _, err := x.verifyMsgSignature(types.TimeoutSigHash(&types.TimeoutForSign{
+	verified, signer, err := x.verifyMsgSignature(types.TimeoutSigHash(&types.TimeoutForSign{
 		Round:     timeoutMsg.Round,
 		GapNumber: timeoutMsg.GapNumber,
 	}), timeoutMsg.Signature, snap.NextEpochMasterNodes)
+
+	if err != nil {
+		log.Warn("[VerifyTimeoutMessage] cannot verify timeout signature", "err", err)
+		return false, err
+	}
+
+	timeoutMsg.Signer = signer
 	return verified, err
 }
 
@@ -875,8 +885,9 @@ func (x *XDPoS_v2) setNewRound(blockChainReader consensus.ChainReader, round typ
 	x.currentRound = round
 	x.timeoutCount = 0
 	x.timeoutWorker.Reset(blockChainReader)
-	//TODO: vote pools
 	x.timeoutPool.Clear()
+	// don't need to clean vote pool, we have other process to clean and it's not good to clean here, some edge case may break
+	// for example round gets bump during collecting vote, so we have to keep vote.
 }
 
 func (x *XDPoS_v2) broadcastToBftChannel(msg interface{}) {
