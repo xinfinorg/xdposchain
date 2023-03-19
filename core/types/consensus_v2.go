@@ -36,6 +36,10 @@ func (v *Vote) PoolKey() string {
 	return fmt.Sprint(v.ProposedBlockInfo.Round, ":", v.GapNumber, ":", v.ProposedBlockInfo.Number, ":", v.ProposedBlockInfo.Hash.Hex())
 }
 
+func (v *Vote) GetSigner() common.Address {
+	return v.Signer
+}
+
 // Timeout message in XDPoS 2.0
 type Timeout struct {
 	Signer    common.Address
@@ -51,6 +55,10 @@ func (t *Timeout) Hash() common.Hash {
 func (t *Timeout) PoolKey() string {
 	// timeout pool key is round:gapNumber
 	return fmt.Sprint(t.Round, ":", t.GapNumber)
+}
+
+func (t *Timeout) GetSigner() common.Address {
+	return t.Signer
 }
 
 // BFT Sync Info message in XDPoS 2.0

@@ -146,7 +146,7 @@ func calculateSigners(message map[string]SignerTypes, pool map[string]map[common
 		copy(missingSigners, masternodes)
 		num := len(objs)
 		for _, obj := range objs {
-			signer := obj.(*types.Vote).Signer
+			signer := obj.GetSigner()
 			currentSigners = append(currentSigners, signer)
 			for i, mn := range missingSigners {
 				if mn == signer {
