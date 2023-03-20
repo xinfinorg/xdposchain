@@ -120,9 +120,17 @@ var (
 		},
 		843800: {
 			SwitchRound:          843800,
-			CertThreshold:        13, // based on masternode is 18, 2/3*18 +1 = 13
+			CertThreshold:        73, // based on masternode is 108
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        25,
+			WaitPeriod:           2,
+			MinePeriod:           2,
+		},
+		1143200: {
+			SwitchRound:          1143200,
+			CertThreshold:        13, // based on masternode is 18
+			TimeoutSyncThreshold: 5,
+			TimeoutPeriod:        10,
 			WaitPeriod:           2,
 			MinePeriod:           2,
 		},
