@@ -191,7 +191,7 @@ func (x *XDPoS_v2) sendTimeout(chain consensus.ChainReader) error {
 		GapNumber: gapNumber,
 	}))
 	if err != nil {
-		log.Error("[sendTimeout] signSignature when sending out TC", "Error", err)
+		log.Error("[sendTimeout] signSignature when sending out TC", "Error", err, "round", x.currentRound, "gap", gapNumber)
 		return err
 	}
 	timeoutMsg := &types.Timeout{
@@ -225,7 +225,7 @@ func (x *XDPoS_v2) OnCountdownTimeout(time time.Time, chain interface{}) error {
 
 	err := x.sendTimeout(chain.(consensus.ChainReader))
 	if err != nil {
-		log.Error("Error while sending out timeout message at time: ", time)
+		log.Error("Error while sending out timeout message at time: ", "time", time, "err", err)
 		return err
 	}
 
