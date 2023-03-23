@@ -96,7 +96,7 @@ func (x *XDPoS_v2) signSignature(signingHash common.Hash) (types.Signature, erro
 
 	signedHash, err := signFn(accounts.Account{Address: signer}, signingHash.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("Error while signing hash")
+		return nil, fmt.Errorf("Error %v while signing hash", err)
 	}
 	return signedHash, nil
 }
