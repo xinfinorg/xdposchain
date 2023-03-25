@@ -605,10 +605,11 @@ func (x *XDPoS_v2) VerifyVoteMessage(chain consensus.ChainReader, vote *types.Vo
 			log.Warn("[VerifyVoteMessage] Master node list item", "index", i, "Master node", mn.Hex())
 		}
 		log.Warn("[VerifyVoteMessage] Error while verifying vote message", "votedBlockNum", vote.ProposedBlockInfo.Number.Uint64(), "votedBlockHash", vote.ProposedBlockInfo.Hash.Hex(), "voteHash", vote.Hash(), "error", err.Error())
+		return false, err
 	}
 	vote.Signer = signer
 
-	return verified, err
+	return verified, nil
 }
 
 // Consensus entry point for processing vote message to produce QC
@@ -652,7 +653,7 @@ func (x *XDPoS_v2) VerifyTimeoutMessage(chain consensus.ChainReader, timeoutMsg 
 	}
 
 	timeoutMsg.Signer = signer
-	return verified, err
+	return verified, nil
 }
 
 /*
