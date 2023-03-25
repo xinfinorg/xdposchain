@@ -507,7 +507,7 @@ func TestVerifyVoteMsg(t *testing.T) {
 	}
 
 	verified, err = engineV2.VerifyVoteMessage(blockchain, voteMsg)
-	assert.Equal(t, voteMsg.Signer, signer)
+	assert.Equal(t, voteMsg.GetSigner(), signer)
 	assert.True(t, verified)
 	assert.Nil(t, err)
 }

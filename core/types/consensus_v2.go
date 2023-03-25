@@ -21,7 +21,7 @@ type BlockInfo struct {
 
 // Vote message in XDPoS 2.0
 type Vote struct {
-	Signer            common.Address `rlp:"nil"`
+	signer            common.Address
 	ProposedBlockInfo *BlockInfo
 	Signature         Signature
 	GapNumber         uint64
@@ -37,12 +37,16 @@ func (v *Vote) PoolKey() string {
 }
 
 func (v *Vote) GetSigner() common.Address {
-	return v.Signer
+	return v.signer
+}
+
+func (v *Vote) SetSigner(signer common.Address) {
+	v.signer = signer
 }
 
 // Timeout message in XDPoS 2.0
 type Timeout struct {
-	Signer    common.Address `rlp:"nil"`
+	signer    common.Address
 	Round     Round
 	Signature Signature
 	GapNumber uint64
@@ -58,7 +62,11 @@ func (t *Timeout) PoolKey() string {
 }
 
 func (t *Timeout) GetSigner() common.Address {
-	return t.Signer
+	return t.signer
+}
+
+func (t *Timeout) SetSigner(signer common.Address) {
+	t.signer = signer
 }
 
 // BFT Sync Info message in XDPoS 2.0

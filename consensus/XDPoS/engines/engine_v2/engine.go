@@ -607,7 +607,7 @@ func (x *XDPoS_v2) VerifyVoteMessage(chain consensus.ChainReader, vote *types.Vo
 		log.Warn("[VerifyVoteMessage] Error while verifying vote message", "votedBlockNum", vote.ProposedBlockInfo.Number.Uint64(), "votedBlockHash", vote.ProposedBlockInfo.Hash.Hex(), "voteHash", vote.Hash(), "error", err.Error())
 		return false, err
 	}
-	vote.Signer = signer
+	vote.SetSigner(signer)
 
 	return verified, nil
 }
@@ -652,7 +652,7 @@ func (x *XDPoS_v2) VerifyTimeoutMessage(chain consensus.ChainReader, timeoutMsg 
 		return false, err
 	}
 
-	timeoutMsg.Signer = signer
+	timeoutMsg.SetSigner(signer)
 	return verified, nil
 }
 

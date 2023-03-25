@@ -126,7 +126,7 @@ func (x *XDPoS_v2) verifyVotes(chain consensus.ChainReader, votes map[common.Has
 				log.Warn("[verifyVotes] non-verified vote signature", "verified", verified)
 				return
 			}
-			v.Signer = masterNode
+			v.SetSigner(masterNode)
 		}(h, vote.(*types.Vote))
 	}
 	wg.Wait()

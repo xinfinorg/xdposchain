@@ -248,7 +248,7 @@ func TestShouldVerifyTimeoutMessageForFirstV2Block(t *testing.T) {
 	}
 
 	verified, err := engineV2.VerifyTimeoutMessage(blockchain, timeoutMsg)
-	assert.Equal(t, timeoutMsg.Signer, signer)
+	assert.Equal(t, timeoutMsg.GetSigner(), signer)
 	assert.Nil(t, err)
 	assert.True(t, verified)
 
@@ -264,7 +264,7 @@ func TestShouldVerifyTimeoutMessageForFirstV2Block(t *testing.T) {
 	}
 
 	verified, err = engineV2.VerifyTimeoutMessage(blockchain, timeoutMsg)
-	assert.Equal(t, timeoutMsg.Signer, signer)
+	assert.Equal(t, timeoutMsg.GetSigner(), signer)
 	assert.Nil(t, err)
 	assert.True(t, verified)
 }
