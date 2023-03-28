@@ -321,18 +321,15 @@ func getValidators(bc *core.BlockChain, masternodes []common.Address) ([]byte, e
 	// Check m2 exists on chaindb.
 	// Get secrets and opening at epoc block checkpoint.
 
-	var candidates []int64
-	if err != nil {
-		return nil, err
-	}
 	lenSigners := int64(len(masternodes))
-	if lenSigners > 0 {
-		for _, addr := range masternodes {
+	if lenSigners != 0 {
+		candidates := make([]int64, len(masternodes))
+		for i, addr := range masternodes {
 			random, err := contracts.GetRandomizeFromContract(client, addr)
 			if err != nil {
 				return nil, err
 			}
-			candidates = append(candidates, random)
+			candidates[i] = random
 		}
 		// Get randomize m2 list.
 		m2, err := contracts.GenM2FromRandomize(candidates, lenSigners)
