@@ -12,7 +12,7 @@
       "logDriver": "awslogs",
       "options": {
         "awslogs-group": "${cloudwatch_group}",
-        "awslogs-region": "us-east-1",
+        "awslogs-region": "${cloudwatch_region}",
         "awslogs-stream-prefix": "ecs"
       }
     },
