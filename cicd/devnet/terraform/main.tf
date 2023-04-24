@@ -49,40 +49,6 @@ module "eu-west-1" {
 }
 
 provider "aws" {
-  alias = "sa-east-1"
-  region  = "sa-east-1"
-}
-
-module "sa-east-1" {
-  source = "./module/region"
-  region = "sa-east-1"
-  devnetNodeKeys = local.devnetNodeKeys["sa-east-1"]
-  logLevel = local.logLevel
-  devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
-
-  providers = {
-    aws = aws.sa-east-1
-  }
-}
-
-provider "aws" {
-  alias = "ap-northeast-1"
-  region  = "ap-northeast-1"
-}
-
-module "ap-northeast-1" {
-  source = "./module/region"
-  region = "ap-northeast-1"
-  devnetNodeKeys = local.devnetNodeKeys["ap-northeast-1"]
-  logLevel = local.logLevel
-  devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
-
-  providers = {
-    aws = aws.ap-northeast-1
-  }
-}
-
-provider "aws" {
   alias = "ap-southeast-2"
   region  = "ap-southeast-2"
 }
