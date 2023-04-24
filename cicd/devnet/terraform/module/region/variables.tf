@@ -1,8 +1,3 @@
-variable "availability_zone" {
-  description = "AWS Subnet Zone"
-  type        = string
-}
-
 variable "region" {
   description = "AWS region"
   type        = string

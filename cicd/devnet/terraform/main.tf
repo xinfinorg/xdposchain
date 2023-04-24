@@ -21,7 +21,6 @@ provider "aws" {
 
 module "us-east-2" {
   source = "./module/region"
-  availability_zone = "us-east-2a"
   region = "us-east-2"
   devnetNodeKeys = local.devnetNodeKeys["us-east-2"]
   logLevel = local.logLevel
@@ -39,7 +38,6 @@ provider "aws" {
 
 module "eu-west-1" {
   source = "./module/region"
-  availability_zone = "eu-west-1a"
   region = "eu-west-1"
   devnetNodeKeys = local.devnetNodeKeys["eu-west-1"]
   logLevel = local.logLevel
@@ -57,7 +55,6 @@ provider "aws" {
 
 module "sa-east-1" {
   source = "./module/region"
-  availability_zone = "sa-east-1a"
   region = "sa-east-1"
   devnetNodeKeys = local.devnetNodeKeys["sa-east-1"]
   logLevel = local.logLevel
@@ -75,7 +72,6 @@ provider "aws" {
 
 module "ap-northeast-1" {
   source = "./module/region"
-  availability_zone = "ap-northeast-1a"
   region = "ap-northeast-1"
   devnetNodeKeys = local.devnetNodeKeys["ap-northeast-1"]
   logLevel = local.logLevel
@@ -93,7 +89,6 @@ provider "aws" {
 
 module "ap-southeast-2" {
   source = "./module/region"
-  availability_zone = "ap-southeast-2a"
   region = "ap-southeast-2"
   devnetNodeKeys = local.devnetNodeKeys["ap-southeast-2"]
   logLevel = local.logLevel
