@@ -53,6 +53,6 @@ go.sum
 
 
 cicd/devnet/terraform/.terraform
-cicd/devnet/terraform_module/.terraform
+cicd/devnet/terraform_new/.terraform
 cicd/devnet/.pwd
 cicd/devnet/tmp/

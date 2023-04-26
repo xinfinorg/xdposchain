@@ -24,16 +24,6 @@ locals {
         "end": local.envs["eu-west-1_end"],
       },
       {
-        "name": "sa-east-1", // Sao Paulo
-        "start": local.envs["sa-east-1_start"],
-        "end": local.envs["sa-east-1_end"],
-      },
-      {
-        "name": "ap-northeast-1", // Tokyo
-        "start": local.envs["ap-northeast-1_start"],
-        "end": local.envs["ap-northeast-1_end"],
-      },
-      {
         "name": "ap-southeast-2", // Sydney
         "start": local.envs["ap-southeast-2_start"],
         "end": local.envs["ap-southeast-2_end"],
