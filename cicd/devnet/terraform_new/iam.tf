@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "xdc_ecs_tasks_execution_role" {
 
 # Create the role
 resource "aws_iam_role" "devnet_xdc_ecs_tasks_execution_role" {
-  name               = "devnet-xdc-ecs-task-execution-role-liam"
+  name               = "devnet-xdc-ecs-task-execution-role"
   assume_role_policy = "${data.aws_iam_policy_document.xdc_ecs_tasks_execution_role.json}"
 }
 
