@@ -44,17 +44,17 @@ provider "aws" {
   region  = "eu-west-1"
 }
 
-# module "eu-west-1" {
-#   source = "./module/region"
-#   region = "eu-west-1"
-#   devnetNodeKeys = local.devnetNodeKeys["eu-west-1"]
-#   logLevel = local.logLevel
-#   devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
+module "eu-west-1" {
+  source = "./module/region"
+  region = "eu-west-1"
+  devnetNodeKeys = local.devnetNodeKeys["eu-west-1"]
+  logLevel = local.logLevel
+  devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
 
-#   providers = {
-#     aws = aws.eu-west-1
-#   }
-# }
+  providers = {
+    aws = aws.eu-west-1
+  }
+}
 
 provider "aws" {
   alias = "ap-southeast-2"
