@@ -27,17 +27,17 @@ provider "aws" {
   region  = "us-east-2"
 }
 
-# module "us-east-2" {
-#   source = "./module/region"
-#   region = "us-east-2"
-#   devnetNodeKeys = local.devnetNodeKeys["us-east-2"]
-#   logLevel = local.logLevel
-#   devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
+module "us-east-2" {
+  source = "./module/region"
+  region = "us-east-2"
+  devnetNodeKeys = local.devnetNodeKeys["us-east-2"]
+  logLevel = local.logLevel
+  devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
 
-#   providers = {
-#     aws = aws.us-east-2
-#   }
-# }
+  providers = {
+    aws = aws.us-east-2
+  }
+}
 
 provider "aws" {
   alias = "eu-west-1"
