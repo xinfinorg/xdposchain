@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/XinFinOrg/XDPoSChain/accounts"
+	"github.com/XinFinOrg/XDPoSChain/accounts/abi/bind/backends"
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
@@ -135,19 +136,19 @@ func TestVoteMessageHandlerSuccessfullyGeneratedAndProcessQC(t *testing.T) {
 	assert.Equal(t, types.Round(5), currentRound)
 
 	// Create another vote which is signed by someone not from the master node list
-	/*
-		randomSigner, randomSignFn, err := backends.SimulateWalletAddressAndSignFn()
-		assert.Nil(t, err)
-		randomlySignedHash, err := randomSignFn(accounts.Account{Address: randomSigner}, voteSigningHash.Bytes())
-		assert.Nil(t, err)
-		voteMsg = &types.Vote{
-			ProposedBlockInfo: blockInfo,
-			Signature:         randomlySignedHash,
-			GapNumber:         450,
-		}
-		err = engineV2.VoteHandler(blockchain, voteMsg)
-		assert.Nil(t, err)
-	*/
+
+	randomSigner, randomSignFn, err := backends.SimulateWalletAddressAndSignFn()
+	assert.Nil(t, err)
+	randomlySignedHash, err := randomSignFn(accounts.Account{Address: randomSigner}, voteSigningHash.Bytes())
+	assert.Nil(t, err)
+	voteMsg = &types.Vote{
+		ProposedBlockInfo: blockInfo,
+		Signature:         randomlySignedHash,
+		GapNumber:         450,
+	}
+	err = engineV2.VoteHandler(blockchain, voteMsg)
+	assert.Nil(t, err)
+
 	currentRound, lockQuorumCert, highestQuorumCert, _, _, _ = engineV2.GetPropertiesFaker()
 	// Still using the initlised value because we did not yet go to the next round
 	assert.Nil(t, lockQuorumCert)

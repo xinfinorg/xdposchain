@@ -138,7 +138,9 @@ func (x *XDPoS_v2) UpdateParams(header *types.Header) {
 	}()
 }
 
-/* V2 Block
+/*
+	V2 Block
+
 SignerFn is a signer callback function to request a hash to be signed by a
 backing account.
 type SignerFn func(accounts.Account, []byte) ([]byte, error)
@@ -574,7 +576,7 @@ func (x *XDPoS_v2) SyncInfoHandler(chain consensus.ChainReader, syncInfo *types.
 }
 
 /*
-	Vote workflow
+Vote workflow
 */
 func (x *XDPoS_v2) VerifyVoteMessage(chain consensus.ChainReader, vote *types.Vote) (bool, error) {
 	/*
@@ -657,7 +659,7 @@ func (x *XDPoS_v2) VerifyTimeoutMessage(chain consensus.ChainReader, timeoutMsg 
 }
 
 /*
-	Entry point for handling timeout message to process below:
+Entry point for handling timeout message to process below:
 */
 func (x *XDPoS_v2) TimeoutHandler(blockChainReader consensus.ChainReader, timeout *types.Timeout) error {
 	x.lock.Lock()
@@ -666,7 +668,7 @@ func (x *XDPoS_v2) TimeoutHandler(blockChainReader consensus.ChainReader, timeou
 }
 
 /*
-	Proposed Block workflow
+Proposed Block workflow
 */
 func (x *XDPoS_v2) ProposedBlockHandler(chain consensus.ChainReader, blockHeader *types.Header) error {
 	x.lock.Lock()
@@ -877,9 +879,9 @@ func (x *XDPoS_v2) processQC(blockChainReader consensus.ChainReader, incomingQuo
 }
 
 /*
-	1. Set currentRound = QC round + 1 (or TC round +1)
-	2. Reset timer
-	3. Reset vote and timeout Pools
+1. Set currentRound = QC round + 1 (or TC round +1)
+2. Reset timer
+3. Reset vote and timeout Pools
 */
 func (x *XDPoS_v2) setNewRound(blockChainReader consensus.ChainReader, round types.Round) {
 	log.Info("[setNewRound] new round and reset pools and workers", "round", round)
@@ -904,7 +906,7 @@ func (x *XDPoS_v2) getSyncInfo() *types.SyncInfo {
 	}
 }
 
-//Find parent and grandparent, check round number, if so, commit grandparent(grandGrandParent of currentBlock)
+// Find parent and grandparent, check round number, if so, commit grandparent(grandGrandParent of currentBlock)
 func (x *XDPoS_v2) commitBlocks(blockChainReader consensus.ChainReader, proposedBlockHeader *types.Header, proposedBlockRound *types.Round, incomingQc *types.QuorumCert) (bool, error) {
 	// XDPoS v1.0 switch to v2.0, skip commit
 	if big.NewInt(0).Sub(proposedBlockHeader.Number, big.NewInt(2)).Cmp(x.config.V2.SwitchBlock) <= 0 {
@@ -974,6 +976,10 @@ func (x *XDPoS_v2) GetMasternodes(chain consensus.ChainReader, header *types.Hea
 		return []common.Address{}
 	}
 	return epochSwitchInfo.Masternodes
+}
+
+func (x *XDPoS_v2) CalcMasternodes(chain consensus.ChainReader, blockNum *big.Int, parentHash common.Hash) ([]common.Address, []common.Address, error) {
+	return x.calcMasternodes(chain, blockNum, parentHash)
 }
 
 func (x *XDPoS_v2) calcMasternodes(chain consensus.ChainReader, blockNum *big.Int, parentHash common.Hash) ([]common.Address, []common.Address, error) {

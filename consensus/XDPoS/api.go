@@ -59,6 +59,14 @@ type SignerTypes struct {
 	MissingSigners []common.Address
 }
 
+type MasternodesStatus struct {
+	MasternodesLen int
+	Masternodes    []common.Address
+
+	PenaltyLen int
+	Penalty    []common.Address
+}
+
 type MessageStatus map[string]map[string]SignerTypes
 
 // GetSnapshot retrieves the state snapshot at a given block.
@@ -112,9 +120,27 @@ func (api *API) GetSignersAtHash(hash common.Hash) ([]common.Address, error) {
 	return api.XDPoS.GetAuthorisedSignersFromSnapshot(api.chain, header)
 }
 
-// Get the latest v2 committed block information. Note: This only applies to v2 engine. it doesn't make sense for v1
-func (api *API) GetLatestCommittedBlockHeader() *types.BlockInfo {
-	return api.XDPoS.EngineV2.GetLatestCommittedBlockInfo()
+func (api *API) GetMasternodesByNumber(number *rpc.BlockNumber) MasternodesStatus {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else if *number == rpc.CommittedBlockNumber {
+		hash := api.XDPoS.EngineV2.GetLatestCommittedBlockInfo().Hash
+		header = api.chain.GetHeaderByHash(hash)
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	masternodes, penalties, err := api.XDPoS.EngineV2.CalcMasternodes(api.chain, header.Number, header.ParentHash)
+	if err != nil {
+		return MasternodesStatus{}
+	}
+	info := MasternodesStatus{
+		MasternodesLen: len(masternodes),
+		Masternodes:    masternodes,
+		PenaltyLen:     len(penalties),
+		Penalty:        penalties,
+	}
+	return info
 }
 
 // Get current vote pool and timeout pool content and missing messages
@@ -238,8 +264,9 @@ func (api *API) NetworkInformation() NetworkInformation {
 func calculateSigners(message map[string]SignerTypes, pool map[string]map[common.Hash]utils.PoolObj, masternodes []common.Address) {
 	for name, objs := range pool {
 		var currentSigners []common.Address
-		var missingSigners []common.Address
+		missingSigners := make([]common.Address, len(masternodes))
 		copy(missingSigners, masternodes)
+
 		num := len(objs)
 		for _, obj := range objs {
 			signer := obj.GetSigner()
