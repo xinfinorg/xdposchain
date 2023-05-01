@@ -91,6 +91,9 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 		if err != nil {
 			return err
 		}
+
+		x.verifyVotes(chain, pooledVotes, proposedBlockHeader)
+
 		err = x.onVotePoolThresholdReached(chain, pooledVotes, voteMsg, proposedBlockHeader)
 		if err != nil {
 			return err
@@ -106,12 +109,17 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 func (x *XDPoS_v2) verifyVotes(chain consensus.ChainReader, votes map[common.Hash]utils.PoolObj, header *types.Header) {
 	masternodes := x.GetMasternodes(chain, header)
 	start := time.Now()
+	emptySigner := common.Address{}
 	// Filter out non-Master nodes signatures
 	var wg sync.WaitGroup
 	wg.Add(len(votes))
 	for h, vote := range votes {
 		go func(hash common.Hash, v *types.Vote) {
 			defer wg.Done()
+			if v.GetSigner() != emptySigner {
+				// verify before
+				return
+			}
 			signedVote := types.VoteSigHash(&types.VoteForSign{
 				ProposedBlockInfo: v.ProposedBlockInfo,
 				GapNumber:         v.GapNumber,
@@ -135,14 +143,17 @@ func (x *XDPoS_v2) verifyVotes(chain consensus.ChainReader, votes map[common.Has
 }
 
 /*
-	Function that will be called by votePool when it reached threshold.
-	In the engine v2, we will need to generate and process QC
+Function that will be called by votePool when it reached threshold.
+In the engine v2, we will need to generate and process QC
 */
 func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, pooledVotes map[common.Hash]utils.PoolObj, currentVoteMsg utils.PoolObj, proposedBlockHeader *types.Header) error {
 	// The signature list may contain empty entey. we only care the ones with values
 	var validSignatures []types.Signature
+	emptySigner := common.Address{}
 	for _, vote := range pooledVotes {
-		validSignatures = append(validSignatures, vote.(*types.Vote).Signature)
+		if vote.GetSigner() != emptySigner {
+			validSignatures = append(validSignatures, vote.(*types.Vote).Signature)
+		}
 	}
 
 	// Skip and wait for the next vote to process again if valid votes is less than what we required
