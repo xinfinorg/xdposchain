@@ -1025,14 +1025,12 @@ func (x *XDPoS_v2) calcMasternodes(chain consensus.ChainReader, blockNum *big.In
 		masternodes = masternodes[:maxMasternodes]
 	}
 	if len(masternodes) < x.config.V2.CurrentConfig.CertThreshold {
-		log.Warn("[calcMasternodes] Next epoch masternodes less than threshold", "number", blockNum, "masternodes", len(masternodes), "threshold", x.config.V2.CurrentConfig.CertThreshold)
+		log.Warn("[calcMasternodes] Current epoch masternodes less than threshold", "number", blockNum, "masternodes", len(masternodes), "threshold", x.config.V2.CurrentConfig.CertThreshold)
 		for i, a := range masternodes {
 			log.Warn("final masternode", "i", i, "addr", a)
 		}
-		if len(penalties) > 0 {
-			for i, a := range penalties {
-				log.Warn("penalty", "i", i, "addr", a)
-			}
+		for i, a := range penalties {
+			log.Warn("penalty", "i", i, "addr", a)
 		}
 	}
 	return masternodes, penalties, nil
