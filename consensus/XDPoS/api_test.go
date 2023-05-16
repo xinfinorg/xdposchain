@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO LIAM
 func TestCalculateSignersVote(t *testing.T) {
 
 	info := make(map[string]SignerTypes)
