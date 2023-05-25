@@ -228,11 +228,12 @@ func AttachConsensusV1Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 		)
 
 		stateDB, err := bc.StateAt(bc.GetBlockByHash(block).Root())
-		candidateAddresses = state.GetCandidates(stateDB)
-
 		if err != nil {
 			return nil, err
 		}
+
+		candidateAddresses = state.GetCandidates(stateDB)
+
 		for _, address := range candidateAddresses {
 			v, err := validator.GetCandidateCap(opts, address)
 			if err != nil {
