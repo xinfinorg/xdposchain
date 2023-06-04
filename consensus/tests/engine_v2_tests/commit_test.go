@@ -12,7 +12,7 @@ import (
 )
 
 func TestNormalReorgWhenNotInvolveCommittedBlock(t *testing.T) {
-	// Block number 905, 906 have forks and forkedBlock is the 906th
+	// create 3 forking blockss, so the committed block is not in the forking numbers
 	var numOfForks = new(int)
 	*numOfForks = 3
 	blockchain, _, currentBlock, signer, signFn, forkedBlock := PrepareXDCTestBlockChainForV2Engine(t, 906, params.TestXDPoSMockChainConfig, &ForkedBlockOptions{numOfForkedBlocks: numOfForks})
@@ -32,7 +32,7 @@ func TestNormalReorgWhenNotInvolveCommittedBlock(t *testing.T) {
 }
 
 func TestShouldNotReorgCommittedBlock(t *testing.T) {
-	// Block number 905, 906 have forks and forkedBlock is the 906th
+	// create 4 forking blocks, so the committed block is in the forking numbers
 	var numOfForks = new(int)
 	*numOfForks = 4
 	blockchain, _, currentBlock, signer, signFn, forkedBlock := PrepareXDCTestBlockChainForV2Engine(t, 906, params.TestXDPoSMockChainConfig, &ForkedBlockOptions{numOfForkedBlocks: numOfForks})
