@@ -1022,6 +1022,7 @@ func (x *XDPoS_v1) getSignersFromContract(chain consensus.ChainReader, checkpoin
 	}
 	signers, err := x.HookGetSignersFromContract(startGapBlockHeader.Hash())
 	if err != nil {
+		log.Error("getSignersFromContract", "number", number, "err", err)
 		return []common.Address{}, fmt.Errorf("Can't get signers from Smart Contract . Err: %v", err)
 	}
 	return signers, nil
