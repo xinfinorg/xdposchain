@@ -2203,23 +2203,25 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 	// Ensure XDPoS engine committed block will be not reverted
 	if xdpos, ok := bc.Engine().(*XDPoS.XDPoS); ok {
 		latestCommittedBlock := xdpos.EngineV2.GetLatestCommittedBlockInfo()
-		currentBlock := bc.CurrentBlock()
-		currentBlock.Number().Cmp(latestCommittedBlock.Number)
-		cmp := commonBlock.Number().Cmp(latestCommittedBlock.Number)
-		if cmp < 0 {
-			for _, oldBlock := range oldChain {
-				if oldBlock.Number().Cmp(latestCommittedBlock.Number) == 0 {
-					if oldBlock.Hash() != latestCommittedBlock.Hash {
-						log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(), "oldhash", oldBlock.Hash(), "committed hash", latestCommittedBlock.Hash)
-					} else {
-						log.Warn("Stop reorg, blockchain is under forking attack", "old committed num", oldBlock.Number(), "old committed hash", oldBlock.Hash())
-						return fmt.Errorf("stop reorg, blockchain is under forking attack. old committed num %d, hash %x", oldBlock.Number(), oldBlock.Hash())
+		if latestCommittedBlock != nil {
+			currentBlock := bc.CurrentBlock()
+			currentBlock.Number().Cmp(latestCommittedBlock.Number)
+			cmp := commonBlock.Number().Cmp(latestCommittedBlock.Number)
+			if cmp < 0 {
+				for _, oldBlock := range oldChain {
+					if oldBlock.Number().Cmp(latestCommittedBlock.Number) == 0 {
+						if oldBlock.Hash() != latestCommittedBlock.Hash {
+							log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(), "oldhash", oldBlock.Hash(), "committed hash", latestCommittedBlock.Hash)
+						} else {
+							log.Warn("Stop reorg, blockchain is under forking attack", "old committed num", oldBlock.Number(), "old committed hash", oldBlock.Hash())
+							return fmt.Errorf("stop reorg, blockchain is under forking attack. old committed num %d, hash %x", oldBlock.Number(), oldBlock.Hash())
+						}
 					}
 				}
-			}
-		} else if cmp == 0 {
-			if commonBlock.Hash() != latestCommittedBlock.Hash {
-				log.Error("Impossible reorg, please file an issue", "oldnum", commonBlock.Number(), "oldhash", commonBlock.Hash(), "committed hash", latestCommittedBlock.Hash)
+			} else if cmp == 0 {
+				if commonBlock.Hash() != latestCommittedBlock.Hash {
+					log.Error("Impossible reorg, please file an issue", "oldnum", commonBlock.Number(), "oldhash", commonBlock.Hash(), "committed hash", latestCommittedBlock.Hash)
+				}
 			}
 		}
 	}
