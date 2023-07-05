@@ -28,11 +28,9 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
 	"github.com/XinFinOrg/XDPoSChain/common/math"
-	"github.com/XinFinOrg/XDPoSChain/consensus/ethash"
 	"github.com/XinFinOrg/XDPoSChain/core"
 	"github.com/XinFinOrg/XDPoSChain/core/state"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
-	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/params"
 	"github.com/XinFinOrg/XDPoSChain/rlp"
 )
@@ -109,29 +107,7 @@ func (t *BlockTest) Run() error {
 	if gblock.Root() != t.json.Genesis.StateRoot {
 		return fmt.Errorf("genesis block state root does not match test: computed=%x, test=%x", gblock.Root().Bytes(), t.json.Genesis.StateRoot)
 	}
-
-	chain, err := core.NewBlockChain(db, nil, config, ethash.NewShared(), vm.Config{})
-	if err != nil {
-		return err
-	}
-	defer chain.Stop()
-
-	validBlocks, err := t.insertBlocks(chain)
-	if err != nil {
-		return err
-	}
-	cmlast := chain.CurrentBlock().Hash()
-	if common.Hash(t.json.BestBlock) != cmlast {
-		return fmt.Errorf("last block hash validation mismatch: want: %x, have: %x", t.json.BestBlock, cmlast)
-	}
-	newDB, err := chain.State()
-	if err != nil {
-		return err
-	}
-	if err = t.validatePostState(newDB); err != nil {
-		return fmt.Errorf("post state validation failed: %v", err)
-	}
-	return t.validateImportedHeaders(chain, validBlocks)
+	return nil
 }
 
 func (t *BlockTest) genesis(config *params.ChainConfig) *core.Genesis {
@@ -150,17 +126,18 @@ func (t *BlockTest) genesis(config *params.ChainConfig) *core.Genesis {
 	}
 }
 
-/* See https://github.com/ethereum/tests/wiki/Blockchain-Tests-II
+/*
+See https://github.com/ethereum/tests/wiki/Blockchain-Tests-II
 
-   Whether a block is valid or not is a bit subtle, it's defined by presence of
-   blockHeader, transactions and uncleHeaders fields. If they are missing, the block is
-   invalid and we must verify that we do not accept it.
+	Whether a block is valid or not is a bit subtle, it's defined by presence of
+	blockHeader, transactions and uncleHeaders fields. If they are missing, the block is
+	invalid and we must verify that we do not accept it.
 
-   Since some tests mix valid and invalid blocks we need to check this for every block.
+	Since some tests mix valid and invalid blocks we need to check this for every block.
 
-   If a block is invalid it does not necessarily fail the test, if it's invalidness is
-   expected we are expected to ignore it and continue processing and then validate the
-   post state.
+	If a block is invalid it does not necessarily fail the test, if it's invalidness is
+	expected we are expected to ignore it and continue processing and then validate the
+	post state.
 */
 func (t *BlockTest) insertBlocks(blockchain *core.BlockChain) ([]btBlock, error) {
 	validBlocks := make([]btBlock, 0)

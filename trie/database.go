@@ -98,21 +98,14 @@ type Database struct {
 	Lock sync.RWMutex
 }
 
-// rawNode is a simple binary blob used to differentiate between collapsed trie
-// nodes and already encoded RLP binary blobs (while at the same time store them
-// in the same Cache fields).
-type rawNode []byte
-
-func (n rawNode) Cache() (HashNode, bool)   { panic("this should never end up in a live trie") }
-func (n rawNode) fstring(ind string) string { panic("this should never end up in a live trie") }
-
 // rawFullNode represents only the useful data content of a full Node, with the
 // caches and flags stripped out to minimize its data storage. This type honors
 // the same RLP encoding as the original parent.
 type rawFullNode [17]Node
 
-func (n rawFullNode) Cache() (HashNode, bool)   { panic("this should never end up in a live trie") }
-func (n rawFullNode) fstring(ind string) string { panic("this should never end up in a live trie") }
+func (n rawFullNode) Cache() (HashNode, bool)    { panic("this should never end up in a live trie") }
+func (n rawFullNode) fstring(ind string) string  { panic("this should never end up in a live trie") }
+func (n rawFullNode) encode(w rlp.EncoderBuffer) { n.encode(w) }
 
 func (n rawFullNode) EncodeRLP(w io.Writer) error {
 	var nodes [17]Node
@@ -135,8 +128,9 @@ type rawShortNode struct {
 	Val Node
 }
 
-func (n rawShortNode) Cache() (HashNode, bool)   { panic("this should never end up in a live trie") }
-func (n rawShortNode) fstring(ind string) string { panic("this should never end up in a live trie") }
+func (n rawShortNode) Cache() (HashNode, bool)    { panic("this should never end up in a live trie") }
+func (n rawShortNode) fstring(ind string) string  { panic("this should never end up in a live trie") }
+func (n rawShortNode) encode(w rlp.EncoderBuffer) { n.encode(w) }
 
 // cachedNode is all the information we know about a single cached Node in the
 // memory database write layer.
@@ -184,7 +178,7 @@ func (n *cachedNode) obj(hash common.Hash) Node {
 
 // forChilds invokes the callback for  all the tracked children of this Node,
 // both the implicit ones  from inside the Node as well as the explicit ones
-//from outside the Node.
+// from outside the Node.
 func (n *cachedNode) forChilds(onChild func(hash common.Hash)) {
 	for child := range n.children {
 		onChild(child)
@@ -198,7 +192,7 @@ func (n *cachedNode) forChilds(onChild func(hash common.Hash)) {
 // invokes the callback for all the hashnode children.
 func forGatherChildren(n Node, onChild func(hash common.Hash)) {
 	switch n := n.(type) {
-	case *rawShortNode:
+	case rawShortNode:
 		forGatherChildren(n.Val, onChild)
 	case rawFullNode:
 		for i := 0; i < 16; i++ {

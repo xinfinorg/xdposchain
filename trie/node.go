@@ -29,6 +29,7 @@ var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b
 
 type Node interface {
 	fstring(string) string
+	encode(w rlp.EncoderBuffer)
 	Cache() (HashNode, bool)
 }
 
@@ -52,16 +53,9 @@ var nilValueNode = ValueNode(nil)
 
 // EncodeRLP encodes a full Node into the consensus RLP format.
 func (n *FullNode) EncodeRLP(w io.Writer) error {
-	var nodes [17]Node
-
-	for i, child := range &n.Children {
-		if child != nil {
-			nodes[i] = child
-		} else {
-			nodes[i] = nilValueNode
-		}
-	}
-	return rlp.Encode(w, nodes)
+	eb := rlp.NewEncoderBuffer(w)
+	n.encode(eb)
+	return eb.Flush()
 }
 
 func (n *FullNode) copy() *FullNode   { copy := *n; return &copy }
@@ -105,6 +99,19 @@ func (n ValueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
 
+// rawNode is a simple binary blob used to differentiate between collapsed trie
+// nodes and already encoded RLP binary blobs (while at the same time store them
+// in the same cache fields).
+type rawNode []byte
+
+func (n rawNode) Cache() (HashNode, bool)   { panic("this should never end up in a live trie") }
+func (n rawNode) fstring(ind string) string { panic("this should never end up in a live trie") }
+
+func (n rawNode) EncodeRLP(w io.Writer) error {
+	_, err := w.Write(n)
+	return err
+}
+
 func MustDecodeNode(hash, buf []byte) Node {
 	n, err := decodeNode(hash, buf)
 	if err != nil {
@@ -113,8 +120,19 @@ func MustDecodeNode(hash, buf []byte) Node {
 	return n
 }
 
-// decodeNode parses the RLP encoding of a trie Node.
+// decodeNode parses the RLP encoding of a trie node. It will deep-copy the passed
+// byte slice for decoding, so it's safe to modify the byte slice afterwards. The-
+// decode performance of this function is not optimal, but it is suitable for most
+// scenarios with low performance requirements and hard to determine whether the
+// byte slice be modified or not.
 func decodeNode(hash, buf []byte) (Node, error) {
+	return decodeNodeUnsafe(hash, common.CopyBytes(buf))
+}
+
+// decodeNodeUnsafe parses the RLP encoding of a trie node. The passed byte slice
+// will be directly referenced by node without bytes deep copy, so the input MUST
+// not be changed after.
+func decodeNodeUnsafe(hash, buf []byte) (Node, error) {
 	if len(buf) == 0 {
 		return nil, io.ErrUnexpectedEOF
 	}
@@ -142,12 +160,12 @@ func decodeShort(hash, elems []byte) (Node, error) {
 	flag := NodeFlag{hash: hash}
 	key := compactToHex(kbuf)
 	if hasTerm(key) {
-		// value Node
+		// value node
 		val, _, err := rlp.SplitString(rest)
 		if err != nil {
-			return nil, fmt.Errorf("invalid value Node: %v", err)
+			return nil, fmt.Errorf("invalid value node: %v", err)
 		}
-		return &ShortNode{key, append(ValueNode{}, val...), flag}, nil
+		return &ShortNode{key, ValueNode(val), flag}, nil
 	}
 	r, _, err := decodeRef(rest)
 	if err != nil {
@@ -170,7 +188,7 @@ func decodeFull(hash, elems []byte) (*FullNode, error) {
 		return n, err
 	}
 	if len(val) > 0 {
-		n.Children[16] = append(ValueNode{}, val...)
+		n.Children[16] = ValueNode(val)
 	}
 	return n, nil
 }
@@ -184,19 +202,19 @@ func decodeRef(buf []byte) (Node, []byte, error) {
 	}
 	switch {
 	case kind == rlp.List:
-		// 'embedded' Node reference. The encoding must be smaller
+		// 'embedded' node reference. The encoding must be smaller
 		// than a hash in order to be valid.
 		if size := len(buf) - len(rest); size > hashLen {
-			err := fmt.Errorf("oversized embedded Node (size is %d bytes, want size < %d)", size, hashLen)
+			err := fmt.Errorf("oversized embedded node (size is %d bytes, want size < %d)", size, hashLen)
 			return nil, buf, err
 		}
 		n, err := decodeNode(nil, buf)
 		return n, rest, err
 	case kind == rlp.String && len(val) == 0:
-		// empty Node
+		// empty node
 		return nil, rest, nil
 	case kind == rlp.String && len(val) == 32:
-		return append(HashNode{}, val...), rest, nil
+		return HashNode(val), rest, nil
 	default:
 		return nil, nil, fmt.Errorf("invalid RLP string size %d (want 0 or 32)", len(val))
 	}

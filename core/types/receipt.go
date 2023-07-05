@@ -18,8 +18,12 @@ package types
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"github.com/XinFinOrg/XDPoSChain/crypto"
+	"github.com/XinFinOrg/XDPoSChain/params"
 	"io"
+	"math/big"
 	"unsafe"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
@@ -45,6 +49,7 @@ const (
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
+	Type              uint8  `json:"type,omitempty"`
 	PostState         []byte `json:"root"`
 	Status            uint   `json:"status"`
 	CumulativeGasUsed uint64 `json:"cumulativeGasUsed" gencodec:"required"`
@@ -52,16 +57,27 @@ type Receipt struct {
 	Logs              []*Log `json:"logs"              gencodec:"required"`
 
 	// Implementation fields (don't reorder!)
-	TxHash          common.Hash    `json:"transactionHash" gencodec:"required"`
-	ContractAddress common.Address `json:"contractAddress"`
-	GasUsed         uint64         `json:"gasUsed" gencodec:"required"`
+	TxHash            common.Hash    `json:"transactionHash" gencodec:"required"`
+	ContractAddress   common.Address `json:"contractAddress"`
+	GasUsed           uint64         `json:"gasUsed" gencodec:"required"`
+	EffectiveGasPrice *big.Int       `json:"effectiveGasPrice"` // required, but tag omitted for backwards compatibility
+
+	// Inclusion information: These fields provide information about the inclusion of the
+	// transaction corresponding to this receipt.
+	BlockHash        common.Hash `json:"blockHash,omitempty"`
+	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
+	TransactionIndex uint        `json:"transactionIndex"`
 }
 
 type receiptMarshaling struct {
+	Type              hexutil.Uint64
 	PostState         hexutil.Bytes
 	Status            hexutil.Uint
 	CumulativeGasUsed hexutil.Uint64
 	GasUsed           hexutil.Uint64
+	EffectiveGasPrice *hexutil.Big
+	BlockNumber       *hexutil.Big
+	TransactionIndex  hexutil.Uint
 }
 
 // receiptRLP is the consensus encoding of a receipt.
@@ -80,17 +96,6 @@ type receiptStorageRLP struct {
 	ContractAddress   common.Address
 	Logs              []*LogForStorage
 	GasUsed           uint64
-}
-
-// NewReceipt creates a barebone transaction receipt, copying the init fields.
-func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
-	r := &Receipt{PostState: common.CopyBytes(root), CumulativeGasUsed: cumulativeGasUsed}
-	if failed {
-		r.Status = ReceiptStatusFailed
-	} else {
-		r.Status = ReceiptStatusSuccessful
-	}
-	return r
 }
 
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
@@ -213,4 +218,72 @@ func (r Receipts) GetRlp(i int) []byte {
 		panic(err)
 	}
 	return bytes
+}
+
+func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
+	r := rs[i]
+	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
+	if r.Type == LegacyTxType {
+		rlp.Encode(w, data)
+		return
+	}
+	w.WriteByte(r.Type)
+	switch r.Type {
+	case AccessListTxType, DynamicFeeTxType, BlobTxType:
+		rlp.Encode(w, data)
+	default:
+		// For unsupported types, write nothing. Since this is for
+		// DeriveSha, the error will be caught matching the derived hash
+		// to the block.
+	}
+}
+
+// DeriveFields fills the receipts with their computed fields based on consensus
+// data and contextual infos like containing block and transactions.
+func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, number uint64, time uint64, baseFee *big.Int, txs []*Transaction) error {
+	signer := MakeSigner(config, new(big.Int).SetUint64(number), time)
+
+	logIndex := uint(0)
+	if len(txs) != len(rs) {
+		return errors.New("transaction and receipt count mismatch")
+	}
+	for i := 0; i < len(rs); i++ {
+		// The transaction type and hash can be retrieved from the transaction itself
+		rs[i].Type = txs[i].Type()
+		rs[i].TxHash = txs[i].Hash()
+
+		rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
+
+		// block location fields
+		rs[i].BlockHash = hash
+		rs[i].BlockNumber = new(big.Int).SetUint64(number)
+		rs[i].TransactionIndex = uint(i)
+
+		// The contract address can be derived from the transaction itself
+		if txs[i].To() == nil {
+			// Deriving the signer is expensive, only do if it's actually needed
+			from, _ := Sender(signer, txs[i])
+			rs[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
+		} else {
+			rs[i].ContractAddress = common.Address{}
+		}
+
+		// The used gas can be calculated based on previous r
+		if i == 0 {
+			rs[i].GasUsed = rs[i].CumulativeGasUsed
+		} else {
+			rs[i].GasUsed = rs[i].CumulativeGasUsed - rs[i-1].CumulativeGasUsed
+		}
+
+		// The derived log fields can simply be set from the block and transaction
+		for j := 0; j < len(rs[i].Logs); j++ {
+			rs[i].Logs[j].BlockNumber = number
+			rs[i].Logs[j].BlockHash = hash
+			rs[i].Logs[j].TxHash = rs[i].TxHash
+			rs[i].Logs[j].TxIndex = uint(i)
+			rs[i].Logs[j].Index = logIndex
+			logIndex++
+		}
+	}
+	return nil
 }

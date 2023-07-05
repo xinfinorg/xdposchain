@@ -48,6 +48,7 @@ func (b *sliceBuffer) Reset() {
 type hasher struct {
 	sha      keccakState
 	tmp      sliceBuffer
+	encbuf   rlp.EncoderBuffer
 	parallel bool // Whether to use paralallel threads when hashing
 }
 
@@ -55,8 +56,9 @@ type hasher struct {
 var hasherPool = sync.Pool{
 	New: func() interface{} {
 		return &hasher{
-			tmp: make(sliceBuffer, 0, 550), // cap is as large as a full FullNode.
-			sha: sha3.NewLegacyKeccak256().(keccakState),
+			tmp:    make(sliceBuffer, 0, 550), // cap is as large as a full FullNode.
+			sha:    sha3.NewLegacyKeccak256().(keccakState),
+			encbuf: rlp.NewEncoderBuffer(nil),
 		}
 	},
 }
@@ -185,6 +187,22 @@ func (h *hasher) fullnodeToHash(n *FullNode, force bool) Node {
 		return n // Nodes smaller than 32 bytes are stored inside their parent
 	}
 	return h.hashData(h.tmp)
+}
+
+// encodedBytes returns the result of the last encoding operation on h.encbuf.
+// This also resets the encoder buffer.
+//
+// All node encoding must be done like this:
+//
+//	node.encode(h.encbuf)
+//	enc := h.encodedBytes()
+//
+// This convention exists because node.encode can only be inlined/escape-analyzed when
+// called on a concrete receiver type.
+func (h *hasher) encodedBytes() []byte {
+	h.tmp = h.encbuf.AppendToBytes(h.tmp[:0])
+	h.encbuf.Reset(nil)
+	return h.tmp
 }
 
 // hashData hashes the provided data

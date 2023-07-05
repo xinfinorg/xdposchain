@@ -72,6 +72,9 @@ type StateDB struct {
 	logs         map[common.Hash][]*types.Log
 	logSize      uint
 
+	// Transient storage
+	transientStorage transientStorage
+
 	preimages map[common.Hash][]byte
 
 	// Journal of state modifications. This is the backbone of
@@ -353,6 +356,17 @@ func (self *StateDB) Suicide(addr common.Address) bool {
 	return true
 }
 
+// setTransientState is a lower level setter for transient storage. It
+// is called during a revert to prevent modifications to the journal.
+func (s *StateDB) setTransientState(addr common.Address, key, value common.Hash) {
+	s.transientStorage.Set(addr, key, value)
+}
+
+// GetTransientState gets transient storage for a given account.
+func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
+	return s.transientStorage.Get(addr, key)
+}
+
 //
 // Setting, updating & deleting state object methods.
 //
@@ -449,8 +463,8 @@ func (self *StateDB) createObject(addr common.Address) (newobj, prev *stateObjec
 // CreateAccount is called during the EVM CREATE operation. The situation might arise that
 // a contract does the following:
 //
-//   1. sends funds to sha(account ++ (nonce + 1))
-//   2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
+//  1. sends funds to sha(account ++ (nonce + 1))
+//  2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
 //
 // Carrying over the balance ensures that Ether doesn't disappear.
 func (self *StateDB) CreateAccount(addr common.Address) {

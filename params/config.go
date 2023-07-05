@@ -219,15 +219,15 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil}
+	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 	// AllXDPoSProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the XDPoS consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllXDPoSProtocolChanges  = &ChainConfig{big.NewInt(89), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, &XDPoSConfig{Period: 0, Epoch: 30000}}
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil}
+	AllXDPoSProtocolChanges  = &ChainConfig{big.NewInt(89), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, &XDPoSConfig{Period: 0, Epoch: 30000}, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
 	// XDPoS config with v2 engine after block 901
 	TestXDPoSMockChainConfig = &ChainConfig{
@@ -255,10 +255,22 @@ var (
 				AllConfigs:    UnitTestV2Configs,
 			},
 		},
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
 	}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil}
-	TestRules       = TestChainConfig.Rules(new(big.Int))
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	TestRules       = TestChainConfig.Rules(new(big.Int), false, 0)
 )
 
 // ChainConfig is the core config which determines the blockchain settings.
@@ -282,12 +294,29 @@ type ChainConfig struct {
 	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
 
 	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
-	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
+	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated
 
 	// Various consensus engines
 	Ethash *EthashConfig `json:"ethash,omitempty"`
 	Clique *CliqueConfig `json:"clique,omitempty"`
 	XDPoS  *XDPoSConfig  `json:"XDPoS,omitempty"`
+
+	PetersburgBlock    *big.Int `json:"petersburgBlock,omitempty"`    // Petersburg switch block (nil = same as Constantinople)
+	IstanbulBlock      *big.Int `json:"istanbulBlock,omitempty"`      // Istanbul switch block (nil = no fork, 0 = already on istanbul)
+	MuirGlacierBlock   *big.Int `json:"muirGlacierBlock,omitempty"`   // Eip-2384 (bomb delay) switch block (nil = no fork, 0 = already activated)
+	BerlinBlock        *big.Int `json:"berlinBlock,omitempty"`        // Berlin switch block (nil = no fork, 0 = already on berlin)
+	LondonBlock        *big.Int `json:"londonBlock,omitempty"`        // London switch block (nil = no fork, 0 = already on london)
+	ArrowGlacierBlock  *big.Int `json:"arrowGlacierBlock,omitempty"`  // Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)
+	GrayGlacierBlock   *big.Int `json:"grayGlacierBlock,omitempty"`   // Eip-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)
+	MergeNetsplitBlock *big.Int `json:"mergeNetsplitBlock,omitempty"` // Virtual fork after The Merge to use as a network splitter
+
+	ShanghaiTime *uint64 `json:"shanghaiTime,omitempty"` // Shanghai switch time (nil = no fork, 0 = already on shanghai)
+	CancunTime   *uint64 `json:"cancunTime,omitempty"`   // Cancun switch time (nil = no fork, 0 = already on cancun)
+	PragueTime   *uint64 `json:"pragueTime,omitempty"`   // Prague switch time (nil = no fork, 0 = already on prague)
+
+	// TerminalTotalDifficulty is the amount of total difficulty reached by
+	// the network that triggers the consensus upgrade.
+	TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -470,12 +499,55 @@ func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
 // - equal to or greater than the PetersburgBlock fork block,
 // - OR is nil, and Constantinople is active
 func (c *ChainConfig) IsPetersburg(num *big.Int) bool {
-	return isForked(common.TIPXDCXCancellationFee, num)
+	return isForked(c.PetersburgBlock, num) || c.PetersburgBlock == nil && isForked(c.ConstantinopleBlock, num)
 }
 
 // IsIstanbul returns whether num is either equal to the Istanbul fork block or greater.
 func (c *ChainConfig) IsIstanbul(num *big.Int) bool {
-	return isForked(common.TIPXDCXCancellationFee, num)
+	return isForked(c.IstanbulBlock, num)
+}
+
+// IsBerlin returns whether num is either equal to the Berlin fork block or greater.
+func (c *ChainConfig) IsBerlin(num *big.Int) bool {
+	return isForked(c.BerlinBlock, num)
+}
+
+// IsLondon returns whether num is either equal to the London fork block or greater.
+func (c *ChainConfig) IsLondon(num *big.Int) bool {
+	return isForked(c.LondonBlock, num)
+}
+
+// IsArrowGlacier returns whether num is either equal to the Arrow Glacier (EIP-4345) fork block or greater.
+func (c *ChainConfig) IsArrowGlacier(num *big.Int) bool {
+	return isForked(c.ArrowGlacierBlock, num)
+}
+
+// IsGrayGlacier returns whether num is either equal to the Gray Glacier (EIP-5133) fork block or greater.
+func (c *ChainConfig) IsGrayGlacier(num *big.Int) bool {
+	return isForked(c.GrayGlacierBlock, num)
+}
+
+// IsTerminalPoWBlock returns whether the given block is the last block of PoW stage.
+func (c *ChainConfig) IsTerminalPoWBlock(parentTotalDiff *big.Int, totalDiff *big.Int) bool {
+	if c.TerminalTotalDifficulty == nil {
+		return false
+	}
+	return parentTotalDiff.Cmp(c.TerminalTotalDifficulty) < 0 && totalDiff.Cmp(c.TerminalTotalDifficulty) >= 0
+}
+
+// IsShanghai returns whether time is either equal to the Shanghai fork time or greater.
+func (c *ChainConfig) IsShanghai(num *big.Int, time uint64) bool {
+	return c.IsLondon(num) && isTimestampForked(c.ShanghaiTime, time)
+}
+
+// IsCancun returns whether num is either equal to the Cancun fork time or greater.
+func (c *ChainConfig) IsCancun(num *big.Int, time uint64) bool {
+	return c.IsLondon(num) && isTimestampForked(c.CancunTime, time)
+}
+
+// IsPrague returns whether num is either equal to the Prague fork time or greater.
+func (c *ChainConfig) IsPrague(num *big.Int, time uint64) bool {
+	return c.IsLondon(num) && isTimestampForked(c.PragueTime, time)
 }
 
 func (c *ChainConfig) IsTIP2019(num *big.Int) bool {
@@ -596,6 +668,13 @@ func isForked(s, head *big.Int) bool {
 	return s.Cmp(head) <= 0
 }
 
+func isTimestampForked(s *uint64, head uint64) bool {
+	if s == nil {
+		return false
+	}
+	return *s <= head
+}
+
 func configNumEqual(x, y *big.Int) bool {
 	if x == nil {
 		return y == nil
@@ -646,9 +725,11 @@ type Rules struct {
 	ChainId                                                 *big.Int
 	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
 	IsByzantium, IsConstantinople, IsPetersburg, IsIstanbul bool
+	IsBerlin, IsLondon                                      bool
+	IsMerge, IsShanghai, IsCancun, IsPrague                 bool
 }
 
-func (c *ChainConfig) Rules(num *big.Int) Rules {
+func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules {
 	chainId := c.ChainId
 	if chainId == nil {
 		chainId = new(big.Int)
@@ -663,5 +744,11 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 		IsConstantinople: c.IsConstantinople(num),
 		IsPetersburg:     c.IsPetersburg(num),
 		IsIstanbul:       c.IsIstanbul(num),
+		IsBerlin:         c.IsBerlin(num),
+		IsLondon:         c.IsLondon(num),
+		IsMerge:          isMerge,
+		IsShanghai:       c.IsShanghai(num, timestamp),
+		IsCancun:         c.IsCancun(num, timestamp),
+		IsPrague:         c.IsPrague(num, timestamp),
 	}
 }

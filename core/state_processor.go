@@ -86,12 +86,14 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, tra
 	InitSignerInTransactions(p.config, header, block.Transactions())
 	balanceUpdated := map[common.Address]*big.Int{}
 	totalFeeUsed := big.NewInt(0)
+	signer := types.MakeSigner(p.config, block.Number(), block.Time().Uint64())
 	for i, tx := range block.Transactions() {
 		// check black-list txs after hf
 		if (block.Number().Uint64() >= common.BlackListHFNumber) && !common.IsTestnet {
 			// check if sender is in black list
-			if tx.From() != nil && common.Blacklist[*tx.From()] {
-				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
+			from, err := signer.Sender(tx)
+			if err != nil && common.Blacklist[from] {
+				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", from.Hex())
 			}
 			// check if receiver is in black list
 			if tx.To() != nil && common.Blacklist[*tx.To()] {
@@ -167,9 +169,13 @@ func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, stated
 	for i, tx := range block.Transactions() {
 		// check black-list txs after hf
 		if (block.Number().Uint64() >= common.BlackListHFNumber) && !common.IsTestnet {
+			sender, err := types.NewLondonSigner(block.Number()).Sender(tx)
+			if err != nil {
+				return nil, nil, 0, fmt.Errorf("failed to get sender")
+			}
 			// check if sender is in black list
-			if tx.From() != nil && common.Blacklist[*tx.From()] {
-				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
+			if common.Blacklist[sender] {
+				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", sender.Hex())
 			}
 			// check if receiver is in black list
 			if tx.To() != nil && common.Blacklist[*tx.To()] {
@@ -244,7 +250,7 @@ func ApplyTransaction(config *params.ChainConfig, tokensFee map[common.Address]*
 			balanceFee = value
 		}
 	}
-	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number), balanceFee, header.Number)
+	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee)
 	if err != nil {
 		return nil, 0, err, false
 	}
@@ -502,7 +508,7 @@ func ApplyEmptyTransaction(config *params.ChainConfig, statedb *state.StateDB, h
 
 func InitSignerInTransactions(config *params.ChainConfig, header *types.Header, txs types.Transactions) {
 	nWorker := runtime.NumCPU()
-	signer := types.MakeSigner(config, header.Number)
+	signer := types.MakeSigner(config, header.Number, header.Time.Uint64())
 	chunkSize := txs.Len() / nWorker
 	if txs.Len()%nWorker != 0 {
 		chunkSize++

@@ -10,6 +10,7 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20171128150713-2e60448ffcc6
 	github.com/btcsuite/winsvc v1.0.0 // indirect
 	github.com/cespare/cp v1.1.1
+	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.8.0
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
@@ -23,6 +24,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1
 	github.com/hashicorp/golang-lru v0.5.3
+	github.com/holiman/uint256 v1.2.2 // indirect
 	github.com/huin/goupnp v1.0.0
 	github.com/influxdata/influxdb v1.7.9
 	github.com/jackpal/go-nat-pmp v1.0.2-0.20160603034137-1fa385a6f458
@@ -51,12 +53,12 @@ require (
 	github.com/rs/cors v1.6.0
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
-	golang.org/x/crypto v0.0.0-20191105034135-c7e5f84aec59
-	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20190912141932-bc967efca4b8
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	golang.org/x/sync v0.1.0
+	golang.org/x/sys v0.6.0
 	golang.org/x/tools v0.0.0-20191104232314-dc038396d1f0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951

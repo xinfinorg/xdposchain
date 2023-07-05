@@ -59,7 +59,6 @@ import (
 var (
 	blockInsertTimer = metrics.NewRegisteredTimer("chain/inserts", nil)
 	CheckpointCh     = make(chan int)
-	ErrNoGenesis     = errors.New("Genesis not found in chain")
 )
 
 const (
@@ -1037,7 +1036,7 @@ func (bc *BlockChain) Rollback(chain []common.Hash) {
 
 // SetReceiptsData computes all the non-consensus fields of the receipts
 func SetReceiptsData(config *params.ChainConfig, block *types.Block, receipts types.Receipts) error {
-	signer := types.MakeSigner(config, block.Number())
+	signer := types.MakeSigner(config, block.Number(), block.Time().Uint64())
 
 	transactions, logIndex := block.Transactions(), uint(0)
 	if len(transactions) != len(receipts) {
