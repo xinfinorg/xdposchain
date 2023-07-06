@@ -54,8 +54,8 @@ type XDPoS_v1 struct {
 	lock   sync.RWMutex    // Protects the signer fields
 
 	HookReward            func(chain consensus.ChainReader, state *state.StateDB, parentState *state.StateDB, header *types.Header) (error, map[string]interface{})
-	HookPenalty           func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error)
-	HookPenaltyTIPSigning func(chain consensus.ChainReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
+	HookPenalty           func(chain consensus.ChainHeaderReader, blockNumberEpoc uint64) ([]common.Address, error)
+	HookPenaltyTIPSigning func(chain consensus.ChainHeaderReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
 	HookValidator         func(header *types.Header, signers []common.Address) ([]byte, error)
 	HookVerifyMNs         func(header *types.Header, signers []common.Address) error
 
@@ -357,7 +357,7 @@ func (x *XDPoS_v1) StoreSnapshot(snap *SnapshotV1) error {
 	return snap.store(x.db)
 }
 
-func (x *XDPoS_v1) GetMasternodes(chain consensus.ChainReader, header *types.Header) []common.Address {
+func (x *XDPoS_v1) GetMasternodes(chain consensus.ChainHeaderReader, header *types.Header) []common.Address {
 	n := header.Number.Uint64()
 	e := x.config.Epoch
 	switch {
@@ -661,7 +661,7 @@ func (x *XDPoS_v1) verifySeal(chain consensus.ChainReader, header *types.Header,
 	return nil
 }
 
-func (x *XDPoS_v1) GetValidator(creator common.Address, chain consensus.ChainReader, header *types.Header) (common.Address, error) {
+func (x *XDPoS_v1) GetValidator(creator common.Address, chain consensus.ChainHeaderReader, header *types.Header) (common.Address, error) {
 	epoch := x.config.Epoch
 	no := header.Number.Uint64()
 	cpNo := no
@@ -1014,7 +1014,7 @@ func removePenaltiesFromBlock(chain consensus.ChainReader, masternodes []common.
 	return masternodes
 }
 
-func (x *XDPoS_v1) getSignersFromContract(chain consensus.ChainReader, checkpointHeader *types.Header) ([]common.Address, error) {
+func (x *XDPoS_v1) getSignersFromContract(chain consensus.ChainHeaderReader, checkpointHeader *types.Header) ([]common.Address, error) {
 	startGapBlockHeader := checkpointHeader
 	number := checkpointHeader.Number.Uint64()
 	for step := uint64(1); step <= chain.Config().XDPoS.Gap; step++ {

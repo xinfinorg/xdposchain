@@ -77,7 +77,7 @@ func (tt *TransactionTest) Run(config *params.ChainConfig) error {
 		}
 	}
 	// Check sender derivation.
-	signer := types.MakeSigner(config, new(big.Int).SetUint64(uint64(tt.json.BlockNumber)))
+	signer := types.MakeSigner(config, new(big.Int).SetUint64(uint64(tt.json.BlockNumber)), 0)
 	sender, err := types.Sender(signer, tx)
 	if err != nil {
 		return err

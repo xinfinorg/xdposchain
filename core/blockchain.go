@@ -984,7 +984,7 @@ func (bc *BlockChain) procFutureBlocks() {
 			_, err := bc.InsertChain(blocks[i : i+1])
 			// let consensus engine handle the last block (e.g. for voting)
 			if i == len(blocks)-1 && err == nil {
-				engine, ok := bc.Engine().(*XDPoS.XDPoS)
+				engine, ok := bc.engine.(*XDPoS.XDPoS)
 				if ok {
 					go func() {
 						header := blocks[i].Header()
