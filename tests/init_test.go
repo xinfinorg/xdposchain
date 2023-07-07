@@ -18,13 +18,14 @@ package tests
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -36,14 +37,15 @@ var (
 	baseDir            = filepath.Join(".", "testdata")
 	blockTestDir       = filepath.Join(baseDir, "BlockchainTests")
 	stateTestDir       = filepath.Join(baseDir, "GeneralStateTests")
+	legacyStateTestDir = filepath.Join(baseDir, "LegacyTests", "Constantinople", "GeneralStateTests")
 	transactionTestDir = filepath.Join(baseDir, "TransactionTests")
-	vmTestDir          = filepath.Join(baseDir, "VMTests")
 	rlpTestDir         = filepath.Join(baseDir, "RLPTests")
 	difficultyTestDir  = filepath.Join(baseDir, "BasicTests")
+	benchmarksDir      = filepath.Join(".", "evm-benchmarks", "benchmarks")
 )
 
-func readJson(reader io.Reader, value interface{}) error {
-	data, err := ioutil.ReadAll(reader)
+func readJSON(reader io.Reader, value interface{}) error {
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return fmt.Errorf("error reading JSON file: %v", err)
 	}
@@ -57,14 +59,14 @@ func readJson(reader io.Reader, value interface{}) error {
 	return nil
 }
 
-func readJsonFile(fn string, value interface{}) error {
+func readJSONFile(fn string, value interface{}) error {
 	file, err := os.Open(fn)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	err = readJson(file, value)
+	err = readJSON(file, value)
 	if err != nil {
 		return fmt.Errorf("%s in file %s", err.Error(), fn)
 	}
@@ -87,10 +89,11 @@ func findLine(data []byte, offset int64) (line int) {
 
 // testMatcher controls skipping and chain config assignment to tests.
 type testMatcher struct {
-	configpat    []testConfig
-	failpat      []testFailure
-	skiploadpat  []*regexp.Regexp
-	skipshortpat []*regexp.Regexp
+	configpat      []testConfig
+	failpat        []testFailure
+	skiploadpat    []*regexp.Regexp
+	slowpat        []*regexp.Regexp
+	runonlylistpat *regexp.Regexp
 }
 
 type testConfig struct {
@@ -104,8 +107,8 @@ type testFailure struct {
 }
 
 // skipShortMode skips tests matching when the -short flag is used.
-func (tm *testMatcher) skipShortMode(pattern string) {
-	tm.skipshortpat = append(tm.skipshortpat, regexp.MustCompile(pattern))
+func (tm *testMatcher) slow(pattern string) {
+	tm.slowpat = append(tm.slowpat, regexp.MustCompile(pattern))
 }
 
 // skipLoad skips JSON loading of tests matching the pattern.
@@ -114,11 +117,17 @@ func (tm *testMatcher) skipLoad(pattern string) {
 }
 
 // fails adds an expected failure for tests matching the pattern.
+//
+//nolint:unused
 func (tm *testMatcher) fails(pattern string, reason string) {
 	if reason == "" {
 		panic("empty fail reason")
 	}
 	tm.failpat = append(tm.failpat, testFailure{regexp.MustCompile(pattern), reason})
+}
+
+func (tm *testMatcher) runonly(pattern string) {
+	tm.runonlylistpat = regexp.MustCompile(pattern)
 }
 
 // config defines chain config for tests matching the pattern.
@@ -128,10 +137,14 @@ func (tm *testMatcher) config(pattern string, cfg params.ChainConfig) {
 
 // findSkip matches name against test skip patterns.
 func (tm *testMatcher) findSkip(name string) (reason string, skipload bool) {
-	if testing.Short() {
-		for _, re := range tm.skipshortpat {
-			if re.MatchString(name) {
+	isWin32 := runtime.GOARCH == "386" && runtime.GOOS == "windows"
+	for _, re := range tm.slowpat {
+		if re.MatchString(name) {
+			if testing.Short() {
 				return "skipped in -short mode", false
+			}
+			if isWin32 {
+				return "skipped on 32bit windows", false
 			}
 		}
 	}
@@ -144,10 +157,9 @@ func (tm *testMatcher) findSkip(name string) (reason string, skipload bool) {
 }
 
 // findConfig returns the chain config matching defined patterns.
-func (tm *testMatcher) findConfig(name string) *params.ChainConfig {
-	// TODO(fjl): name can be derived from testing.T when min Go version is 1.8
+func (tm *testMatcher) findConfig(t *testing.T) *params.ChainConfig {
 	for _, m := range tm.configpat {
-		if m.p.MatchString(name) {
+		if m.p.MatchString(t.Name()) {
 			return &m.config
 		}
 	}
@@ -155,11 +167,10 @@ func (tm *testMatcher) findConfig(name string) *params.ChainConfig {
 }
 
 // checkFailure checks whether a failure is expected.
-func (tm *testMatcher) checkFailure(t *testing.T, name string, err error) error {
-	// TODO(fjl): name can be derived from t when min Go version is 1.8
+func (tm *testMatcher) checkFailure(t *testing.T, err error) error {
 	failReason := ""
 	for _, m := range tm.failpat {
-		if m.p.MatchString(name) {
+		if m.p.MatchString(t.Name()) {
 			failReason = m.reason
 			break
 		}
@@ -169,9 +180,8 @@ func (tm *testMatcher) checkFailure(t *testing.T, name string, err error) error 
 		if err != nil {
 			t.Logf("error: %v", err)
 			return nil
-		} else {
-			return fmt.Errorf("test succeeded unexpectedly")
 		}
+		return errors.New("test succeeded unexpectedly")
 	}
 	return err
 }
@@ -209,11 +219,16 @@ func (tm *testMatcher) runTestFile(t *testing.T, path, name string, runTest inte
 	if r, _ := tm.findSkip(name); r != "" {
 		t.Skip(r)
 	}
+	if tm.runonlylistpat != nil {
+		if !tm.runonlylistpat.MatchString(name) {
+			t.Skip("Skipped by runonly")
+		}
+	}
 	t.Parallel()
 
 	// Load the file as map[string]<testType>.
 	m := makeMapFromTestFunc(runTest)
-	if err := readJsonFile(path, m.Addr().Interface()); err != nil {
+	if err := readJSONFile(path, m.Addr().Interface()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -260,5 +275,16 @@ func runTestFunc(runTest interface{}, t *testing.T, name string, m reflect.Value
 		reflect.ValueOf(t),
 		reflect.ValueOf(name),
 		m.MapIndex(reflect.ValueOf(key)),
+	})
+}
+
+func TestMatcherRunonlylist(t *testing.T) {
+	t.Parallel()
+	tm := new(testMatcher)
+	tm.runonly("invalid*")
+	tm.walk(t, rlpTestDir, func(t *testing.T, name string, test *RLPTest) {
+		if name[:len("invalidRLPTest.json")] != "invalidRLPTest.json" {
+			t.Fatalf("invalid test found: %s != invalidRLPTest.json", name)
+		}
 	})
 }

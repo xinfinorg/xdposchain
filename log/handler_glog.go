@@ -57,6 +57,11 @@ func NewGlogHandler(h Handler) *GlogHandler {
 	}
 }
 
+// SetHandler updates the handler to write records to the specified sub-handler.
+func (h *GlogHandler) SetHandler(nh Handler) {
+	h.origin = nh
+}
+
 // pattern contains a filter for the Vmodule option, holding a verbosity level
 // and a file pattern to match.
 type pattern struct {
@@ -77,14 +82,14 @@ func (h *GlogHandler) Verbosity(level Lvl) {
 //
 // For instance:
 //
-//  pattern="gopher.go=3"
-//   sets the V level to 3 in all Go files named "gopher.go"
+//	pattern="gopher.go=3"
+//	 sets the V level to 3 in all Go files named "gopher.go"
 //
-//  pattern="foo=3"
-//   sets V to 3 in all files of any packages whose import path ends in "foo"
+//	pattern="foo=3"
+//	 sets V to 3 in all files of any packages whose import path ends in "foo"
 //
-//  pattern="foo/*=3"
-//   sets V to 3 in all files of any packages whose import path contains "foo"
+//	pattern="foo/*=3"
+//	 sets V to 3 in all files of any packages whose import path contains "foo"
 func (h *GlogHandler) Vmodule(ruleset string) error {
 	var filter []pattern
 	for _, rule := range strings.Split(ruleset, ",") {
@@ -202,7 +207,7 @@ func (h *GlogHandler) Log(r *Record) error {
 	}
 	// Check callsite cache for previously calculated log levels
 	h.lock.RLock()
-	lvl, ok := h.siteCache[r.Call.PC()]
+	lvl, ok := h.siteCache[r.Call.Frame().PC]
 	h.lock.RUnlock()
 
 	// If we didn't cache the callsite yet, calculate it
@@ -210,13 +215,13 @@ func (h *GlogHandler) Log(r *Record) error {
 		h.lock.Lock()
 		for _, rule := range h.patterns {
 			if rule.pattern.MatchString(fmt.Sprintf("%+s", r.Call)) {
-				h.siteCache[r.Call.PC()], lvl, ok = rule.level, rule.level, true
+				h.siteCache[r.Call.Frame().PC], lvl, ok = rule.level, rule.level, true
 				break
 			}
 		}
 		// If no rule matched, remember to drop log the next time
 		if !ok {
-			h.siteCache[r.Call.PC()] = 0
+			h.siteCache[r.Call.Frame().PC] = 0
 		}
 		h.lock.Unlock()
 	}

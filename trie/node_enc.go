@@ -20,7 +20,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/rlp"
 )
 
-func nodeToBytes(n Node) []byte {
+func nodeToBytes(n node) []byte {
 	w := rlp.NewEncoderBuffer(nil)
 	n.encode(w)
 	result := w.ToBytes()
@@ -28,7 +28,7 @@ func nodeToBytes(n Node) []byte {
 	return result
 }
 
-func (n *FullNode) encode(w rlp.EncoderBuffer) {
+func (n *fullNode) encode(w rlp.EncoderBuffer) {
 	offset := w.List()
 	for _, c := range n.Children {
 		if c != nil {
@@ -40,7 +40,7 @@ func (n *FullNode) encode(w rlp.EncoderBuffer) {
 	w.ListEnd(offset)
 }
 
-func (n *ShortNode) encode(w rlp.EncoderBuffer) {
+func (n *shortNode) encode(w rlp.EncoderBuffer) {
 	offset := w.List()
 	w.WriteBytes(n.Key)
 	if n.Val != nil {
@@ -51,11 +51,11 @@ func (n *ShortNode) encode(w rlp.EncoderBuffer) {
 	w.ListEnd(offset)
 }
 
-func (n HashNode) encode(w rlp.EncoderBuffer) {
+func (n hashNode) encode(w rlp.EncoderBuffer) {
 	w.WriteBytes(n)
 }
 
-func (n ValueNode) encode(w rlp.EncoderBuffer) {
+func (n valueNode) encode(w rlp.EncoderBuffer) {
 	w.WriteBytes(n)
 }
 

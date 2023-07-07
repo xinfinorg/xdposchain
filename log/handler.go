@@ -11,8 +11,8 @@ import (
 	"github.com/go-stack/stack"
 )
 
+// Handler defines where and how log records are written.
 // A Logger prints its log records by writing to a Handler.
-// The Handler interface defines where and how log records are written.
 // Handlers are composable, providing you great flexibility in combining
 // them to achieve the logging structure that suits your applications.
 type Handler interface {
@@ -52,8 +52,9 @@ func StreamHandler(wr io.Writer, fmtr Format) Handler {
 func SyncHandler(h Handler) Handler {
 	var mu sync.Mutex
 	return FuncHandler(func(r *Record) error {
-		defer mu.Unlock()
 		mu.Lock()
+		defer mu.Unlock()
+
 		return h.Log(r)
 	})
 }
@@ -117,7 +118,7 @@ func formatCall(format string, c stack.Call) string {
 }
 
 // CallerStackHandler returns a Handler that adds a stack trace to the context
-// with key "stack". The stack trace is formated as a space separated list of
+// with key "stack". The stack trace is formatted as a space separated list of
 // call sites inside matching []'s. The most recent call site is listed first.
 // Each call site is formatted according to format. See the documentation of
 // package github.com/go-stack/stack for the list of supported formats.
@@ -135,15 +136,14 @@ func CallerStackHandler(format string, h Handler) Handler {
 // wrapped Handler if the given function evaluates true. For example,
 // to only log records where the 'err' key is not nil:
 //
-//    logger.SetHandler(FilterHandler(func(r *Record) bool {
-//        for i := 0; i < len(r.Ctx); i += 2 {
-//            if r.Ctx[i] == "err" {
-//                return r.Ctx[i+1] != nil
-//            }
-//        }
-//        return false
-//    }, h))
-//
+//	logger.SetHandler(FilterHandler(func(r *Record) bool {
+//	    for i := 0; i < len(r.Ctx); i += 2 {
+//	        if r.Ctx[i] == "err" {
+//	            return r.Ctx[i+1] != nil
+//	        }
+//	    }
+//	    return false
+//	}, h))
 func FilterHandler(fn func(r *Record) bool, h Handler) Handler {
 	return FuncHandler(func(r *Record) error {
 		if fn(r) {
@@ -158,8 +158,7 @@ func FilterHandler(fn func(r *Record) bool, h Handler) Handler {
 // context matches the value. For example, to only log records
 // from your ui package:
 //
-//    log.MatchFilterHandler("pkg", "app/ui", log.StdoutHandler)
-//
+//	log.MatchFilterHandler("pkg", "app/ui", log.StdoutHandler)
 func MatchFilterHandler(key string, value interface{}, h Handler) Handler {
 	return FilterHandler(func(r *Record) (pass bool) {
 		switch key {
@@ -185,23 +184,21 @@ func MatchFilterHandler(key string, value interface{}, h Handler) Handler {
 // level to the wrapped Handler. For example, to only
 // log Error/Crit records:
 //
-//     log.LvlFilterHandler(log.LvlError, log.StdoutHandler)
-//
+//	log.LvlFilterHandler(log.LvlError, log.StdoutHandler)
 func LvlFilterHandler(maxLvl Lvl, h Handler) Handler {
 	return FilterHandler(func(r *Record) (pass bool) {
 		return r.Lvl <= maxLvl
 	}, h)
 }
 
-// A MultiHandler dispatches any write to each of its handlers.
+// MultiHandler dispatches any write to each of its handlers.
 // This is useful for writing different types of log information
 // to different locations. For example, to log to a file and
 // standard error:
 //
-//     log.MultiHandler(
-//         log.Must.FileHandler("/var/log/app.log", log.LogfmtFormat()),
-//         log.StderrHandler)
-//
+//	log.MultiHandler(
+//	    log.Must.FileHandler("/var/log/app.log", log.LogfmtFormat()),
+//	    log.StderrHandler)
 func MultiHandler(hs ...Handler) Handler {
 	return FuncHandler(func(r *Record) error {
 		for _, h := range hs {
@@ -212,17 +209,17 @@ func MultiHandler(hs ...Handler) Handler {
 	})
 }
 
-// A FailoverHandler writes all log records to the first handler
+// FailoverHandler writes all log records to the first handler
 // specified, but will failover and write to the second handler if
 // the first handler has failed, and so on for all handlers specified.
 // For example you might want to log to a network socket, but failover
 // to writing to a file if the network fails, and then to
 // standard out if the file write fails:
 //
-//     log.FailoverHandler(
-//         log.Must.NetHandler("tcp", ":9090", log.JsonFormat()),
-//         log.Must.FileHandler("/var/log/app.log", log.LogfmtFormat()),
-//         log.StdoutHandler)
+//	log.FailoverHandler(
+//	    log.Must.NetHandler("tcp", ":9090", log.JSONFormat()),
+//	    log.Must.FileHandler("/var/log/app.log", log.LogfmtFormat()),
+//	    log.StdoutHandler)
 //
 // All writes that do not go to the first handler will add context with keys of
 // the form "failover_err_{idx}" which explain the error encountered while
@@ -234,9 +231,8 @@ func FailoverHandler(hs ...Handler) Handler {
 			err = h.Log(r)
 			if err == nil {
 				return nil
-			} else {
-				r.Ctx = append(r.Ctx, fmt.Sprintf("failover_err_%d", i), err)
 			}
+			r.Ctx = append(r.Ctx, fmt.Sprintf("failover_err_%d", i), err)
 		}
 
 		return err
@@ -320,13 +316,12 @@ func evaluateLazy(lz Lazy) (interface{}, error) {
 	results := value.Call([]reflect.Value{})
 	if len(results) == 1 {
 		return results[0].Interface(), nil
-	} else {
-		values := make([]interface{}, len(results))
-		for i, v := range results {
-			values[i] = v.Interface()
-		}
-		return values, nil
 	}
+	values := make([]interface{}, len(results))
+	for i, v := range results {
+		values[i] = v.Interface()
+	}
+	return values, nil
 }
 
 // DiscardHandler reports success for all writes but does nothing.
@@ -338,7 +333,7 @@ func DiscardHandler() Handler {
 	})
 }
 
-// The Must object provides the following Handler creation functions
+// Must provides the following Handler creation functions
 // which instead of returning an error parameter only return a Handler
 // and panic on failure: FileHandler, NetHandler, SyslogHandler, SyslogNetHandler
 var Must muster

@@ -10,6 +10,7 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/metrics"
+	"github.com/XinFinOrg/XDPoSChain/metrics/prometheus"
 )
 
 type exp struct {
@@ -43,6 +44,7 @@ func Exp(r metrics.Registry) {
 	// http.HandleFunc("/debug/vars", e.expHandler)
 	// haven't found an elegant way, so just use a different endpoint
 	http.Handle("/debug/metrics", h)
+	http.Handle("/debug/metrics/prometheus", prometheus.Handler(r))
 }
 
 // ExpHandler will return an expvar powered metrics handler.
@@ -56,6 +58,7 @@ func ExpHandler(r metrics.Registry) http.Handler {
 func Setup(address string) {
 	m := http.NewServeMux()
 	m.Handle("/debug/metrics", ExpHandler(metrics.DefaultRegistry))
+	m.Handle("/debug/metrics/prometheus", prometheus.Handler(metrics.DefaultRegistry))
 	log.Info("Starting metrics server", "addr", fmt.Sprintf("http://%s/debug/metrics", address))
 	go func() {
 		if err := http.ListenAndServe(address, m); err != nil {
@@ -94,6 +97,11 @@ func (exp *exp) getFloat(name string) *expvar.Float {
 
 func (exp *exp) publishCounter(name string, metric metrics.Counter) {
 	v := exp.getInt(name)
+	v.Set(metric.Count())
+}
+
+func (exp *exp) publishCounterFloat64(name string, metric metrics.CounterFloat64) {
+	v := exp.getFloat(name)
 	v.Set(metric.Count())
 }
 
@@ -164,6 +172,8 @@ func (exp *exp) syncToExpvar() {
 		switch i := i.(type) {
 		case metrics.Counter:
 			exp.publishCounter(name, i)
+		case metrics.CounterFloat64:
+			exp.publishCounterFloat64(name, i)
 		case metrics.Gauge:
 			exp.publishGauge(name, i)
 		case metrics.GaugeFloat64:

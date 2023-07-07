@@ -171,7 +171,6 @@ func BenchmarkByteAt(b *testing.B) {
 }
 
 func BenchmarkByteAtOld(b *testing.B) {
-
 	bigint := MustParseBig256("0x18F8F8F1000111000110011100222004330052300000000000000000FEFCF3CC")
 	for i := 0; i < b.N; i++ {
 		PaddedBigBytes(bigint, 32)
@@ -212,6 +211,16 @@ func TestU256(t *testing.T) {
 	}
 }
 
+func TestU256Bytes(t *testing.T) {
+	ubytes := make([]byte, 32)
+	ubytes[31] = 1
+
+	unsigned := U256Bytes(big.NewInt(1))
+	if !bytes.Equal(unsigned, ubytes) {
+		t.Errorf("expected %x got %x", ubytes, unsigned)
+	}
+}
+
 func TestBigEndianByteAt(t *testing.T) {
 	tests := []struct {
 		x   string
@@ -234,7 +243,6 @@ func TestBigEndianByteAt(t *testing.T) {
 		if actual != test.exp {
 			t.Fatalf("Expected  [%v] %v:th byte to be %v, was %v.", test.x, test.y, test.exp, actual)
 		}
-
 	}
 }
 func TestLittleEndianByteAt(t *testing.T) {
@@ -267,7 +275,6 @@ func TestLittleEndianByteAt(t *testing.T) {
 		if actual != test.exp {
 			t.Fatalf("Expected  [%v] %v:th byte to be %v, was %v.", test.x, test.y, test.exp, actual)
 		}
-
 	}
 }
 

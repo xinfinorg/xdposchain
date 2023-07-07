@@ -19,11 +19,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"math/big"
 	"os"
 
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
-	"gopkg.in/urfave/cli.v1"
 )
 
 var gitCommit = "" // Git SHA1 commit hash of the release (set via linker flags)
@@ -110,6 +110,15 @@ var (
 		Name:  "nostack",
 		Usage: "disable stack output",
 	}
+	DisableStorageFlag = &cli.BoolFlag{
+		Name:  "nostorage",
+		Usage: "disable storage output",
+	}
+	DisableReturnDataFlag = &cli.BoolFlag{
+		Name:  "noreturndata",
+		Value: true,
+		Usage: "enable return data output",
+	}
 )
 
 func init() {
@@ -134,7 +143,7 @@ func init() {
 		DisableMemoryFlag,
 		DisableStackFlag,
 	}
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		compileCommand,
 		disasmCommand,
 		runCommand,

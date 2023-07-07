@@ -6,6 +6,8 @@ import "sync/atomic"
 type Gauge interface {
 	Snapshot() Gauge
 	Update(int64)
+	Dec(int64)
+	Inc(int64)
 	Value() int64
 }
 
@@ -23,7 +25,7 @@ func NewGauge() Gauge {
 	if !Enabled {
 		return NilGauge{}
 	}
-	return &StandardGauge{0}
+	return &StandardGauge{}
 }
 
 // NewRegisteredGauge constructs and registers a new StandardGauge.
@@ -65,6 +67,16 @@ func (GaugeSnapshot) Update(int64) {
 	panic("Update called on a GaugeSnapshot")
 }
 
+// Dec panics.
+func (GaugeSnapshot) Dec(int64) {
+	panic("Dec called on a GaugeSnapshot")
+}
+
+// Inc panics.
+func (GaugeSnapshot) Inc(int64) {
+	panic("Inc called on a GaugeSnapshot")
+}
+
 // Value returns the value at the time the snapshot was taken.
 func (g GaugeSnapshot) Value() int64 { return int64(g) }
 
@@ -77,13 +89,19 @@ func (NilGauge) Snapshot() Gauge { return NilGauge{} }
 // Update is a no-op.
 func (NilGauge) Update(v int64) {}
 
+// Dec is a no-op.
+func (NilGauge) Dec(i int64) {}
+
+// Inc is a no-op.
+func (NilGauge) Inc(i int64) {}
+
 // Value is a no-op.
 func (NilGauge) Value() int64 { return 0 }
 
 // StandardGauge is the standard implementation of a Gauge and uses the
 // sync/atomic package to manage a single int64 value.
 type StandardGauge struct {
-	value int64
+	value atomic.Int64
 }
 
 // Snapshot returns a read-only copy of the gauge.
@@ -93,12 +111,22 @@ func (g *StandardGauge) Snapshot() Gauge {
 
 // Update updates the gauge's value.
 func (g *StandardGauge) Update(v int64) {
-	atomic.StoreInt64(&g.value, v)
+	g.value.Store(v)
 }
 
 // Value returns the gauge's current value.
 func (g *StandardGauge) Value() int64 {
-	return atomic.LoadInt64(&g.value)
+	return g.value.Load()
+}
+
+// Dec decrements the gauge's current value by the given amount.
+func (g *StandardGauge) Dec(i int64) {
+	g.value.Add(-i)
+}
+
+// Inc increments the gauge's current value by the given amount.
+func (g *StandardGauge) Inc(i int64) {
+	g.value.Add(i)
 }
 
 // FunctionalGauge returns value from given function
@@ -117,4 +145,14 @@ func (g FunctionalGauge) Snapshot() Gauge { return GaugeSnapshot(g.Value()) }
 // Update panics.
 func (FunctionalGauge) Update(int64) {
 	panic("Update called on a FunctionalGauge")
+}
+
+// Dec panics.
+func (FunctionalGauge) Dec(int64) {
+	panic("Dec called on a FunctionalGauge")
+}
+
+// Inc panics.
+func (FunctionalGauge) Inc(int64) {
+	panic("Inc called on a FunctionalGauge")
 }

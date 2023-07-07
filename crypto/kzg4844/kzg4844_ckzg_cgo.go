@@ -15,6 +15,7 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 //go:build ckzg && !nacl && !js && cgo && !gofuzz
+// +build ckzg,!nacl,!js,cgo,!gofuzz
 
 package kzg4844
 
@@ -23,9 +24,9 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
 	ckzg4844 "github.com/ethereum/c-kzg-4844/bindings/go"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // ckzgAvailable signals whether the library was compiled into Geth.

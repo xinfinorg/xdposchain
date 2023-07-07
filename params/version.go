@@ -36,6 +36,15 @@ var Version = func() string {
 	return v
 }()
 
+// VersionWithMeta holds the textual version string including the metadata.
+var VersionWithMeta = func() string {
+	v := Version
+	if VersionMeta != "" {
+		v += "-" + VersionMeta
+	}
+	return v
+}()
+
 func VersionWithCommit(gitCommit string) string {
 	vsn := Version
 	if len(gitCommit) >= 8 {

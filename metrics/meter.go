@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,6 +30,17 @@ func GetOrRegisterMeter(name string, r Registry) Meter {
 	return r.GetOrRegister(name, NewMeter).(Meter)
 }
 
+// GetOrRegisterMeterForced returns an existing Meter or constructs and registers a
+// new StandardMeter no matter the global switch is enabled or not.
+// Be sure to unregister the meter from the registry once it is of no use to
+// allow for garbage collection.
+func GetOrRegisterMeterForced(name string, r Registry) Meter {
+	if nil == r {
+		r = DefaultRegistry
+	}
+	return r.GetOrRegister(name, NewMeterForced).(Meter)
+}
+
 // NewMeter constructs a new StandardMeter and launches a goroutine.
 // Be sure to call Stop() once the meter is of no use to allow for garbage collection.
 func NewMeter() Meter {
@@ -46,8 +58,23 @@ func NewMeter() Meter {
 	return m
 }
 
-// NewMeter constructs and registers a new StandardMeter and launches a
-// goroutine.
+// NewMeterForced constructs a new StandardMeter and launches a goroutine no matter
+// the global switch is enabled or not.
+// Be sure to call Stop() once the meter is of no use to allow for garbage collection.
+func NewMeterForced() Meter {
+	m := newStandardMeter()
+	arbiter.Lock()
+	defer arbiter.Unlock()
+	arbiter.meters[m] = struct{}{}
+	if !arbiter.started {
+		arbiter.started = true
+		go arbiter.tick()
+	}
+	return m
+}
+
+// NewRegisteredMeter constructs and registers a new StandardMeter
+// and launches a goroutine.
 // Be sure to unregister the meter from the registry once it is of no use to
 // allow for garbage collection.
 func NewRegisteredMeter(name string, r Registry) Meter {
@@ -59,8 +86,22 @@ func NewRegisteredMeter(name string, r Registry) Meter {
 	return c
 }
 
+// NewRegisteredMeterForced constructs and registers a new StandardMeter
+// and launches a goroutine no matter the global switch is enabled or not.
+// Be sure to unregister the meter from the registry once it is of no use to
+// allow for garbage collection.
+func NewRegisteredMeterForced(name string, r Registry) Meter {
+	c := NewMeterForced()
+	if nil == r {
+		r = DefaultRegistry
+	}
+	r.Register(name, c)
+	return c
+}
+
 // MeterSnapshot is a read-only copy of another Meter.
 type MeterSnapshot struct {
+	temp                           atomic.Int64
 	count                          int64
 	rate1, rate5, rate15, rateMean float64
 }
@@ -110,7 +151,7 @@ func (NilMeter) Rate1() float64 { return 0.0 }
 // Rate5 is a no-op.
 func (NilMeter) Rate5() float64 { return 0.0 }
 
-// Rate15is a no-op.
+// Rate15 is a no-op.
 func (NilMeter) Rate15() float64 { return 0.0 }
 
 // RateMean is a no-op.
@@ -128,7 +169,7 @@ type StandardMeter struct {
 	snapshot    *MeterSnapshot
 	a1, a5, a15 EWMA
 	startTime   time.Time
-	stopped     bool
+	stopped     atomic.Bool
 }
 
 func newStandardMeter() *StandardMeter {
@@ -143,10 +184,7 @@ func newStandardMeter() *StandardMeter {
 
 // Stop stops the meter, Mark() will be a no-op if you use it after being stopped.
 func (m *StandardMeter) Stop() {
-	m.lock.Lock()
-	stopped := m.stopped
-	m.stopped = true
-	m.lock.Unlock()
+	stopped := m.stopped.Swap(true)
 	if !stopped {
 		arbiter.Lock()
 		delete(arbiter.meters, m)
@@ -155,63 +193,58 @@ func (m *StandardMeter) Stop() {
 }
 
 // Count returns the number of events recorded.
+// It updates the meter to be as accurate as possible
 func (m *StandardMeter) Count() int64 {
-	m.lock.RLock()
-	count := m.snapshot.count
-	m.lock.RUnlock()
-	return count
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.updateMeter()
+	return m.snapshot.count
 }
 
 // Mark records the occurrence of n events.
 func (m *StandardMeter) Mark(n int64) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	if m.stopped {
-		return
-	}
-	m.snapshot.count += n
-	m.a1.Update(n)
-	m.a5.Update(n)
-	m.a15.Update(n)
-	m.updateSnapshot()
+	m.snapshot.temp.Add(n)
 }
 
 // Rate1 returns the one-minute moving average rate of events per second.
 func (m *StandardMeter) Rate1() float64 {
 	m.lock.RLock()
-	rate1 := m.snapshot.rate1
-	m.lock.RUnlock()
-	return rate1
+	defer m.lock.RUnlock()
+	return m.snapshot.rate1
 }
 
 // Rate5 returns the five-minute moving average rate of events per second.
 func (m *StandardMeter) Rate5() float64 {
 	m.lock.RLock()
-	rate5 := m.snapshot.rate5
-	m.lock.RUnlock()
-	return rate5
+	defer m.lock.RUnlock()
+	return m.snapshot.rate5
 }
 
 // Rate15 returns the fifteen-minute moving average rate of events per second.
 func (m *StandardMeter) Rate15() float64 {
 	m.lock.RLock()
-	rate15 := m.snapshot.rate15
-	m.lock.RUnlock()
-	return rate15
+	defer m.lock.RUnlock()
+	return m.snapshot.rate15
 }
 
 // RateMean returns the meter's mean rate of events per second.
 func (m *StandardMeter) RateMean() float64 {
 	m.lock.RLock()
-	rateMean := m.snapshot.rateMean
-	m.lock.RUnlock()
-	return rateMean
+	defer m.lock.RUnlock()
+	return m.snapshot.rateMean
 }
 
 // Snapshot returns a read-only copy of the meter.
 func (m *StandardMeter) Snapshot() Meter {
 	m.lock.RLock()
-	snapshot := *m.snapshot
+	snapshot := MeterSnapshot{
+		count:    m.snapshot.count,
+		rate1:    m.snapshot.rate1,
+		rate5:    m.snapshot.rate5,
+		rate15:   m.snapshot.rate15,
+		rateMean: m.snapshot.rateMean,
+	}
+	snapshot.temp.Store(m.snapshot.temp.Load())
 	m.lock.RUnlock()
 	return &snapshot
 }
@@ -225,9 +258,19 @@ func (m *StandardMeter) updateSnapshot() {
 	snapshot.rateMean = float64(snapshot.count) / time.Since(m.startTime).Seconds()
 }
 
+func (m *StandardMeter) updateMeter() {
+	// should only run with write lock held on m.lock
+	n := m.snapshot.temp.Swap(0)
+	m.snapshot.count += n
+	m.a1.Update(n)
+	m.a5.Update(n)
+	m.a15.Update(n)
+}
+
 func (m *StandardMeter) tick() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	m.updateMeter()
 	m.a1.Tick()
 	m.a5.Tick()
 	m.a15.Tick()
@@ -243,7 +286,7 @@ type meterArbiter struct {
 	ticker  *time.Ticker
 }
 
-var arbiter = meterArbiter{ticker: time.NewTicker(5e9), meters: make(map[*StandardMeter]struct{})}
+var arbiter = meterArbiter{ticker: time.NewTicker(5 * time.Second), meters: make(map[*StandardMeter]struct{})}
 
 // Ticks meters on the scheduled interval
 func (ma *meterArbiter) tick() {

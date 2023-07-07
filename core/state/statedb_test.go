@@ -19,17 +19,20 @@ package state
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/XinFinOrg/XDPoSChain/core/rawdb"
+	"github.com/XinFinOrg/XDPoSChain/core/state/snapshot"
+	"github.com/XinFinOrg/XDPoSChain/crypto"
+	"github.com/XinFinOrg/XDPoSChain/trie"
 	"math"
 	"math/big"
 	"math/rand"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"testing/quick"
-
-	check "gopkg.in/check.v1"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
@@ -40,7 +43,7 @@ import (
 func TestUpdateLeaks(t *testing.T) {
 	// Create an empty state database
 	db := rawdb.NewMemoryDatabase()
-	state, _ := New(common.Hash{}, NewDatabase(db))
+	state, _ := New(types.EmptyRootHash, NewDatabase(db), nil)
 
 	// Update it with some accounts
 	for i := byte(0); i < 255; i++ {
@@ -53,15 +56,19 @@ func TestUpdateLeaks(t *testing.T) {
 		if i%3 == 0 {
 			state.SetCode(addr, []byte{i, i, i, i, i})
 		}
-		state.IntermediateRoot(false)
 	}
+
+	root := state.IntermediateRoot(false)
+	if err := state.Database().TrieDB().Commit(root, false); err != nil {
+		t.Errorf("can not commit trie %v to persistent database", root.Hex())
+	}
+
 	// Ensure that no data was leaked into the database
 	it := db.NewIterator(nil, nil)
 	for it.Next() {
-		key := it.Key()
-		value := it.Value()
-		t.Errorf("State leaked into database: %x -> %x", key, value)
+		t.Errorf("State leaked into database: %x -> %x", it.Key(), it.Value())
 	}
+	it.Release()
 }
 
 // Tests that no intermediate state of an object is stored into the database,
@@ -70,8 +77,8 @@ func TestIntermediateLeaks(t *testing.T) {
 	// Create two state databases, one transitioning to the final state, the other final from the beginning
 	transDb := rawdb.NewMemoryDatabase()
 	finalDb := rawdb.NewMemoryDatabase()
-	transState, _ := New(common.Hash{}, NewDatabase(transDb))
-	finalState, _ := New(common.Hash{}, NewDatabase(finalDb))
+	transState, _ := New(types.EmptyRootHash, NewDatabase(transDb), nil)
+	finalState, _ := New(types.EmptyRootHash, NewDatabase(finalDb), nil)
 
 	modify := func(state *StateDB, addr common.Address, i, tweak byte) {
 		state.SetBalance(addr, big.NewInt(int64(11*i)+int64(tweak)))
@@ -87,49 +94,66 @@ func TestIntermediateLeaks(t *testing.T) {
 
 	// Modify the transient state.
 	for i := byte(0); i < 255; i++ {
-		modify(transState, common.Address{byte(i)}, i, 0)
+		modify(transState, common.Address{i}, i, 0)
 	}
 	// Write modifications to trie.
 	transState.IntermediateRoot(false)
 
 	// Overwrite all the data with new values in the transient database.
 	for i := byte(0); i < 255; i++ {
-		modify(transState, common.Address{byte(i)}, i, 99)
-		modify(finalState, common.Address{byte(i)}, i, 99)
+		modify(transState, common.Address{i}, i, 99)
+		modify(finalState, common.Address{i}, i, 99)
 	}
 
 	// Commit and cross check the databases.
-	if _, err := transState.Commit(false); err != nil {
+	transRoot, err := transState.Commit(false)
+	if err != nil {
 		t.Fatalf("failed to commit transition state: %v", err)
 	}
-	if _, err := finalState.Commit(false); err != nil {
+	if err = transState.Database().TrieDB().Commit(transRoot, false); err != nil {
+		t.Errorf("can not commit trie %v to persistent database", transRoot.Hex())
+	}
+
+	finalRoot, err := finalState.Commit(false)
+	if err != nil {
 		t.Fatalf("failed to commit final state: %v", err)
 	}
+	if err = finalState.Database().TrieDB().Commit(finalRoot, false); err != nil {
+		t.Errorf("can not commit trie %v to persistent database", finalRoot.Hex())
+	}
+
 	it := finalDb.NewIterator(nil, nil)
 	for it.Next() {
-		key := it.Key()
-		if _, err := transDb.Get(key); err != nil {
-			val, _ := finalDb.Get(key)
-			t.Errorf("entry missing from the transition database: %x -> %x", key, val)
+		key, fvalue := it.Key(), it.Value()
+		tvalue, err := transDb.Get(key)
+		if err != nil {
+			t.Errorf("entry missing from the transition database: %x -> %x", key, fvalue)
+		}
+		if !bytes.Equal(fvalue, tvalue) {
+			t.Errorf("value mismatch at key %x: %x in transition database, %x in final database", key, tvalue, fvalue)
 		}
 	}
+	it.Release()
+
 	it = transDb.NewIterator(nil, nil)
 	for it.Next() {
-		key := it.Key()
-		if _, err := finalDb.Get(key); err != nil {
-			val, _ := transDb.Get(key)
-			t.Errorf("extra entry in the transition database: %x -> %x", key, val)
+		key, tvalue := it.Key(), it.Value()
+		fvalue, err := finalDb.Get(key)
+		if err != nil {
+			t.Errorf("extra entry in the transition database: %x -> %x", key, it.Value())
+		}
+		if !bytes.Equal(fvalue, tvalue) {
+			t.Errorf("value mismatch at key %x: %x in transition database, %x in final database", key, tvalue, fvalue)
 		}
 	}
 }
 
-// TestCopy tests that copying a statedb object indeed makes the original and
+// TestCopy tests that copying a StateDB object indeed makes the original and
 // the copy independent of each other. This test is a regression test against
-// https://github.com/XinFinOrg/XDPoSChain/pull/15549.
+// https://github.com/ethereum/go-ethereum/pull/15549.
 func TestCopy(t *testing.T) {
 	// Create a random state test to copy and modify "independently"
-	db := rawdb.NewMemoryDatabase()
-	orig, _ := New(common.Hash{}, NewDatabase(db))
+	orig, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
 	for i := byte(0); i < 255; i++ {
 		obj := orig.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
@@ -138,38 +162,54 @@ func TestCopy(t *testing.T) {
 	}
 	orig.Finalise(false)
 
-	// Copy the state, modify both in-memory
+	// Copy the state
 	copy := orig.Copy()
 
+	// Copy the copy state
+	ccopy := copy.Copy()
+
+	// modify all in memory
 	for i := byte(0); i < 255; i++ {
 		origObj := orig.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		copyObj := copy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
+		ccopyObj := ccopy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 
 		origObj.AddBalance(big.NewInt(2 * int64(i)))
 		copyObj.AddBalance(big.NewInt(3 * int64(i)))
+		ccopyObj.AddBalance(big.NewInt(4 * int64(i)))
 
 		orig.updateStateObject(origObj)
 		copy.updateStateObject(copyObj)
+		ccopy.updateStateObject(copyObj)
 	}
-	// Finalise the changes on both concurrently
-	done := make(chan struct{})
-	go func() {
-		orig.Finalise(true)
-		close(done)
-	}()
-	copy.Finalise(true)
-	<-done
 
-	// Verify that the two states have been updated independently
+	// Finalise the changes on all concurrently
+	finalise := func(wg *sync.WaitGroup, db *StateDB) {
+		defer wg.Done()
+		db.Finalise(true)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go finalise(&wg, orig)
+	go finalise(&wg, copy)
+	go finalise(&wg, ccopy)
+	wg.Wait()
+
+	// Verify that the three states have been updated independently
 	for i := byte(0); i < 255; i++ {
 		origObj := orig.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		copyObj := copy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
+		ccopyObj := ccopy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 
 		if want := big.NewInt(3 * int64(i)); origObj.Balance().Cmp(want) != 0 {
 			t.Errorf("orig obj %d: balance mismatch: have %v, want %v", i, origObj.Balance(), want)
 		}
 		if want := big.NewInt(4 * int64(i)); copyObj.Balance().Cmp(want) != 0 {
 			t.Errorf("copy obj %d: balance mismatch: have %v, want %v", i, copyObj.Balance(), want)
+		}
+		if want := big.NewInt(5 * int64(i)); ccopyObj.Balance().Cmp(want) != 0 {
+			t.Errorf("copy obj %d: balance mismatch: have %v, want %v", i, ccopyObj.Balance(), want)
 		}
 	}
 }
@@ -283,13 +323,46 @@ func newTestAction(addr common.Address, r *rand.Rand) testAction {
 			},
 			args: make([]int64, 1),
 		},
+		{
+			name: "AddPreimage",
+			fn: func(a testAction, s *StateDB) {
+				preimage := []byte{1}
+				hash := common.BytesToHash(preimage)
+				s.AddPreimage(hash, preimage)
+			},
+			args: make([]int64, 1),
+		},
+		{
+			name: "AddAddressToAccessList",
+			fn: func(a testAction, s *StateDB) {
+				s.AddAddressToAccessList(addr)
+			},
+		},
+		{
+			name: "AddSlotToAccessList",
+			fn: func(a testAction, s *StateDB) {
+				s.AddSlotToAccessList(addr,
+					common.Hash{byte(a.args[0])})
+			},
+			args: make([]int64, 1),
+		},
+		{
+			name: "SetTransientState",
+			fn: func(a testAction, s *StateDB) {
+				var key, val common.Hash
+				binary.BigEndian.PutUint16(key[:], uint16(a.args[0]))
+				binary.BigEndian.PutUint16(val[:], uint16(a.args[1]))
+				s.SetTransientState(addr, key, val)
+			},
+			args: make([]int64, 2),
+		},
 	}
 	action := actions[r.Intn(len(actions))]
 	var nameargs []string
 	if !action.noAddr {
 		nameargs = append(nameargs, addr.Hex())
 	}
-	for _, i := range action.args {
+	for i := range action.args {
 		action.args[i] = rand.Int63n(100)
 		nameargs = append(nameargs, fmt.Sprint(action.args[i]))
 	}
@@ -340,8 +413,7 @@ func (test *snapshotTest) String() string {
 func (test *snapshotTest) run() bool {
 	// Run all actions and create snapshots.
 	var (
-		db           = rawdb.NewMemoryDatabase()
-		state, _     = New(common.Hash{}, NewDatabase(db))
+		state, _     = New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		snapshotRevs = make([]int, len(test.snapshots))
 		sindex       = 0
 	)
@@ -355,7 +427,7 @@ func (test *snapshotTest) run() bool {
 	// Revert all snapshots in reverse order. Each revert must yield a state
 	// that is equivalent to fresh state with all actions up the snapshot applied.
 	for sindex--; sindex >= 0; sindex-- {
-		checkstate, _ := New(common.Hash{}, state.Database())
+		checkstate, _ := New(types.EmptyRootHash, state.Database(), nil)
 		for _, action := range test.actions[:test.snapshots[sindex]] {
 			action.fn(action, checkstate)
 		}
@@ -389,11 +461,11 @@ func (test *snapshotTest) checkEqual(state, checkstate *StateDB) error {
 		checkeq("GetCodeSize", state.GetCodeSize(addr), checkstate.GetCodeSize(addr))
 		// Check storage.
 		if obj := state.getStateObject(addr); obj != nil {
-			state.ForEachStorage(addr, func(key, val common.Hash) bool {
-				return checkeq("GetState("+key.Hex()+")", val, checkstate.GetState(addr, key))
+			state.ForEachStorage(addr, func(key, value common.Hash) bool {
+				return checkeq("GetState("+key.Hex()+")", checkstate.GetState(addr, key), value)
 			})
-			checkstate.ForEachStorage(addr, func(key, checkval common.Hash) bool {
-				return checkeq("GetState("+key.Hex()+")", state.GetState(addr, key), checkval)
+			checkstate.ForEachStorage(addr, func(key, value common.Hash) bool {
+				return checkeq("GetState("+key.Hex()+")", checkstate.GetState(addr, key), value)
 			})
 		}
 		if err != nil {
@@ -405,25 +477,596 @@ func (test *snapshotTest) checkEqual(state, checkstate *StateDB) error {
 		return fmt.Errorf("got GetRefund() == %d, want GetRefund() == %d",
 			state.GetRefund(), checkstate.GetRefund())
 	}
-	if !reflect.DeepEqual(state.GetLogs(common.Hash{}), checkstate.GetLogs(common.Hash{})) {
+	if !reflect.DeepEqual(state.GetLogs(common.Hash{}, 0, common.Hash{}), checkstate.GetLogs(common.Hash{}, 0, common.Hash{})) {
 		return fmt.Errorf("got GetLogs(common.Hash{}) == %v, want GetLogs(common.Hash{}) == %v",
-			state.GetLogs(common.Hash{}), checkstate.GetLogs(common.Hash{}))
+			state.GetLogs(common.Hash{}, 0, common.Hash{}), checkstate.GetLogs(common.Hash{}, 0, common.Hash{}))
 	}
 	return nil
 }
 
-func (s *StateSuite) TestTouchDelete(c *check.C) {
+func TestTouchDelete(t *testing.T) {
+	s := newStateTest()
 	s.state.GetOrNewStateObject(common.Address{})
 	root, _ := s.state.Commit(false)
-	s.state.Reset(root)
+	s.state, _ = New(root, s.state.db, s.state.snaps)
 
 	snapshot := s.state.Snapshot()
 	s.state.AddBalance(common.Address{}, new(big.Int))
-	if len(s.state.stateObjectsDirty) != 1 {
-		c.Fatal("expected one dirty state object")
+
+	if len(s.state.journal.dirties) != 1 {
+		t.Fatal("expected one dirty state object")
 	}
 	s.state.RevertToSnapshot(snapshot)
-	if len(s.state.stateObjectsDirty) != 0 {
-		c.Fatal("expected no dirty state object")
+	if len(s.state.journal.dirties) != 0 {
+		t.Fatal("expected no dirty state object")
+	}
+}
+
+// TestCopyOfCopy tests that modified objects are carried over to the copy, and the copy of the copy.
+// See https://github.com/ethereum/go-ethereum/pull/15225#issuecomment-380191512
+func TestCopyOfCopy(t *testing.T) {
+	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
+	addr := common.HexToAddress("aaaa")
+	state.SetBalance(addr, big.NewInt(42))
+
+	if got := state.Copy().GetBalance(addr).Uint64(); got != 42 {
+		t.Fatalf("1st copy fail, expected 42, got %v", got)
+	}
+	if got := state.Copy().Copy().GetBalance(addr).Uint64(); got != 42 {
+		t.Fatalf("2nd copy fail, expected 42, got %v", got)
+	}
+}
+
+// Tests a regression where committing a copy lost some internal meta information,
+// leading to corrupted subsequent copies.
+//
+// See https://github.com/ethereum/go-ethereum/issues/20106.
+func TestCopyCommitCopy(t *testing.T) {
+	tdb := NewDatabase(rawdb.NewMemoryDatabase())
+	state, _ := New(types.EmptyRootHash, tdb, nil)
+
+	// Create an account and check if the retrieved balance is correct
+	addr := common.HexToAddress("0xaffeaffeaffeaffeaffeaffeaffeaffeaffeaffe")
+	skey := common.HexToHash("aaa")
+	sval := common.HexToHash("bbb")
+
+	state.SetBalance(addr, big.NewInt(42)) // Change the account trie
+	state.SetCode(addr, []byte("hello"))   // Change an external metadata
+	state.SetState(addr, skey, sval)       // Change the storage trie
+
+	if balance := state.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("initial balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := state.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("initial code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := state.GetState(addr, skey); val != sval {
+		t.Fatalf("initial non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := state.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("initial committed storage slot mismatch: have %x, want %x", val, common.Hash{})
+	}
+	// Copy the non-committed state database and check pre/post commit balance
+	copyOne := state.Copy()
+	if balance := copyOne.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("first copy pre-commit balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := copyOne.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("first copy pre-commit code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := copyOne.GetState(addr, skey); val != sval {
+		t.Fatalf("first copy pre-commit non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := copyOne.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("first copy pre-commit committed storage slot mismatch: have %x, want %x", val, common.Hash{})
+	}
+	// Copy the copy and check the balance once more
+	copyTwo := copyOne.Copy()
+	if balance := copyTwo.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("second copy balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := copyTwo.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("second copy code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := copyTwo.GetState(addr, skey); val != sval {
+		t.Fatalf("second copy non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := copyTwo.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("second copy committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	// Commit state, ensure states can be loaded from disk
+	root, _ := state.Commit(false)
+	state, _ = New(root, tdb, nil)
+	if balance := state.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("state post-commit balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := state.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("state post-commit code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := state.GetState(addr, skey); val != sval {
+		t.Fatalf("state post-commit non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := state.GetCommittedState(addr, skey); val != sval {
+		t.Fatalf("state post-commit committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+}
+
+// Tests a regression where committing a copy lost some internal meta information,
+// leading to corrupted subsequent copies.
+//
+// See https://github.com/ethereum/go-ethereum/issues/20106.
+func TestCopyCopyCommitCopy(t *testing.T) {
+	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
+
+	// Create an account and check if the retrieved balance is correct
+	addr := common.HexToAddress("0xaffeaffeaffeaffeaffeaffeaffeaffeaffeaffe")
+	skey := common.HexToHash("aaa")
+	sval := common.HexToHash("bbb")
+
+	state.SetBalance(addr, big.NewInt(42)) // Change the account trie
+	state.SetCode(addr, []byte("hello"))   // Change an external metadata
+	state.SetState(addr, skey, sval)       // Change the storage trie
+
+	if balance := state.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("initial balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := state.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("initial code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := state.GetState(addr, skey); val != sval {
+		t.Fatalf("initial non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := state.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("initial committed storage slot mismatch: have %x, want %x", val, common.Hash{})
+	}
+	// Copy the non-committed state database and check pre/post commit balance
+	copyOne := state.Copy()
+	if balance := copyOne.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("first copy balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := copyOne.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("first copy code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := copyOne.GetState(addr, skey); val != sval {
+		t.Fatalf("first copy non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := copyOne.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("first copy committed storage slot mismatch: have %x, want %x", val, common.Hash{})
+	}
+	// Copy the copy and check the balance once more
+	copyTwo := copyOne.Copy()
+	if balance := copyTwo.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("second copy pre-commit balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := copyTwo.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("second copy pre-commit code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := copyTwo.GetState(addr, skey); val != sval {
+		t.Fatalf("second copy pre-commit non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := copyTwo.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("second copy pre-commit committed storage slot mismatch: have %x, want %x", val, common.Hash{})
+	}
+	// Copy the copy-copy and check the balance once more
+	copyThree := copyTwo.Copy()
+	if balance := copyThree.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("third copy balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := copyThree.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("third copy code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := copyThree.GetState(addr, skey); val != sval {
+		t.Fatalf("third copy non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := copyThree.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("third copy committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+}
+
+// TestCommitCopy tests the copy from a committed state is not functional.
+func TestCommitCopy(t *testing.T) {
+	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
+
+	// Create an account and check if the retrieved balance is correct
+	addr := common.HexToAddress("0xaffeaffeaffeaffeaffeaffeaffeaffeaffeaffe")
+	skey := common.HexToHash("aaa")
+	sval := common.HexToHash("bbb")
+
+	state.SetBalance(addr, big.NewInt(42)) // Change the account trie
+	state.SetCode(addr, []byte("hello"))   // Change an external metadata
+	state.SetState(addr, skey, sval)       // Change the storage trie
+
+	if balance := state.GetBalance(addr); balance.Cmp(big.NewInt(42)) != 0 {
+		t.Fatalf("initial balance mismatch: have %v, want %v", balance, 42)
+	}
+	if code := state.GetCode(addr); !bytes.Equal(code, []byte("hello")) {
+		t.Fatalf("initial code mismatch: have %x, want %x", code, []byte("hello"))
+	}
+	if val := state.GetState(addr, skey); val != sval {
+		t.Fatalf("initial non-committed storage slot mismatch: have %x, want %x", val, sval)
+	}
+	if val := state.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("initial committed storage slot mismatch: have %x, want %x", val, common.Hash{})
+	}
+	// Copy the committed state database, the copied one is not functional.
+	state.Commit(true)
+	copied := state.Copy()
+	if balance := copied.GetBalance(addr); balance.Cmp(big.NewInt(0)) != 0 {
+		t.Fatalf("unexpected balance: have %v", balance)
+	}
+	if code := copied.GetCode(addr); code != nil {
+		t.Fatalf("unexpected code: have %x", code)
+	}
+	if val := copied.GetState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("unexpected storage slot: have %x", val)
+	}
+	if val := copied.GetCommittedState(addr, skey); val != (common.Hash{}) {
+		t.Fatalf("unexpected storage slot: have %x", val)
+	}
+	if !errors.Is(copied.Error(), trie.ErrCommitted) {
+		t.Fatalf("unexpected state error, %v", copied.Error())
+	}
+}
+
+// TestDeleteCreateRevert tests a weird state transition corner case that we hit
+// while changing the internals of StateDB. The workflow is that a contract is
+// self-destructed, then in a follow-up transaction (but same block) it's created
+// again and the transaction reverted.
+//
+// The original StateDB implementation flushed dirty objects to the tries after
+// each transaction, so this works ok. The rework accumulated writes in memory
+// first, but the journal wiped the entire state object on create-revert.
+func TestDeleteCreateRevert(t *testing.T) {
+	// Create an initial state with a single contract
+	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
+
+	addr := common.BytesToAddress([]byte("so"))
+	state.SetBalance(addr, big.NewInt(1))
+
+	root, _ := state.Commit(false)
+	state, _ = New(root, state.db, state.snaps)
+
+	// Simulate self-destructing in one transaction, then create-reverting in another
+	state.Suicide(addr)
+	state.Finalise(true)
+
+	id := state.Snapshot()
+	state.SetBalance(addr, big.NewInt(2))
+	state.RevertToSnapshot(id)
+
+	// Commit the entire state and make sure we don't crash and have the correct state
+	root, _ = state.Commit(true)
+	state, _ = New(root, state.db, state.snaps)
+
+	if state.getStateObject(addr) != nil {
+		t.Fatalf("self-destructed contract came alive")
+	}
+}
+
+// TestMissingTrieNodes tests that if the StateDB fails to load parts of the trie,
+// the Commit operation fails with an error
+// If we are missing trie nodes, we should not continue writing to the trie
+func TestMissingTrieNodes(t *testing.T) {
+	// Create an initial state with a few accounts
+	memDb := rawdb.NewMemoryDatabase()
+	db := NewDatabase(memDb)
+	var root common.Hash
+	state, _ := New(types.EmptyRootHash, db, nil)
+	addr := common.BytesToAddress([]byte("so"))
+	{
+		state.SetBalance(addr, big.NewInt(1))
+		state.SetCode(addr, []byte{1, 2, 3})
+		a2 := common.BytesToAddress([]byte("another"))
+		state.SetBalance(a2, big.NewInt(100))
+		state.SetCode(a2, []byte{1, 2, 4})
+		root, _ = state.Commit(false)
+		t.Logf("root: %x", root)
+		// force-flush
+		state.Database().TrieDB().Cap(0)
+	}
+	// Create a new state on the old root
+	state, _ = New(root, db, nil)
+	// Now we clear out the memdb
+	it := memDb.NewIterator(nil, nil)
+	for it.Next() {
+		k := it.Key()
+		// Leave the root intact
+		if !bytes.Equal(k, root[:]) {
+			t.Logf("key: %x", k)
+			memDb.Delete(k)
+		}
+	}
+	balance := state.GetBalance(addr)
+	// The removed elem should lead to it returning zero balance
+	if exp, got := uint64(0), balance.Uint64(); got != exp {
+		t.Errorf("expected %d, got %d", exp, got)
+	}
+	// Modify the state
+	state.SetBalance(addr, big.NewInt(2))
+	root, err := state.Commit(false)
+	if err == nil {
+		t.Fatalf("expected error, got root :%x", root)
+	}
+}
+
+func TestStateDBAccessList(t *testing.T) {
+	// Some helpers
+	addr := func(a string) common.Address {
+		return common.HexToAddress(a)
+	}
+	slot := func(a string) common.Hash {
+		return common.HexToHash(a)
+	}
+
+	memDb := rawdb.NewMemoryDatabase()
+	db := NewDatabase(memDb)
+	state, _ := New(types.EmptyRootHash, db, nil)
+	state.accessList = newAccessList()
+
+	verifyAddrs := func(astrings ...string) {
+		t.Helper()
+		// convert to common.Address form
+		var addresses []common.Address
+		var addressMap = make(map[common.Address]struct{})
+		for _, astring := range astrings {
+			address := addr(astring)
+			addresses = append(addresses, address)
+			addressMap[address] = struct{}{}
+		}
+		// Check that the given addresses are in the access list
+		for _, address := range addresses {
+			if !state.AddressInAccessList(address) {
+				t.Fatalf("expected %x to be in access list", address)
+			}
+		}
+		// Check that only the expected addresses are present in the access list
+		for address := range state.accessList.addresses {
+			if _, exist := addressMap[address]; !exist {
+				t.Fatalf("extra address %x in access list", address)
+			}
+		}
+	}
+	verifySlots := func(addrString string, slotStrings ...string) {
+		if !state.AddressInAccessList(addr(addrString)) {
+			t.Fatalf("scope missing address/slots %v", addrString)
+		}
+		var address = addr(addrString)
+		// convert to common.Hash form
+		var slots []common.Hash
+		var slotMap = make(map[common.Hash]struct{})
+		for _, slotString := range slotStrings {
+			s := slot(slotString)
+			slots = append(slots, s)
+			slotMap[s] = struct{}{}
+		}
+		// Check that the expected items are in the access list
+		for i, s := range slots {
+			if _, slotPresent := state.SlotInAccessList(address, s); !slotPresent {
+				t.Fatalf("input %d: scope missing slot %v (address %v)", i, s, addrString)
+			}
+		}
+		// Check that no extra elements are in the access list
+		index := state.accessList.addresses[address]
+		if index >= 0 {
+			stateSlots := state.accessList.slots[index]
+			for s := range stateSlots {
+				if _, slotPresent := slotMap[s]; !slotPresent {
+					t.Fatalf("scope has extra slot %v (address %v)", s, addrString)
+				}
+			}
+		}
+	}
+
+	state.AddAddressToAccessList(addr("aa"))          // 1
+	state.AddSlotToAccessList(addr("bb"), slot("01")) // 2,3
+	state.AddSlotToAccessList(addr("bb"), slot("02")) // 4
+	verifyAddrs("aa", "bb")
+	verifySlots("bb", "01", "02")
+
+	// Make a copy
+	stateCopy1 := state.Copy()
+	if exp, got := 4, state.journal.length(); exp != got {
+		t.Fatalf("journal length mismatch: have %d, want %d", got, exp)
+	}
+
+	// same again, should cause no journal entries
+	state.AddSlotToAccessList(addr("bb"), slot("01"))
+	state.AddSlotToAccessList(addr("bb"), slot("02"))
+	state.AddAddressToAccessList(addr("aa"))
+	if exp, got := 4, state.journal.length(); exp != got {
+		t.Fatalf("journal length mismatch: have %d, want %d", got, exp)
+	}
+	// some new ones
+	state.AddSlotToAccessList(addr("bb"), slot("03")) // 5
+	state.AddSlotToAccessList(addr("aa"), slot("01")) // 6
+	state.AddSlotToAccessList(addr("cc"), slot("01")) // 7,8
+	state.AddAddressToAccessList(addr("cc"))
+	if exp, got := 8, state.journal.length(); exp != got {
+		t.Fatalf("journal length mismatch: have %d, want %d", got, exp)
+	}
+
+	verifyAddrs("aa", "bb", "cc")
+	verifySlots("aa", "01")
+	verifySlots("bb", "01", "02", "03")
+	verifySlots("cc", "01")
+
+	// now start rolling back changes
+	state.journal.revert(state, 7)
+	if _, ok := state.SlotInAccessList(addr("cc"), slot("01")); ok {
+		t.Fatalf("slot present, expected missing")
+	}
+	verifyAddrs("aa", "bb", "cc")
+	verifySlots("aa", "01")
+	verifySlots("bb", "01", "02", "03")
+
+	state.journal.revert(state, 6)
+	if state.AddressInAccessList(addr("cc")) {
+		t.Fatalf("addr present, expected missing")
+	}
+	verifyAddrs("aa", "bb")
+	verifySlots("aa", "01")
+	verifySlots("bb", "01", "02", "03")
+
+	state.journal.revert(state, 5)
+	if _, ok := state.SlotInAccessList(addr("aa"), slot("01")); ok {
+		t.Fatalf("slot present, expected missing")
+	}
+	verifyAddrs("aa", "bb")
+	verifySlots("bb", "01", "02", "03")
+
+	state.journal.revert(state, 4)
+	if _, ok := state.SlotInAccessList(addr("bb"), slot("03")); ok {
+		t.Fatalf("slot present, expected missing")
+	}
+	verifyAddrs("aa", "bb")
+	verifySlots("bb", "01", "02")
+
+	state.journal.revert(state, 3)
+	if _, ok := state.SlotInAccessList(addr("bb"), slot("02")); ok {
+		t.Fatalf("slot present, expected missing")
+	}
+	verifyAddrs("aa", "bb")
+	verifySlots("bb", "01")
+
+	state.journal.revert(state, 2)
+	if _, ok := state.SlotInAccessList(addr("bb"), slot("01")); ok {
+		t.Fatalf("slot present, expected missing")
+	}
+	verifyAddrs("aa", "bb")
+
+	state.journal.revert(state, 1)
+	if state.AddressInAccessList(addr("bb")) {
+		t.Fatalf("addr present, expected missing")
+	}
+	verifyAddrs("aa")
+
+	state.journal.revert(state, 0)
+	if state.AddressInAccessList(addr("aa")) {
+		t.Fatalf("addr present, expected missing")
+	}
+	if got, exp := len(state.accessList.addresses), 0; got != exp {
+		t.Fatalf("expected empty, got %d", got)
+	}
+	if got, exp := len(state.accessList.slots), 0; got != exp {
+		t.Fatalf("expected empty, got %d", got)
+	}
+	// Check the copy
+	// Make a copy
+	state = stateCopy1
+	verifyAddrs("aa", "bb")
+	verifySlots("bb", "01", "02")
+	if got, exp := len(state.accessList.addresses), 2; got != exp {
+		t.Fatalf("expected empty, got %d", got)
+	}
+	if got, exp := len(state.accessList.slots), 1; got != exp {
+		t.Fatalf("expected empty, got %d", got)
+	}
+}
+
+// Tests that account and storage tries are flushed in the correct order and that
+// no data loss occurs.
+func TestFlushOrderDataLoss(t *testing.T) {
+	// Create a state trie with many accounts and slots
+	var (
+		memdb    = rawdb.NewMemoryDatabase()
+		statedb  = NewDatabase(memdb)
+		state, _ = New(types.EmptyRootHash, statedb, nil)
+	)
+	for a := byte(0); a < 10; a++ {
+		state.CreateAccount(common.Address{a})
+		for s := byte(0); s < 10; s++ {
+			state.SetState(common.Address{a}, common.Hash{a, s}, common.Hash{a, s})
+		}
+	}
+	root, err := state.Commit(false)
+	if err != nil {
+		t.Fatalf("failed to commit state trie: %v", err)
+	}
+	statedb.TrieDB().Reference(root, common.Hash{})
+	if err := statedb.TrieDB().Cap(1024); err != nil {
+		t.Fatalf("failed to cap trie dirty cache: %v", err)
+	}
+	if err := statedb.TrieDB().Commit(root, false); err != nil {
+		t.Fatalf("failed to commit state trie: %v", err)
+	}
+	// Reopen the state trie from flushed disk and verify it
+	state, err = New(root, NewDatabase(memdb), nil)
+	if err != nil {
+		t.Fatalf("failed to reopen state trie: %v", err)
+	}
+	for a := byte(0); a < 10; a++ {
+		for s := byte(0); s < 10; s++ {
+			if have := state.GetState(common.Address{a}, common.Hash{a, s}); have != (common.Hash{a, s}) {
+				t.Errorf("account %d: slot %d: state mismatch: have %x, want %x", a, s, have, common.Hash{a, s})
+			}
+		}
+	}
+}
+
+func TestStateDBTransientStorage(t *testing.T) {
+	memDb := rawdb.NewMemoryDatabase()
+	db := NewDatabase(memDb)
+	state, _ := New(types.EmptyRootHash, db, nil)
+
+	key := common.Hash{0x01}
+	value := common.Hash{0x02}
+	addr := common.Address{}
+
+	state.SetTransientState(addr, key, value)
+	if exp, got := 1, state.journal.length(); exp != got {
+		t.Fatalf("journal length mismatch: have %d, want %d", got, exp)
+	}
+	// the retrieved value should equal what was set
+	if got := state.GetTransientState(addr, key); got != value {
+		t.Fatalf("transient storage mismatch: have %x, want %x", got, value)
+	}
+
+	// revert the transient state being set and then check that the
+	// value is now the empty hash
+	state.journal.revert(state, 0)
+	if got, exp := state.GetTransientState(addr, key), (common.Hash{}); exp != got {
+		t.Fatalf("transient storage mismatch: have %x, want %x", got, exp)
+	}
+
+	// set transient state and then copy the statedb and ensure that
+	// the transient state is copied
+	state.SetTransientState(addr, key, value)
+	cpy := state.Copy()
+	if got := cpy.GetTransientState(addr, key); got != value {
+		t.Fatalf("transient storage mismatch: have %x, want %x", got, value)
+	}
+}
+
+func TestResetObject(t *testing.T) {
+	var (
+		disk     = rawdb.NewMemoryDatabase()
+		tdb      = trie.NewDatabase(disk)
+		db       = NewDatabaseWithNodeDB(disk, tdb)
+		snaps, _ = snapshot.New(snapshot.Config{CacheSize: 10}, disk, tdb, types.EmptyRootHash)
+		state, _ = New(types.EmptyRootHash, db, snaps)
+		addr     = common.HexToAddress("0x1")
+		slotA    = common.HexToHash("0x1")
+		slotB    = common.HexToHash("0x2")
+	)
+	// Initialize account with balance and storage in first transaction.
+	state.SetBalance(addr, big.NewInt(1))
+	state.SetState(addr, slotA, common.BytesToHash([]byte{0x1}))
+	state.IntermediateRoot(true)
+
+	// Reset account and mutate balance and storages
+	state.CreateAccount(addr)
+	state.SetBalance(addr, big.NewInt(2))
+	state.SetState(addr, slotB, common.BytesToHash([]byte{0x2}))
+	root, _ := state.Commit(true)
+
+	// Ensure the original account is wiped properly
+	snap := snaps.Snapshot(root)
+	slot, _ := snap.Storage(crypto.Keccak256Hash(addr.Bytes()), crypto.Keccak256Hash(slotA.Bytes()))
+	if len(slot) != 0 {
+		t.Fatalf("Unexpected storage slot")
+	}
+	slot, _ = snap.Storage(crypto.Keccak256Hash(addr.Bytes()), crypto.Keccak256Hash(slotB.Bytes()))
+	if !bytes.Equal(slot, []byte{0x2}) {
+		t.Fatalf("Unexpected storage slot value %v", slot)
 	}
 }

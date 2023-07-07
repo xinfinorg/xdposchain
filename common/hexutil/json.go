@@ -44,14 +44,6 @@ func (b Bytes) MarshalText() ([]byte, error) {
 	return result, nil
 }
 
-// MarshalXDCText implements encoding.TextMarshaler
-func (b Bytes) MarshalXDCText() ([]byte, error) {
-	result := make([]byte, len(b)*2+3)
-	copy(result, `xdc`)
-	hex.Encode(result[3:], b)
-	return result, nil
-}
-
 // UnmarshalJSON implements json.Unmarshaler.
 func (b *Bytes) UnmarshalJSON(input []byte) error {
 	if !isString(input) {
@@ -78,6 +70,25 @@ func (b *Bytes) UnmarshalText(input []byte) error {
 // String returns the hex encoding of b.
 func (b Bytes) String() string {
 	return Encode(b)
+}
+
+// ImplementsGraphQLType returns true if Bytes implements the specified GraphQL type.
+func (b Bytes) ImplementsGraphQLType(name string) bool { return name == "Bytes" }
+
+// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+func (b *Bytes) UnmarshalGraphQL(input interface{}) error {
+	var err error
+	switch input := input.(type) {
+	case string:
+		data, err := Decode(input)
+		if err != nil {
+			return err
+		}
+		*b = data
+	default:
+		err = fmt.Errorf("unexpected type %T for Bytes", input)
+	}
+	return err
 }
 
 // UnmarshalFixedJSON decodes the input as a string with 0x prefix. The length of out
@@ -195,6 +206,25 @@ func (b *Big) String() string {
 	return EncodeBig(b.ToInt())
 }
 
+// ImplementsGraphQLType returns true if Big implements the provided GraphQL type.
+func (b Big) ImplementsGraphQLType(name string) bool { return name == "BigInt" }
+
+// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+func (b *Big) UnmarshalGraphQL(input interface{}) error {
+	var err error
+	switch input := input.(type) {
+	case string:
+		return b.UnmarshalText([]byte(input))
+	case int32:
+		var num big.Int
+		num.SetInt64(int64(input))
+		*b = Big(num)
+	default:
+		err = fmt.Errorf("unexpected type %T for BigInt", input)
+	}
+	return err
+}
+
 // Uint64 marshals/unmarshals as a JSON string with 0x prefix.
 // The zero value marshals as "0x0".
 type Uint64 uint64
@@ -242,6 +272,23 @@ func (b Uint64) String() string {
 	return EncodeUint64(uint64(b))
 }
 
+// ImplementsGraphQLType returns true if Uint64 implements the provided GraphQL type.
+func (b Uint64) ImplementsGraphQLType(name string) bool { return name == "Long" }
+
+// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+func (b *Uint64) UnmarshalGraphQL(input interface{}) error {
+	var err error
+	switch input := input.(type) {
+	case string:
+		return b.UnmarshalText([]byte(input))
+	case int32:
+		*b = Uint64(input)
+	default:
+		err = fmt.Errorf("unexpected type %T for Long", input)
+	}
+	return err
+}
+
 // Uint marshals/unmarshals as a JSON string with 0x prefix.
 // The zero value marshals as "0x0".
 type Uint uint
@@ -285,16 +332,11 @@ func bytesHave0xPrefix(input []byte) bool {
 	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
 }
 
-func bytesHaveXDCPrefix(input []byte) bool {
-	return len(input) >= 3 && (input[0] == 'x' || input[0] == 'X') && (input[1] == 'd' || input[1] == 'D') && (input[2] == 'c' || input[2] == 'C')
-}
 func checkText(input []byte, wantPrefix bool) ([]byte, error) {
 	if len(input) == 0 {
 		return nil, nil // empty strings are allowed
 	}
-	if bytesHaveXDCPrefix(input) {
-		input = input[3:]
-	} else if bytesHave0xPrefix(input) {
+	if bytesHave0xPrefix(input) {
 		input = input[2:]
 	} else if wantPrefix {
 		return nil, ErrMissingPrefix
