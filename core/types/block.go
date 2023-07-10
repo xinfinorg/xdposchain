@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
-	"github.com/XinFinOrg/XDPoSChain/crypto"
 	"github.com/XinFinOrg/XDPoSChain/rlp"
 	"io"
 	"math/big"
@@ -30,12 +29,6 @@ import (
 	"sort"
 	"sync/atomic"
 	"time"
-)
-
-var (
-	EmptyRootHash  = DeriveSha(Transactions{}, nil)
-	EmptyUncleHash = CalcUncleHash(nil)
-	EmptyCodeHash  = crypto.Keccak256Hash(nil) // c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 )
 
 // A BlockNonce is a 64-bit hash which proves (combined with the

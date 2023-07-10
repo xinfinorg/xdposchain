@@ -23,7 +23,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/log"
 	gethmetrics "github.com/XinFinOrg/XDPoSChain/metrics"
 	"github.com/XinFinOrg/XDPoSChain/metrics/influxdb"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 var (

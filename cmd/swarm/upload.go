@@ -32,7 +32,7 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
 	swarm "github.com/XinFinOrg/XDPoSChain/swarm/api/client"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 func upload(ctx *cli.Context) {

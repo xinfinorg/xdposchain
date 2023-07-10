@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/XinFinOrg/XDPoSChain/log"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 // main is just a boring entry point to set up the CLI app.

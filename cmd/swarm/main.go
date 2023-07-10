@@ -45,7 +45,7 @@ import (
 	bzzapi "github.com/XinFinOrg/XDPoSChain/swarm/api"
 	swarmmetrics "github.com/XinFinOrg/XDPoSChain/swarm/metrics"
 
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 const clientIdentifier = "swarm"
@@ -153,7 +153,7 @@ var (
 	}
 )
 
-//declare a few constant error messages, useful for later error check comparisons in test
+// declare a few constant error messages, useful for later error check comparisons in test
 var (
 	SWARM_ERR_NO_BZZACCOUNT   = "bzzaccount option is required but not set; check your config file, command line or environment variables"
 	SWARM_ERR_SWAP_SET_NO_API = "SWAP is enabled but --swap-api is not set"

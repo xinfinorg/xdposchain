@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 const (

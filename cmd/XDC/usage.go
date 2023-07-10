@@ -24,7 +24,7 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
 	"github.com/XinFinOrg/XDPoSChain/internal/debug"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 // AppHelpTemplate is the test template for the default, global app help topic.

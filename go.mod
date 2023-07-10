@@ -58,6 +58,7 @@ require (
 	github.com/btcsuite/winsvc v1.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
+	github.com/deckarep/golang-set/v2 v2.3.0 // indirect
 	github.com/deepmap/oapi-codegen v1.8.2 // indirect
 	github.com/holiman/bloomfilter v1.0.6 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect

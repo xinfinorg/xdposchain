@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/XinFinOrg/XDPoSChain/common/math"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 // Custom type which is registered in the flags library which cli uses for
@@ -124,7 +124,7 @@ func (f TextMarshalerFlag) Apply(set *flag.FlagSet) {
 
 // GlobalTextMarshaler returns the value of a TextMarshalerFlag from the global flag set.
 func GlobalTextMarshaler(ctx *cli.Context, name string) TextMarshaler {
-	val := ctx.GlobalGeneric(name)
+	val := ctx.Generic(name)
 	if val == nil {
 		return nil
 	}
@@ -162,6 +162,10 @@ func (f BigFlag) GetName() string {
 	return f.Name
 }
 
+func (f BigFlag) Names() []string {
+	return []string{f.Name}
+}
+
 func (f BigFlag) String() string {
 	fmtString := "%s %v\t%v"
 	if f.Value != nil {
@@ -178,7 +182,7 @@ func (f BigFlag) Apply(set *flag.FlagSet) {
 
 // GlobalBig returns the value of a BigFlag from the global flag set.
 func GlobalBig(ctx *cli.Context, name string) *big.Int {
-	val := ctx.GlobalGeneric(name)
+	val := ctx.Generic(name)
 	if val == nil {
 		return nil
 	}

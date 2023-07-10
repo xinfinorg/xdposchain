@@ -23,7 +23,7 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/cmd/evm/internal/compiler"
 
-	cli "gopkg.in/urfave/cli.v1"
+	cli "github.com/urfave/cli/v2"
 )
 
 var compileCommand = cli.Command{
@@ -34,7 +34,7 @@ var compileCommand = cli.Command{
 }
 
 func compileCmd(ctx *cli.Context) error {
-	debug := ctx.GlobalBool(DebugFlag.Name)
+	debug := ctx.Bool(DebugFlag.Name)
 
 	if len(ctx.Args().First()) == 0 {
 		return errors.New("filename required")

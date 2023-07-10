@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/XinFinOrg/XDPoSChain/core/asm"
-	cli "gopkg.in/urfave/cli.v1"
+	cli "github.com/urfave/cli/v2"
 )
 
 var disasmCommand = cli.Command{

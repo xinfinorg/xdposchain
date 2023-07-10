@@ -30,7 +30,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/params"
 
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
-	cli "gopkg.in/urfave/cli.v1"
+	cli "github.com/urfave/cli/v2"
 )
 
 var bugCommand = cli.Command{

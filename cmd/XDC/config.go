@@ -27,7 +27,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 
 	"github.com/XinFinOrg/XDPoSChain/XDCx"
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
@@ -52,7 +52,7 @@ var (
 		Description: `The dumpconfig command shows configuration values.`,
 	}
 
-	configFileFlag = cli.StringFlag{
+	configFileFlag = &cli.StringFlag{
 		Name:  "config",
 		Usage: "TOML configuration file",
 	}

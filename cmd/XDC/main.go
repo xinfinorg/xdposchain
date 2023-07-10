@@ -37,7 +37,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/metrics"
 	"github.com/XinFinOrg/XDPoSChain/node"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -159,24 +159,24 @@ func init() {
 	app.Action = XDC
 	app.HideVersion = true // we have a command to print the version
 	app.Copyright = "Copyright (c) 2018 XDPoSChain"
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		// See chaincmd.go:
-		initCommand,
-		importCommand,
-		exportCommand,
-		removedbCommand,
-		dumpCommand,
+		&initCommand,
+		&importCommand,
+		&exportCommand,
+		&removedbCommand,
+		&dumpCommand,
 		// See accountcmd.go:
-		accountCommand,
-		walletCommand,
+		&accountCommand,
+		&walletCommand,
 		// See consolecmd.go:
-		consoleCommand,
-		attachCommand,
-		javascriptCommand,
+		&consoleCommand,
+		&attachCommand,
+		&javascriptCommand,
 		// See misccmd.go:
-		versionCommand,
+		&versionCommand,
 		// See config.go
-		dumpConfigCommand,
+		&dumpConfigCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
@@ -232,11 +232,11 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 	// Unlock any account specifically requested
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
 
-	if ctx.GlobalIsSet(utils.UnlockedAccountFlag.Name) {
-		cfg.Account.Unlocks = strings.Split(ctx.GlobalString(utils.UnlockedAccountFlag.Name), ",")
+	if ctx.IsSet(utils.UnlockedAccountFlag.Name) {
+		cfg.Account.Unlocks = strings.Split(ctx.String(utils.UnlockedAccountFlag.Name), ",")
 	}
 
-	if ctx.GlobalIsSet(utils.PasswordFileFlag.Name) {
+	if ctx.IsSet(utils.PasswordFileFlag.Name) {
 		cfg.Account.Passwords = utils.MakePasswordList(ctx)
 	}
 
@@ -289,7 +289,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 	// Start auxiliary services if enabled
 
 	// Mining only makes sense if a full Ethereum node is running
-	if ctx.GlobalBool(utils.LightModeFlag.Name) || ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
+	if ctx.Bool(utils.LightModeFlag.Name) || ctx.String(utils.SyncModeFlag.Name) == "light" {
 		utils.Fatalf("Light clients do not support staking")
 	}
 	// Start metrics export if enabled
@@ -305,7 +305,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 		go func() {
 			started := false
 			ok := false
-			slaveMode := ctx.GlobalIsSet(utils.XDCSlaveModeFlag.Name)
+			slaveMode := ctx.IsSet(utils.XDCSlaveModeFlag.Name)
 			var err error
 			if common.IsTestnet {
 				ok, err = ethereum.ValidateMasternodeTestnet()
@@ -325,7 +325,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 				} else {
 					log.Info("Masternode found. Enabling staking mode...")
 					// Use a reduced number of threads if requested
-					if threads := ctx.GlobalInt(utils.StakerThreadsFlag.Name); threads > 0 {
+					if threads := ctx.Int(utils.StakerThreadsFlag.Name); threads > 0 {
 						type threaded interface {
 							SetThreads(threads int)
 						}
@@ -373,7 +373,7 @@ func startNode(ctx *cli.Context, stack *node.Node, cfg XDCConfig) {
 					} else {
 						log.Info("Masternode found. Enabling staking mode...")
 						// Use a reduced number of threads if requested
-						if threads := ctx.GlobalInt(utils.StakerThreadsFlag.Name); threads > 0 {
+						if threads := ctx.Int(utils.StakerThreadsFlag.Name); threads > 0 {
 							type threaded interface {
 								SetThreads(threads int)
 							}

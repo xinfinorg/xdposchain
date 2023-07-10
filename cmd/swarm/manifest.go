@@ -27,7 +27,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/cmd/utils"
 	"github.com/XinFinOrg/XDPoSChain/swarm/api"
 	swarm "github.com/XinFinOrg/XDPoSChain/swarm/api/client"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 const bzzManifestJSON = "application/bzz-manifest+json"

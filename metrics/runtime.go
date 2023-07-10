@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"runtime"
-	"runtime/pprof"
 	"time"
 )
 
@@ -48,8 +47,6 @@ var (
 	mallocs     uint64
 	numGC       uint32
 	numCgoCalls int64
-
-	threadCreateProfile = pprof.Lookup("threadcreate")
 )
 
 // Capture new values for the Go runtime statistics exported in
