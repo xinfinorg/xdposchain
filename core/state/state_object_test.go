@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2019 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,12 +14,33 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package downloader
+package state
 
-import "github.com/ethereum/go-ethereum/core/types"
+import (
+	"bytes"
+	"testing"
 
-type DoneEvent struct {
-	Latest *types.Header
+	"github.com/XinFinOrg/XDPoSChain/common"
+)
+
+func BenchmarkCutOriginal(b *testing.B) {
+	value := common.HexToHash("0x01")
+	for i := 0; i < b.N; i++ {
+		bytes.TrimLeft(value[:], "\x00")
+	}
 }
-type StartEvent struct{}
-type FailedEvent struct{ Err error }
+
+func BenchmarkCutsetterFn(b *testing.B) {
+	value := common.HexToHash("0x01")
+	cutSetFn := func(r rune) bool { return r == 0 }
+	for i := 0; i < b.N; i++ {
+		bytes.TrimLeftFunc(value[:], cutSetFn)
+	}
+}
+
+func BenchmarkCutCustomTrim(b *testing.B) {
+	value := common.HexToHash("0x01")
+	for i := 0; i < b.N; i++ {
+		common.TrimLeftZeroes(value[:])
+	}
+}

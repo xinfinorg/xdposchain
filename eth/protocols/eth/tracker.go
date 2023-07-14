@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package downloader
+package eth
 
-import "github.com/ethereum/go-ethereum/core/types"
+import (
+	"time"
 
-type DoneEvent struct {
-	Latest *types.Header
-}
-type StartEvent struct{}
-type FailedEvent struct{ Err error }
+	"github.com/XinFinOrg/XDPoSChain/p2p/tracker"
+)
+
+// requestTracker is a singleton tracker for eth/66 and newer request times.
+var requestTracker = tracker.New(ProtocolName, 5*time.Minute)

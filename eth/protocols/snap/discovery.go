@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2020 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,12 +14,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package downloader
+package snap
 
-import "github.com/ethereum/go-ethereum/core/types"
+import (
+	"github.com/ethereum/go-ethereum/rlp"
+)
 
-type DoneEvent struct {
-	Latest *types.Header
+// enrEntry is the ENR entry which advertises `snap` protocol on the discovery.
+type enrEntry struct {
+	// Ignore additional fields (for forward compatibility).
+	Rest []rlp.RawValue `rlp:"tail"`
 }
-type StartEvent struct{}
-type FailedEvent struct{ Err error }
+
+// ENRKey implements enr.Entry.
+func (e enrEntry) ENRKey() string {
+	return "snap"
+}

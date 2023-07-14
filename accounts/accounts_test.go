@@ -14,12 +14,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package downloader
+package accounts
 
-import "github.com/ethereum/go-ethereum/core/types"
+import (
+	"bytes"
+	"testing"
 
-type DoneEvent struct {
-	Latest *types.Header
+	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
+)
+
+func TestTextHash(t *testing.T) {
+	hash := TextHash([]byte("Hello Joe"))
+	want := hexutil.MustDecode("0xa080337ae51c4e064c189e113edd0ba391df9206e2f49db658bb32cf2911730b")
+	if !bytes.Equal(hash, want) {
+		t.Fatalf("wrong hash: %x", hash)
+	}
 }
-type StartEvent struct{}
-type FailedEvent struct{ Err error }
