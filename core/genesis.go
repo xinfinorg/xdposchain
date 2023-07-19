@@ -51,6 +51,7 @@ type Genesis struct {
 	Timestamp  uint64              `json:"timestamp"`
 	ExtraData  []byte              `json:"extraData"`
 	GasLimit   uint64              `json:"gasLimit"   gencodec:"required"`
+	BaseFee    *big.Int            `json:"currentBaseFee,omitempty"`
 	Difficulty *big.Int            `json:"difficulty" gencodec:"required"`
 	Mixhash    common.Hash         `json:"mixHash"`
 	Coinbase   common.Address      `json:"coinbase"`
@@ -93,6 +94,7 @@ type genesisSpecMarshaling struct {
 	Timestamp  math.HexOrDecimal64
 	ExtraData  hexutil.Bytes
 	GasLimit   math.HexOrDecimal64
+	BaseFee    math.HexOrDecimal256
 	GasUsed    math.HexOrDecimal64
 	Number     math.HexOrDecimal64
 	Difficulty *math.HexOrDecimal256
@@ -141,10 +143,10 @@ func (e *GenesisMismatchError) Error() string {
 // SetupGenesisBlock writes or updates the genesis block in db.
 // The block that will be used is:
 //
-//                          genesis == nil       genesis != nil
-//                       +------------------------------------------
-//     db has no genesis |  main-net default  |  genesis
-//     db has genesis    |  from DB           |  genesis (if compatible)
+//	                     genesis == nil       genesis != nil
+//	                  +------------------------------------------
+//	db has no genesis |  main-net default  |  genesis
+//	db has genesis    |  from DB           |  genesis (if compatible)
 //
 // The stored chain configuration will be updated if it is compatible (i.e. does not
 // specify a fork block below the local head block). In case of a conflict, the
@@ -252,6 +254,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		ParentHash: g.ParentHash,
 		Extra:      g.ExtraData,
 		GasLimit:   g.GasLimit,
+		BaseFee:    g.BaseFee,
 		GasUsed:    g.GasUsed,
 		Difficulty: g.Difficulty,
 		MixDigest:  g.Mixhash,
@@ -260,6 +263,9 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 	if g.GasLimit == 0 {
 		head.GasLimit = params.GenesisGasLimit
+	}
+	if g.Config != nil && g.Config.IsLondon(common.Big0) {
+		head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 	if g.Difficulty == nil {
 		head.Difficulty = params.GenesisDifficulty
