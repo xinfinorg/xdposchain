@@ -18,10 +18,12 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
+	cmath "github.com/XinFinOrg/XDPoSChain/common/math"
 	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/params"
@@ -42,8 +44,10 @@ The state transitioning model does all all the necessary work to work out a vali
 3) Create a new state object if the recipient is \0*32
 4) Value transfer
 == If contract creation ==
-  4a) Attempt to run transaction data
-  4b) If valid, use result as code for the new state object
+
+	4a) Attempt to run transaction data
+	4b) If valid, use result as code for the new state object
+
 == end ==
 5) Run Script section
 6) Derive new state root
@@ -53,6 +57,8 @@ type StateTransition struct {
 	msg        Message
 	gas        uint64
 	gasPrice   *big.Int
+	feeCap     *big.Int
+	tip        *big.Int
 	initialGas uint64
 	value      *big.Int
 	data       []byte
@@ -67,6 +73,8 @@ type Message interface {
 	To() *common.Address
 
 	GasPrice() *big.Int
+	FeeCap() *big.Int
+	Tip() *big.Int
 	Gas() uint64
 	Value() *big.Int
 
@@ -116,6 +124,8 @@ func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition 
 		evm:      evm,
 		msg:      msg,
 		gasPrice: msg.GasPrice(),
+		feeCap:   msg.FeeCap(),
+		tip:      msg.Tip(),
 		value:    msg.Value(),
 		data:     msg.Data(),
 		state:    evm.StateDB,
@@ -209,6 +219,15 @@ func (st *StateTransition) preCheck() error {
 			return ErrNonceTooLow
 		}
 	}
+	// Make sure that transaction feeCap is greater than the baseFee (post london)
+	if st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
+		// This will panic if baseFee is nil, but basefee presence is verified
+		// as part of header validation.
+		if st.feeCap.Cmp(st.evm.Context.BaseFee) < 0 {
+			return fmt.Errorf("%w: address %v, feeCap: %s baseFee: %s", ErrFeeCapTooLow,
+				st.msg.From().Hex(), st.feeCap, st.evm.Context.BaseFee)
+		}
+	}
 	return st.buyGas()
 }
 
@@ -266,12 +285,17 @@ func (st *StateTransition) TransitionDb(owner common.Address) (ret []byte, usedG
 	}
 	st.refundGas()
 
+	effectiveTip := st.gasPrice
+	if st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
+		effectiveTip = cmath.BigMin(st.tip, new(big.Int).Sub(st.feeCap, st.evm.Context.BaseFee))
+	}
+
 	if st.evm.BlockNumber.Cmp(common.TIPTRC21Fee) > 0 {
 		if (owner != common.Address{}) {
-			st.state.AddBalance(owner, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))
+			st.state.AddBalance(owner, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), effectiveTip))
 		}
 	} else {
-		st.state.AddBalance(st.evm.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))
+		st.state.AddBalance(st.evm.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), effectiveTip))
 	}
 
 	return ret, st.gasUsed(), vmerr != nil, err, vmerr
