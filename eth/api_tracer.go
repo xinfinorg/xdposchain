@@ -208,7 +208,7 @@ func (api *PrivateDebugAPI) traceChain(ctx context.Context, start, end *types.Bl
 							balacne = value
 						}
 					}
-					msg, _ := tx.AsMessage(signer, balacne, task.block.Number())
+					msg, _ := tx.AsMessage(signer, balacne, task.block.Number(), task.block.BaseFee())
 					vmctx := core.NewEVMContext(msg, task.block.Header(), api.eth.blockchain, nil)
 
 					res, err := api.traceTx(ctx, msg, vmctx, task.statedb, config)
@@ -448,7 +448,7 @@ func (api *PrivateDebugAPI) traceBlock(ctx context.Context, block *types.Block, 
 						balacne = value
 					}
 				}
-				msg, _ := txs[task.index].AsMessage(signer, balacne, block.Number())
+				msg, _ := txs[task.index].AsMessage(signer, balacne, block.Number(), block.BaseFee())
 				vmctx := core.NewEVMContext(msg, block.Header(), api.eth.blockchain, nil)
 
 				res, err := api.traceTx(ctx, msg, vmctx, task.statedb, config)
@@ -473,7 +473,7 @@ func (api *PrivateDebugAPI) traceBlock(ctx context.Context, block *types.Block, 
 			}
 		}
 		// Generate the next state snapshot fast without tracing
-		msg, _ := tx.AsMessage(signer, balacne, block.Number())
+		msg, _ := tx.AsMessage(signer, balacne, block.Number(), block.BaseFee())
 		// Set nonce to fix issue #256
 		msg.SetNonce(statedb.GetNonce(*tx.From()))
 		vmctx := core.NewEVMContext(msg, block.Header(), api.eth.blockchain, nil)
@@ -693,7 +693,7 @@ func (api *PrivateDebugAPI) computeTxEnv(blockHash common.Hash, txIndex int, ree
 					balanceFee = value
 				}
 			}
-			msg, err := tx.AsMessage(types.MakeSigner(api.config, block.Header().Number), balanceFee, block.Number())
+			msg, err := tx.AsMessage(types.MakeSigner(api.config, block.Header().Number), balanceFee, block.Number(), block.BaseFee())
 			if err != nil {
 				return nil, vm.Context{}, nil, fmt.Errorf("tx %x failed: %v", tx.Hash(), err)
 			}

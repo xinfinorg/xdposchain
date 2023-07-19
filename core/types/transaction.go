@@ -21,6 +21,7 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
+	"github.com/XinFinOrg/XDPoSChain/common/math"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -42,6 +43,10 @@ var (
 		common.XDCXLendingAddress:               true,
 		common.XDCXLendingFinalizedTradeAddress: true,
 	}
+	ErrUnexpectedProtection = errors.New("transaction type does not supported EIP-155 protected signatures")
+	ErrInvalidTxType        = errors.New("transaction type not valid in this context")
+	ErrTxTypeNotSupported   = errors.New("transaction type not supported")
+	errEmptyTypedTx         = errors.New("empty typed transaction bytes")
 )
 
 // deriveSigner makes a *best* guess about which signer to use.
@@ -62,12 +67,16 @@ type Transaction struct {
 }
 
 type txdata struct {
-	AccountNonce uint64          `json:"nonce"    gencodec:"required"`
-	Price        *big.Int        `json:"gasPrice" gencodec:"required"`
-	GasLimit     uint64          `json:"gas"      gencodec:"required"`
-	Recipient    *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
-	Amount       *big.Int        `json:"value"    gencodec:"required"`
-	Payload      []byte          `json:"input"    gencodec:"required"`
+	AccountNonce uint64   `json:"nonce"    gencodec:"required"`
+	Price        *big.Int `json:"gasPrice" gencodec:"required"`
+	GasLimit     uint64   `json:"gas"      gencodec:"required"`
+	// TODO Gencodec
+	Tip    *big.Int `json:"tip" gencodec:"required"`
+	FeeCap *big.Int `json:"feeCap" gencodec:"required"`
+
+	Recipient *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
+	Amount    *big.Int        `json:"value"    gencodec:"required"`
+	Payload   []byte          `json:"input"    gencodec:"required"`
 
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
@@ -82,6 +91,8 @@ type txdataMarshaling struct {
 	AccountNonce hexutil.Uint64
 	Price        *hexutil.Big
 	GasLimit     hexutil.Uint64
+	FeeCap       *hexutil.Big
+	Tip          *hexutil.Big
 	Amount       *hexutil.Big
 	Payload      hexutil.Bytes
 	V            *hexutil.Big
@@ -89,15 +100,15 @@ type txdataMarshaling struct {
 	S            *hexutil.Big
 }
 
-func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
+func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice, feeCap, tip *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, &to, amount, gasLimit, feeCap, tip, gasPrice, data)
 }
 
-func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
+func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, feeCap, tip *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, nil, amount, gasLimit, feeCap, tip, gasPrice, data)
 }
 
-func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice, feeCap, tip *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -107,6 +118,8 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 		Payload:      data,
 		Amount:       new(big.Int),
 		GasLimit:     gasLimit,
+		FeeCap:       feeCap,
+		Tip:          tip,
 		Price:        new(big.Int),
 		V:            new(big.Int),
 		R:            new(big.Int),
@@ -188,9 +201,15 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Payload) }
 func (tx *Transaction) Gas() uint64        { return tx.data.GasLimit }
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
-func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
-func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
-func (tx *Transaction) CheckNonce() bool   { return true }
+
+// Tip returns the tip per gas of the transaction.
+func (tx *Transaction) Tip() *big.Int { return new(big.Int).Set(tx.data.Tip) }
+
+// FeeCap returns the fee cap per gas of the transaction.
+func (tx *Transaction) FeeCap() *big.Int { return new(big.Int).Set(tx.data.FeeCap) }
+func (tx *Transaction) Value() *big.Int  { return new(big.Int).Set(tx.data.Amount) }
+func (tx *Transaction) Nonce() uint64    { return tx.data.AccountNonce }
+func (tx *Transaction) CheckNonce() bool { return true }
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.
@@ -248,11 +267,13 @@ func (tx *Transaction) Size() common.StorageSize {
 // AsMessage requires a signer to derive the sender.
 //
 // XXX Rename message to something less arbitrary?
-func (tx *Transaction) AsMessage(s Signer, balanceFee *big.Int, number *big.Int) (Message, error) {
+func (tx *Transaction) AsMessage(s Signer, balanceFee *big.Int, number *big.Int, baseFee *big.Int) (Message, error) {
 	msg := Message{
 		nonce:           tx.data.AccountNonce,
 		gasLimit:        tx.data.GasLimit,
 		gasPrice:        new(big.Int).Set(tx.data.Price),
+		feeCap:          new(big.Int),
+		tip:             new(big.Int),
 		to:              tx.data.Recipient,
 		amount:          tx.data.Amount,
 		data:            tx.data.Payload,
@@ -262,13 +283,21 @@ func (tx *Transaction) AsMessage(s Signer, balanceFee *big.Int, number *big.Int)
 	var err error
 	msg.from, err = Sender(s, tx)
 	if balanceFee != nil {
-		if number.Cmp(common.BlockNumberGas50x) >= 0 {
-			msg.gasPrice = common.GasPrice50x
-		} else if number.Cmp(common.TIPTRC21Fee) > 0 {
+		if number.Cmp(common.TIPTRC21Fee) > 0 {
 			msg.gasPrice = common.TRC21GasPrice
 		} else {
 			msg.gasPrice = common.TRC21GasPriceBefore
 		}
+	}
+	// If baseFee provided, set gasPrice to effectiveGasPrice.
+	if baseFee != nil {
+		msg.gasPrice = math.BigMin(msg.gasPrice.Add(msg.tip, baseFee), msg.feeCap)
+	}
+	if tx.data.FeeCap != nil {
+		msg.feeCap.Set(tx.data.FeeCap)
+	}
+	if tx.data.Tip != nil {
+		msg.tip.Set(tx.data.Tip)
 	}
 	return msg, err
 }
@@ -293,8 +322,8 @@ func (tx *Transaction) Cost() *big.Int {
 }
 
 // Cost returns amount + gasprice * gaslimit.
-func (tx *Transaction) TxCost(number *big.Int) *big.Int {
-	total := new(big.Int).Mul(common.GetGasPrice(number), new(big.Int).SetUint64(tx.data.GasLimit))
+func (tx *Transaction) TRC21Cost() *big.Int {
+	total := new(big.Int).Mul(common.TRC21GasPrice, new(big.Int).SetUint64(tx.data.GasLimit))
 	total.Add(total, tx.data.Amount)
 	return total
 }
@@ -697,14 +726,16 @@ type Message struct {
 	amount          *big.Int
 	gasLimit        uint64
 	gasPrice        *big.Int
+	feeCap          *big.Int
+	tip             *big.Int
 	data            []byte
 	checkNonce      bool
 	balanceTokenFee *big.Int
 }
 
-func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool, balanceTokenFee *big.Int, number *big.Int) Message {
+func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, feeCap, tip *big.Int, data []byte, checkNonce bool, balanceTokenFee *big.Int) Message {
 	if balanceTokenFee != nil {
-		gasPrice = common.GetGasPrice(number)
+		gasPrice = common.TRC21GasPrice
 	}
 	return Message{
 		from:            from,
@@ -713,6 +744,8 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		amount:          amount,
 		gasLimit:        gasLimit,
 		gasPrice:        gasPrice,
+		feeCap:          feeCap,
+		tip:             tip,
 		data:            data,
 		checkNonce:      checkNonce,
 		balanceTokenFee: balanceTokenFee,
@@ -723,10 +756,10 @@ func (m Message) From() common.Address      { return m.from }
 func (m Message) BalanceTokenFee() *big.Int { return m.balanceTokenFee }
 func (m Message) To() *common.Address       { return m.to }
 func (m Message) GasPrice() *big.Int        { return m.gasPrice }
+func (m Message) FeeCap() *big.Int          { return new(big.Int).Set(m.feeCap) }
+func (m Message) Tip() *big.Int             { return new(big.Int).Set(m.tip) }
 func (m Message) Value() *big.Int           { return m.amount }
 func (m Message) Gas() uint64               { return m.gasLimit }
 func (m Message) Nonce() uint64             { return m.nonce }
 func (m Message) Data() []byte              { return m.data }
 func (m Message) CheckNonce() bool          { return m.checkNonce }
-
-func (m *Message) SetNonce(nonce uint64) { m.nonce = nonce }
