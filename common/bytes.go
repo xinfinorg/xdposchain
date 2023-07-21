@@ -29,13 +29,8 @@ func ToHex(b []byte) string {
 }
 
 func FromHex(s string) []byte {
-	if len(s) > 1 {
-		if s[0:2] == "0x" || s[0:2] == "0X" {
-			s = s[2:]
-		}
-		if (s[0] == 'x' || s[0] == 'X') && (s[1] == 'd' || s[1] == 'D') && (s[2] == 'c' || s[2] == 'C') {
-			s = s[3:]
-		}
+	if hasHexPrefix(s) {
+		s = s[2:]
 	}
 	if len(s)%2 == 1 {
 		s = "0" + s

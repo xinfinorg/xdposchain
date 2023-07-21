@@ -35,6 +35,8 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/rlp"
 )
 
+const SignatureLength = 64 + 1 // 64 bytes ECDSA signature + 1 byte recovery id
+
 var (
 	secp256k1_N, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
 	secp256k1_halfN = new(big.Int).Div(secp256k1_N, big.NewInt(2))
