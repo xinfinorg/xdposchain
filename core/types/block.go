@@ -83,8 +83,8 @@ type Header struct {
 	GasUsed     uint64         `json:"gasUsed"          gencodec:"required"`
 	Time        *big.Int       `json:"timestamp"        gencodec:"required"`
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
-	MixDigest   common.Hash    `json:"mixHash"          gencodec:"required"`
-	Nonce       BlockNonce     `json:"nonce"            gencodec:"required"`
+	MixDigest   common.Hash    `json:"mixHash"`
+	Nonce       BlockNonce     `json:"nonce"`
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
 	BaseFee    *big.Int `json:"baseFee" gencodec:"required"`
 	Validators []byte   `json:"validators"       gencodec:"required"`
@@ -236,7 +236,7 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 	if len(txs) == 0 {
 		b.header.TxHash = EmptyRootHash
 	} else {
-		b.header.TxHash = DeriveSha(Transactions(txs), nil)
+		b.header.TxHash = DeriveSha(Transactions(txs), trie.NewStackTrie(nil))
 		b.transactions = make(Transactions, len(txs))
 		copy(b.transactions, txs)
 	}
@@ -244,7 +244,7 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 	if len(receipts) == 0 {
 		b.header.ReceiptHash = EmptyRootHash
 	} else {
-		b.header.ReceiptHash = DeriveSha(Receipts(receipts), nil)
+		b.header.ReceiptHash = DeriveSha(Receipts(receipts), trie.NewStackTrie(nil))
 		b.header.Bloom = CreateBloom(receipts)
 	}
 

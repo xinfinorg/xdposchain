@@ -24,6 +24,7 @@ import (
 	"io"
 	"math/big"
 	"sync/atomic"
+	"time"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
@@ -65,6 +66,7 @@ func deriveSigner(V *big.Int) Signer {
 
 type Transaction struct {
 	inner TxData
+	time  time.Time // Time first seen locally (spam avoidance)
 	// caches
 	hash atomic.Value
 	size atomic.Value
@@ -202,6 +204,7 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 // setDecoded sets the inner transaction and size after decoding.
 func (tx *Transaction) setDecoded(inner TxData, size int) {
 	tx.inner = inner
+	tx.time = time.Now()
 	if size > 0 {
 		tx.size.Store(common.StorageSize(size))
 	}
@@ -357,7 +360,7 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	}
 	cpy := tx.inner.copy()
 	cpy.setSignatureValues(signer.ChainID(), r, s, v)
-	return &Transaction{inner: cpy}, nil
+	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 
 type TxDataMarshaling struct {
@@ -675,6 +678,34 @@ type TxByNonce Transactions
 func (s TxByNonce) Len() int           { return len(s) }
 func (s TxByNonce) Less(i, j int) bool { return s[i].inner.nonce() < s[j].inner.nonce() }
 func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// TxByPriceAndTime implements both the sort and the heap interface, making it useful
+// for all at once sorting as well as individually adding and removing elements.
+type TxByPriceAndTime Transactions
+
+func (s TxByPriceAndTime) Len() int { return len(s) }
+func (s TxByPriceAndTime) Less(i, j int) bool {
+	// If the prices are equal, use the time the transaction was first seen for
+	// deterministic sorting
+	cmp := s[i].GasPrice().Cmp(s[j].GasPrice())
+	if cmp == 0 {
+		return s[i].time.Before(s[j].time)
+	}
+	return cmp > 0
+}
+func (s TxByPriceAndTime) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+func (s *TxByPriceAndTime) Push(x interface{}) {
+	*s = append(*s, x.(*Transaction))
+}
+
+func (s *TxByPriceAndTime) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
 
 // TxByPrice implements both the sort and the heap interface, making it useful
 // for all at once sorting as well as individually adding and removing elements.
