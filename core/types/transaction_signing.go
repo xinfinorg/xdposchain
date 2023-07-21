@@ -42,6 +42,8 @@ type sigCache struct {
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 	var signer Signer
 	switch {
+	case config.IsLondon(blockNumber):
+		signer = NewLondonSigner(config.ChainId)
 	case config.IsEIP155(blockNumber):
 		signer = NewEIP155Signer(config.ChainId)
 	case config.IsHomestead(blockNumber):
@@ -103,6 +105,71 @@ type Signer interface {
 	Equal(Signer) bool
 }
 
+type londonSigner struct{ EIP155Signer }
+
+// NewLondonSigner returns a signer that accepts
+// - EIP-1559 dynamic fee transactions
+// - EIP-2930 access list transactions,
+// - EIP-155 replay protected transactions, and
+// - legacy Homestead transactions.
+func NewLondonSigner(chainId *big.Int) Signer {
+	return londonSigner{NewEIP155Signer(chainId)}
+}
+
+func (s londonSigner) Sender(tx *Transaction) (common.Address, error) {
+	if tx.Type() != DynamicFeeTxType {
+		return s.EIP155Signer.Sender(tx)
+	}
+	V, R, S := tx.RawSignatureValues()
+	// DynamicFee txs are defined to use 0 and 1 as their recovery
+	// id, add 27 to become equivalent to unprotected Homestead signatures.
+	V = new(big.Int).Add(V, big.NewInt(27))
+	if tx.ChainId().Cmp(s.chainId) != 0 {
+		return common.Address{}, ErrInvalidChainId
+	}
+	return recoverPlain(s.Hash(tx), R, S, V, true)
+}
+
+func (s londonSigner) Equal(s2 Signer) bool {
+	x, ok := s2.(londonSigner)
+	return ok && x.chainId.Cmp(s.chainId) == 0
+}
+
+func (s londonSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
+	txdata, ok := tx.inner.(*DynamicFeeTx)
+	if !ok {
+		return s.EIP155Signer.SignatureValues(tx, sig)
+	}
+	// Check that chain ID of tx matches the signer. We also accept ID zero here,
+	// because it indicates that the chain ID was not specified in the tx.
+	if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
+		return nil, nil, nil, ErrInvalidChainId
+	}
+	R, S, _ = decodeSignature(sig)
+	V = big.NewInt(int64(sig[64]))
+	return R, S, V, nil
+}
+
+// Hash returns the hash to be signed by the sender.
+// It does not uniquely identify the transaction.
+func (s londonSigner) Hash(tx *Transaction) common.Hash {
+	if tx.Type() != DynamicFeeTxType {
+		return s.EIP155Signer.Hash(tx)
+	}
+	return prefixedRlpHash(
+		tx.Type(),
+		[]interface{}{
+			s.chainId,
+			tx.Nonce(),
+			tx.Tip(),
+			tx.FeeCap(),
+			tx.Gas(),
+			tx.To(),
+			tx.Value(),
+			tx.Data(),
+		})
+}
+
 // EIP155Transaction implements Signer using the EIP155 rules.
 type EIP155Signer struct {
 	chainId, chainIdMul *big.Int
@@ -126,6 +193,9 @@ func (s EIP155Signer) Equal(s2 Signer) bool {
 var big8 = big.NewInt(8)
 
 func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
+	if tx.Type() != LegacyTxType {
+		return common.Address{}, ErrTxTypeNotSupported
+	}
 	if !tx.Protected() {
 		return HomesteadSigner{}.Sender(tx)
 	}
@@ -145,6 +215,9 @@ func (s EIP155Signer) ChainID() *big.Int {
 // WithSignature returns a new transaction with the given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
+	if tx.Type() != LegacyTxType {
+		return nil, nil, nil, ErrTxTypeNotSupported
+	}
 	R, S, V, err = HomesteadSigner{}.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, nil, nil, err
@@ -235,6 +308,16 @@ func (s FrontierSigner) ChainID() *big.Int {
 	return nil
 }
 
+func decodeSignature(sig []byte) (r, s, v *big.Int) {
+	if len(sig) != crypto.SignatureLength {
+		panic(fmt.Sprintf("wrong size for signature: got %d, want %d", len(sig), crypto.SignatureLength))
+	}
+	r = new(big.Int).SetBytes(sig[:32])
+	s = new(big.Int).SetBytes(sig[32:64])
+	v = new(big.Int).SetBytes([]byte{sig[64] + 27})
+	return r, s, v
+}
+
 func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
 	if Vb.BitLen() > 8 {
 		return common.Address{}, ErrInvalidSig
@@ -245,7 +328,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	}
 	// encode the snature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
-	sig := make([]byte, 65)
+	sig := make([]byte, crypto.SignatureLength)
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
