@@ -45,6 +45,7 @@ const (
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
+	Type              uint8  `json:"type,omitempty"`
 	PostState         []byte `json:"root"`
 	Status            uint   `json:"status"`
 	CumulativeGasUsed uint64 `json:"cumulativeGasUsed" gencodec:"required"`
@@ -205,6 +206,23 @@ type Receipts []*Receipt
 
 // Len returns the number of receipts in this list.
 func (r Receipts) Len() int { return len(r) }
+
+// EncodeIndex encodes the i'th receipt to w.
+func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
+	r := rs[i]
+	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
+	switch r.Type {
+	case LegacyTxType:
+		rlp.Encode(w, data)
+	case DynamicFeeTxType:
+		w.WriteByte(DynamicFeeTxType)
+		rlp.Encode(w, data)
+	default:
+		// For unsupported types, write nothing. Since this is for
+		// DeriveSha, the error will be caught matching the derived hash
+		// to the block.
+	}
+}
 
 // GetRlp returns the RLP encoding of one receipt from the list.
 func (r Receipts) GetRlp(i int) []byte {
