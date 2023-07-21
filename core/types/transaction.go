@@ -359,7 +359,7 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setSignatureValues(signer.ChainID(), r, s, v)
+	cpy.setSignatureValues(signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 
