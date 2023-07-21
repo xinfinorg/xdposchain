@@ -17,6 +17,7 @@ require (
 	github.com/elastic/gosigar v0.10.5
 	github.com/ethereum/go-ethereum v1.9.9
 	github.com/fatih/color v1.6.0
+	github.com/fjl/gencodec v0.0.0-20230517082657-f9840df7b83e // indirect
 	github.com/gizak/termui v2.2.0+incompatible
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-stack/stack v1.8.0
@@ -57,7 +58,7 @@ require (
 	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20190912141932-bc967efca4b8
-	golang.org/x/tools v0.0.0-20191104232314-dc038396d1f0
+	golang.org/x/tools v0.0.0-20191126055441-b0650ceb63d9
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
