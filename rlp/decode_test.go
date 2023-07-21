@@ -327,6 +327,10 @@ type recstruct struct {
 	Child *recstruct `rlp:"nil"`
 }
 
+type invalidNilTag struct {
+	X []byte `rlp:"nil"`
+}
+
 type invalidTail1 struct {
 	A uint `rlp:"tail"`
 	B string
@@ -347,18 +351,63 @@ type tailUint struct {
 	Tail []uint `rlp:"tail"`
 }
 
+type tailPrivateFields struct {
+	A    uint
+	Tail []uint `rlp:"tail"`
+	x, y bool   //lint:ignore U1000 unused fields required for testing purposes.
+}
+
+type nilListUint struct {
+	X *uint `rlp:"nilList"`
+}
+
+type nilStringSlice struct {
+	X *[]uint `rlp:"nilString"`
+}
+
+type intField struct {
+	X int
+}
+
+type optionalFields struct {
+	A uint
+	B uint `rlp:"optional"`
+	C uint `rlp:"optional"`
+}
+
+type optionalAndTailField struct {
+	A    uint
+	B    uint   `rlp:"optional"`
+	Tail []uint `rlp:"tail"`
+}
+
+type optionalBigIntField struct {
+	A uint
+	B *big.Int `rlp:"optional"`
+}
+
+type optionalPtrField struct {
+	A uint
+	B *[3]byte `rlp:"optional"`
+}
+
+type optionalPtrFieldNil struct {
+	A uint
+	B *[3]byte `rlp:"optional,nil"`
+}
+
+type ignoredField struct {
+	A uint
+	B uint `rlp:"-"`
+	C uint
+}
+
 var (
 	veryBigInt = big.NewInt(0).Add(
 		big.NewInt(0).Lsh(big.NewInt(0xFFFFFFFFFFFFFF), 16),
 		big.NewInt(0xFFFF),
 	)
 )
-
-type hasIgnoredField struct {
-	A uint
-	B uint `rlp:"-"`
-	C uint
-}
 
 var decodeTests = []decodeTest{
 	// booleans
@@ -479,19 +528,19 @@ var decodeTests = []decodeTest{
 		error: "rlp: expected input string or byte for uint, decoding into (rlp.recstruct).Child.I",
 	},
 	{
-		input: "C0",
-		ptr:   new(invalidTail1),
-		error: "rlp: invalid struct tag \"tail\" for rlp.invalidTail1.A (must be on last field)",
-	},
-	{
-		input: "C0",
-		ptr:   new(invalidTail2),
-		error: "rlp: invalid struct tag \"tail\" for rlp.invalidTail2.B (field type is not slice)",
+		input: "C103",
+		ptr:   new(intField),
+		error: "rlp: type int is not RLP-serializable (struct field rlp.intField.X)",
 	},
 	{
 		input: "C50102C20102",
 		ptr:   new(tailUint),
 		error: "rlp: expected input string or byte for uint, decoding into (rlp.tailUint).Tail[1]",
+	},
+	{
+		input: "C0",
+		ptr:   new(invalidNilTag),
+		error: `rlp: invalid struct tag "nil" for rlp.invalidNilTag.X (field is not a pointer)`,
 	},
 
 	// struct tag "tail"
@@ -510,12 +559,168 @@ var decodeTests = []decodeTest{
 		ptr:   new(tailRaw),
 		value: tailRaw{A: 1, Tail: []RawValue{}},
 	},
+	{
+		input: "C3010203",
+		ptr:   new(tailPrivateFields),
+		value: tailPrivateFields{A: 1, Tail: []uint{2, 3}},
+	},
+	{
+		input: "C0",
+		ptr:   new(invalidTail1),
+		error: `rlp: invalid struct tag "tail" for rlp.invalidTail1.A (must be on last field)`,
+	},
+	{
+		input: "C0",
+		ptr:   new(invalidTail2),
+		error: `rlp: invalid struct tag "tail" for rlp.invalidTail2.B (field type is not slice)`,
+	},
 
 	// struct tag "-"
 	{
 		input: "C20102",
-		ptr:   new(hasIgnoredField),
-		value: hasIgnoredField{A: 1, C: 2},
+		ptr:   new(ignoredField),
+		value: ignoredField{A: 1, C: 2},
+	},
+
+	// struct tag "nilList"
+	{
+		input: "C180",
+		ptr:   new(nilListUint),
+		error: "rlp: wrong kind of empty value (got String, want List) for *uint, decoding into (rlp.nilListUint).X",
+	},
+	{
+		input: "C1C0",
+		ptr:   new(nilListUint),
+		value: nilListUint{},
+	},
+	{
+		input: "C103",
+		ptr:   new(nilListUint),
+		value: func() interface{} {
+			v := uint(3)
+			return nilListUint{X: &v}
+		}(),
+	},
+
+	// struct tag "nilString"
+	{
+		input: "C1C0",
+		ptr:   new(nilStringSlice),
+		error: "rlp: wrong kind of empty value (got List, want String) for *[]uint, decoding into (rlp.nilStringSlice).X",
+	},
+	{
+		input: "C180",
+		ptr:   new(nilStringSlice),
+		value: nilStringSlice{},
+	},
+	{
+		input: "C2C103",
+		ptr:   new(nilStringSlice),
+		value: nilStringSlice{X: &[]uint{3}},
+	},
+
+	// struct tag "optional"
+	{
+		input: "C101",
+		ptr:   new(optionalFields),
+		value: optionalFields{1, 0, 0},
+	},
+	{
+		input: "C20102",
+		ptr:   new(optionalFields),
+		value: optionalFields{1, 2, 0},
+	},
+	{
+		input: "C3010203",
+		ptr:   new(optionalFields),
+		value: optionalFields{1, 2, 3},
+	},
+	{
+		input: "C401020304",
+		ptr:   new(optionalFields),
+		error: "rlp: input list has too many elements for rlp.optionalFields",
+	},
+	{
+		input: "C101",
+		ptr:   new(optionalAndTailField),
+		value: optionalAndTailField{A: 1},
+	},
+	{
+		input: "C20102",
+		ptr:   new(optionalAndTailField),
+		value: optionalAndTailField{A: 1, B: 2, Tail: []uint{}},
+	},
+	{
+		input: "C401020304",
+		ptr:   new(optionalAndTailField),
+		value: optionalAndTailField{A: 1, B: 2, Tail: []uint{3, 4}},
+	},
+	{
+		input: "C101",
+		ptr:   new(optionalBigIntField),
+		value: optionalBigIntField{A: 1, B: nil},
+	},
+	{
+		input: "C20102",
+		ptr:   new(optionalBigIntField),
+		value: optionalBigIntField{A: 1, B: big.NewInt(2)},
+	},
+	{
+		input: "C101",
+		ptr:   new(optionalPtrField),
+		value: optionalPtrField{A: 1},
+	},
+	{
+		input: "C20180", // not accepted because "optional" doesn't enable "nil"
+		ptr:   new(optionalPtrField),
+		error: "rlp: input string too short for [3]uint8, decoding into (rlp.optionalPtrField).B",
+	},
+	{
+		input: "C20102",
+		ptr:   new(optionalPtrField),
+		error: "rlp: input string too short for [3]uint8, decoding into (rlp.optionalPtrField).B",
+	},
+	{
+		input: "C50183010203",
+		ptr:   new(optionalPtrField),
+		value: optionalPtrField{A: 1, B: &[3]byte{1, 2, 3}},
+	},
+	{
+		input: "C101",
+		ptr:   new(optionalPtrFieldNil),
+		value: optionalPtrFieldNil{A: 1},
+	},
+	{
+		input: "C20180", // accepted because "nil" tag allows empty input
+		ptr:   new(optionalPtrFieldNil),
+		value: optionalPtrFieldNil{A: 1},
+	},
+	{
+		input: "C20102",
+		ptr:   new(optionalPtrFieldNil),
+		error: "rlp: input string too short for [3]uint8, decoding into (rlp.optionalPtrFieldNil).B",
+	},
+
+	// struct tag "optional" field clearing
+	{
+		input: "C101",
+		ptr:   &optionalFields{A: 9, B: 8, C: 7},
+		value: optionalFields{A: 1, B: 0, C: 0},
+	},
+	{
+		input: "C20102",
+		ptr:   &optionalFields{A: 9, B: 8, C: 7},
+		value: optionalFields{A: 1, B: 2, C: 0},
+	},
+	{
+		input: "C20102",
+		ptr:   &optionalAndTailField{A: 9, B: 8, Tail: []uint{7, 6, 5}},
+		value: optionalAndTailField{A: 1, B: 2, Tail: []uint{}},
+	},
+	{
+		input: "C101",
+		ptr:   &optionalPtrField{A: 9, B: &[3]byte{8, 7, 6}},
+		value: optionalPtrField{A: 1},
 	},
 
 	// RawValue
@@ -591,6 +796,26 @@ func TestDecodeWithByteReader(t *testing.T) {
 	})
 }
 
+func testDecodeWithEncReader(t *testing.T, n int) {
+	s := strings.Repeat("0", n)
+	_, r, _ := EncodeToReader(s)
+	var decoded string
+	err := Decode(r, &decoded)
+	if err != nil {
+		t.Errorf("Unexpected decode error with n=%v: %v", n, err)
+	}
+	if decoded != s {
+		t.Errorf("Decode mismatch with n=%v", n)
+	}
+}
+
+// This is a regression test checking that decoding from encReader
+// works for RLP values of size 8192 bytes or more.
+func TestDecodeWithEncReader(t *testing.T) {
+	testDecodeWithEncReader(t, 8188) // length with header is 8191
+	testDecodeWithEncReader(t, 8189) // length with header is 8192
+}
+
 // plainReader reads from a byte slice but does not
 // implement ReadByte. It is also not recognized by the
 // size validation. This is useful to test how the decoder
@@ -661,6 +886,22 @@ func TestDecodeDecoder(t *testing.T) {
 	}
 }
 
+func TestDecodeDecoderNilPointer(t *testing.T) {
+	var s struct {
+		T1 *testDecoder `rlp:"nil"`
+		T2 *testDecoder
+	}
+	if err := Decode(bytes.NewReader(unhex("C2C002")), &s); err != nil {
+		t.Fatalf("Decode error: %v", err)
+	}
+	if s.T1 != nil {
+		t.Errorf("decoder T1 allocated for empty input (called: %v)", s.T1.called)
+	}
+	if s.T2 == nil || !s.T2.called {
+		t.Errorf("decoder T2 not allocated/called")
+	}
+}
+
 type byteDecoder byte
 
 func (bd *byteDecoder) DecodeRLP(s *Stream) error {
@@ -691,13 +932,67 @@ func TestDecoderInByteSlice(t *testing.T) {
 	}
 }
 
+type unencodableDecoder func()
+
+func (f *unencodableDecoder) DecodeRLP(s *Stream) error {
+	if _, err := s.List(); err != nil {
+		return err
+	}
+	if err := s.ListEnd(); err != nil {
+		return err
+	}
+	*f = func() {}
+	return nil
+}
+
+func TestDecoderFunc(t *testing.T) {
+	var x func()
+	if err := DecodeBytes([]byte{0xC0}, (*unencodableDecoder)(&x)); err != nil {
+		t.Fatal(err)
+	}
+	x()
+}
+
+// This tests the validity checks for fields with struct tag "optional".
+func TestInvalidOptionalField(t *testing.T) {
+	type (
+		invalid1 struct {
+			A uint `rlp:"optional"`
+			B uint
+		}
+		invalid2 struct {
+			T []uint `rlp:"tail,optional"`
+		}
+		invalid3 struct {
+			T []uint `rlp:"optional,tail"`
+		}
+	)
+
+	tests := []struct {
+		v   interface{}
+		err string
+	}{
+		{v: new(invalid1), err: `rlp: struct field rlp.invalid1.B needs "optional" tag`},
+		{v: new(invalid2), err: `rlp: invalid struct tag "optional" for rlp.invalid2.T (also has "tail" tag)`},
+		{v: new(invalid3), err: `rlp: invalid struct tag "tail" for rlp.invalid3.T (also has "optional" tag)`},
+	}
+	for _, test := range tests {
+		err := DecodeBytes(unhex("C20102"), test.v)
+		if err == nil {
+			t.Errorf("no error for %T", test.v)
+		} else if err.Error() != test.err {
+			t.Errorf("wrong error for %T: %v", test.v, err.Error())
+		}
+	}
+
+}
+
 func ExampleDecode() {
 	input, _ := hex.DecodeString("C90A1486666F6F626172")
 
 	type example struct {
-		A, B    uint
-		private uint // private fields are ignored
-		String  string
+		A, B   uint
+		String string
 	}
 
 	var s example
@@ -708,7 +1003,7 @@ func ExampleDecode() {
 		fmt.Printf("Decoded value: %#v\n", s)
 	}
 	// Output:
-	// Decoded value: rlp.example{A:0xa, B:0x14, private:0x0, String:"foobar"}
+	// Decoded value: rlp.example{A:0xa, B:0x14, String:"foobar"}
 }
 
 func ExampleDecode_structTagNil() {
