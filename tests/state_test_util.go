@@ -235,7 +235,7 @@ func (tx *stTransaction) toMessage(ps stPostState) (core.Message, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid tx data %q", dataHex)
 	}
-	msg := types.NewMessage(from, to, tx.Nonce, value, gasLimit, nil, nil, tx.GasPrice, data, true, nil)
+	msg := types.NewMessage(from, to, tx.Nonce, value, gasLimit, nil, nil, tx.GasPrice, nil, data, true, nil)
 	return msg, nil
 }
 

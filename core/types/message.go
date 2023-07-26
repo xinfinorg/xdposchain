@@ -19,11 +19,12 @@ type Message struct {
 	feeCap          *big.Int
 	tip             *big.Int
 	data            []byte
+	accessList      AccessList
 	checkNonce      bool
 	balanceTokenFee *big.Int
 }
 
-func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, feeCap, tip *big.Int, data []byte, checkNonce bool, balanceTokenFee *big.Int) Message {
+func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, feeCap, tip *big.Int, accessList AccessList, data []byte, checkNonce bool, balanceTokenFee *big.Int) Message {
 	if balanceTokenFee != nil {
 		gasPrice = common.TRC21GasPrice
 	}
@@ -37,6 +38,7 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		feeCap:          feeCap,
 		tip:             tip,
 		data:            data,
+		accessList:      accessList,
 		checkNonce:      checkNonce,
 		balanceTokenFee: balanceTokenFee,
 	}
@@ -53,6 +55,7 @@ func (tx *Transaction) AsMessage(s Signer, balanceFee *big.Int, number *big.Int,
 		to:              tx.To(),
 		amount:          tx.Value(),
 		data:            tx.Data(),
+		accessList:      tx.AccessList(),
 		balanceTokenFee: balanceFee,
 		checkNonce:      true,
 	}

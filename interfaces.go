@@ -123,6 +123,8 @@ type CallMsg struct {
 	FeeCap *big.Int // EIP-1559 fee cap per gas.
 	Tip    *big.Int // EIP-1559 tip per gas.
 
+	AccessList types.AccessList // EIP-2930 access list.
+
 	BalanceTokenFee *big.Int
 }
 
