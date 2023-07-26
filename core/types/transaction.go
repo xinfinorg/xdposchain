@@ -53,6 +53,7 @@ var (
 const (
 	LegacyTxType = iota
 	DynamicFeeTxType
+	AccessListTxType
 )
 
 // deriveSigner makes a *best* guess about which signer to use.
@@ -88,6 +89,7 @@ type TxData interface {
 	copy() TxData // creates a deep copy and initializes all fields
 
 	chainID() *big.Int
+	accessList() AccessList
 	data() []byte
 	gas() uint64
 	gasPrice() *big.Int
@@ -269,6 +271,9 @@ func (tx *Transaction) ChainId() *big.Int {
 
 // Data returns the input data of the transaction.
 func (tx *Transaction) Data() []byte { return tx.inner.data() }
+
+// AccessList returns the access list of the transaction.
+func (tx *Transaction) AccessList() AccessList { return tx.inner.accessList() }
 
 // Gas returns the gas limit of the transaction.
 func (tx *Transaction) Gas() uint64 { return tx.inner.gas() }
