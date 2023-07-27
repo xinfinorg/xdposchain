@@ -23,14 +23,15 @@ import (
 )
 
 type DynamicFeeTx struct {
-	ChainID *big.Int
-	Nonce   uint64
-	Tip     *big.Int
-	FeeCap  *big.Int
-	Gas     uint64
-	To      *common.Address `rlp:"nil"` // nil means contract creation
-	Value   *big.Int
-	Data    []byte
+	ChainID    *big.Int
+	Nonce      uint64
+	Tip        *big.Int
+	FeeCap     *big.Int
+	Gas        uint64
+	To         *common.Address `rlp:"nil"` // nil means contract creation
+	Value      *big.Int
+	Data       []byte
+	AccessList AccessList
 
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
@@ -41,18 +42,20 @@ type DynamicFeeTx struct {
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
-		Nonce:   tx.Nonce,
-		To:      tx.To, // TODO: copy pointed-to address
-		Data:    common.CopyBytes(tx.Data),
-		Gas:     tx.Gas,
-		Value:   new(big.Int),
-		ChainID: new(big.Int),
-		Tip:     new(big.Int),
-		FeeCap:  new(big.Int),
-		V:       new(big.Int),
-		R:       new(big.Int),
-		S:       new(big.Int),
+		Nonce:      tx.Nonce,
+		To:         tx.To, // TODO: copy pointed-to address
+		Data:       common.CopyBytes(tx.Data),
+		Gas:        tx.Gas,
+		AccessList: make(AccessList, len(tx.AccessList)),
+		Value:      new(big.Int),
+		ChainID:    new(big.Int),
+		Tip:        new(big.Int),
+		FeeCap:     new(big.Int),
+		V:          new(big.Int),
+		R:          new(big.Int),
+		S:          new(big.Int),
 	}
+	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
 	}
@@ -80,7 +83,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 // accessors for innerTx.
 func (tx *DynamicFeeTx) txType() byte           { return DynamicFeeTxType }
 func (tx *DynamicFeeTx) chainID() *big.Int      { return tx.ChainID }
-func (tx *DynamicFeeTx) accessList() AccessList { return nil }
+func (tx *DynamicFeeTx) accessList() AccessList { return tx.AccessList }
 func (tx *DynamicFeeTx) protected() bool        { return true }
 func (tx *DynamicFeeTx) data() []byte           { return tx.Data }
 func (tx *DynamicFeeTx) gas() uint64            { return tx.Gas }

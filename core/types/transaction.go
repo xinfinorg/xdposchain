@@ -52,8 +52,8 @@ var (
 // Transaction types.
 const (
 	LegacyTxType = iota
-	DynamicFeeTxType
 	AccessListTxType
+	DynamicFeeTxType
 )
 
 // deriveSigner makes a *best* guess about which signer to use.
@@ -194,6 +194,10 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		return nil, errEmptyTypedTx
 	}
 	switch b[0] {
+	case AccessListTxType:
+		var inner AccessListTx
+		err := rlp.DecodeBytes(b[1:], &inner)
+		return &inner, err
 	case DynamicFeeTxType:
 		var inner DynamicFeeTx
 		err := rlp.DecodeBytes(b[1:], &inner)

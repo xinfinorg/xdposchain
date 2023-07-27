@@ -46,8 +46,7 @@ func (al AccessList) StorageKeys() int {
 type AccessListTx struct {
 	ChainID    *big.Int // destination chain ID
 	Nonce      uint64   // nonce of sender account
-	Tip        *big.Int
-	FeeCap     *big.Int
+	GasPrice   *big.Int
 	Gas        uint64          // gas limit
 	To         *common.Address `rlp:"nil"` // nil means contract creation
 	Value      *big.Int        // wei amount
@@ -67,8 +66,7 @@ func (tx *AccessListTx) copy() TxData {
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
 		ChainID:    new(big.Int),
-		Tip:        new(big.Int),
-		FeeCap:     new(big.Int),
+		GasPrice:   new(big.Int),
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
@@ -80,11 +78,8 @@ func (tx *AccessListTx) copy() TxData {
 	if tx.ChainID != nil {
 		cpy.ChainID.Set(tx.ChainID)
 	}
-	if tx.Tip != nil {
-		cpy.Tip.Set(tx.Tip)
-	}
-	if tx.FeeCap != nil {
-		cpy.FeeCap.Set(tx.FeeCap)
+	if tx.GasPrice != nil {
+		cpy.GasPrice.Set(tx.GasPrice)
 	}
 	if tx.V != nil {
 		cpy.V.Set(tx.V)
@@ -105,9 +100,9 @@ func (tx *AccessListTx) protected() bool        { return true }
 func (tx *AccessListTx) accessList() AccessList { return tx.AccessList }
 func (tx *AccessListTx) data() []byte           { return tx.Data }
 func (tx *AccessListTx) gas() uint64            { return tx.Gas }
-func (tx *AccessListTx) gasPrice() *big.Int     { return tx.FeeCap }
-func (tx *AccessListTx) tip() *big.Int          { return tx.Tip }
-func (tx *AccessListTx) feeCap() *big.Int       { return tx.FeeCap }
+func (tx *AccessListTx) gasPrice() *big.Int     { return tx.GasPrice }
+func (tx *AccessListTx) tip() *big.Int          { return tx.GasPrice }
+func (tx *AccessListTx) feeCap() *big.Int       { return tx.GasPrice }
 func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
