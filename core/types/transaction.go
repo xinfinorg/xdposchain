@@ -413,6 +413,7 @@ func (tx *Transaction) TRC21Cost() *big.Int {
 	return total
 }
 
+// TODO is not working correctly
 func (tx *Transaction) IsSpecialTransaction() bool {
 	if tx.To() == nil {
 		return false
