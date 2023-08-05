@@ -1,5 +1,5 @@
 # XDPoSChain
-
+THIS PR IS JUST AN EXAMPLE FOR TESTING THE PULL REQUEST TEMPLATE
 <p align="center">
   <img src="./assets/images/xinfin-logo.png" />
 </p>
