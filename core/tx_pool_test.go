@@ -1127,8 +1127,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 
 	config := testTxPoolConfig
-	config.AccountSlots = 10
-	config.GlobalSlots = 0
+	config.GlobalSlots = 1
 	config.AccountSlots = 5
 	pool := NewTxPool(config, params.TestChainConfig, blockchain)
 	defer pool.Stop()
@@ -1155,7 +1154,10 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	for addr, list := range pool.pending {
 		if list.Len() != int(config.AccountSlots) {
-			t.Errorf("addr %x: total pending transactions mismatch: have %d, want %d", addr, list.Len(), config.AccountSlots)
+			t.Errorf("addr %x: total pending transactions mismatch: have %d, want %d/n", addr, list.Len(), config.AccountSlots)
+			for _, tx := range list.txs.items {
+				t.Errorf("%s/n", tx.String())
+			}
 		}
 	}
 	if err := validateTxPoolInternals(pool); err != nil {

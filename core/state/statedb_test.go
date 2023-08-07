@@ -284,6 +284,7 @@ func newTestAction(addr common.Address, r *rand.Rand) testAction {
 			args: make([]int64, 1),
 		},
 	}
+
 	action := actions[r.Intn(len(actions))]
 	var nameargs []string
 	if !action.noAddr {

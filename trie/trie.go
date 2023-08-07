@@ -19,6 +19,7 @@ package trie
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -146,168 +147,81 @@ func (t *Trie) tryGet(origNode Node, key []byte, pos int) (value []byte, newnode
 	}
 }
 
-func (t *Trie) TryGetBestLeftKeyAndValue() ([]byte, []byte, error) {
-	key, value, newroot, didResolve, err := t.tryGetBestLeftKeyAndValue(t.root, []byte{})
-	if err == nil && didResolve {
+// TryGetNode attempts to retrieve a trie node by compact-encoded path. It is not
+// possible to use keybyte-encoding as the path might contain odd nibbles.
+func (t *Trie) TryGetNode(path []byte) ([]byte, int, error) {
+	item, newroot, resolved, err := t.tryGetNode(t.root, compactToHex(path), 0)
+	if err != nil {
+		return nil, resolved, err
+	}
+	if resolved > 0 {
 		t.root = newroot
 	}
-	return hexToKeybytes(key), value, err
+	if item == nil {
+		return nil, resolved, nil
+	}
+	return item, resolved, err
 }
 
-func (t *Trie) tryGetBestLeftKeyAndValue(origNode Node, prefix []byte) (key []byte, value []byte, newnode Node, didResolve bool, err error) {
+func (t *Trie) tryGetNode(origNode Node, path []byte, pos int) (item []byte, newnode Node, resolved int, err error) {
+	// If we reached the requested path, return the current node
+	if pos >= len(path) {
+		// Although we most probably have the original node expanded, encoding
+		// that into consensus form can be nasty (needs to cascade down) and
+		// time consuming. Instead, just pull the hash up from disk directly.
+		var hash HashNode
+		if node, ok := origNode.(HashNode); ok {
+			hash = node
+		} else {
+			hash, _ = origNode.Cache()
+		}
+		if hash == nil {
+			return nil, origNode, 0, errors.New("non-consensus node")
+		}
+		blob, err := t.Db.Node(common.BytesToHash(hash))
+		return blob, origNode, 1, err
+	}
+	// Path still needs to be traversed, descend into children
 	switch n := (origNode).(type) {
 	case nil:
-		return nil, nil, nil, false, nil
-	case *ShortNode:
-		switch v := n.Val.(type) {
-		case ValueNode:
-			return append(prefix, n.Key...), v, n, false, nil
-		default:
-		}
-		key, value, newnode, didResolve, err = t.tryGetBestLeftKeyAndValue(n.Val, append(prefix, n.Key...))
-		if err == nil && didResolve {
-			n = n.copy()
-			n.Val = newnode
-		}
-		return key, value, n, didResolve, err
-	case *FullNode:
-		for i := 0; i < len(n.Children); i++ {
-			if n.Children[i] == nil {
-				continue
-			}
-			key, value, newnode, didResolve, err = t.tryGetBestLeftKeyAndValue(n.Children[i], append(prefix, byte(i)))
-			if err == nil && didResolve {
-				n = n.copy()
-				n.Children[i] = newnode
-			}
-			return key, value, n, didResolve, err
-		}
-	case HashNode:
-		child, err := t.resolveHash(n, nil)
-		if err != nil {
-			return nil, nil, n, true, err
-		}
-		key, value, newnode, _, err := t.tryGetBestLeftKeyAndValue(child, prefix)
-		return key, value, newnode, true, err
-	default:
-		return nil, nil, nil, false, fmt.Errorf("%T: invalid Node: %v", origNode, origNode)
-	}
-	return nil, nil, nil, false, fmt.Errorf("%T: invalid Node: %v", origNode, origNode)
-}
+		// Non-existent path requested, abort
+		return nil, nil, 0, nil
 
-func (t *Trie) TryGetAllLeftKeyAndValue(limit []byte) ([][]byte, [][]byte, error) {
-	limit = keybytesToHex(limit)
-	length := len(limit) - 1
-	limit = limit[0:length]
-	dataKeys, values, newroot, didResolve, err := t.tryGetAllLeftKeyAndValue(t.root, []byte{}, limit)
-	if err == nil && didResolve {
-		t.root = newroot
-	}
-	keys := [][]byte{}
-	for _, data := range dataKeys {
-		keys = append(keys, hexToKeybytes(data))
-	}
-	return keys, values, err
-}
-func (t *Trie) tryGetAllLeftKeyAndValue(origNode Node, prefix []byte, limit []byte) (keys [][]byte, values [][]byte, newnode Node, didResolve bool, err error) {
-	switch n := (origNode).(type) {
-	case nil:
-		return nil, nil, nil, false, nil
 	case ValueNode:
-		key := make([]byte, len(prefix))
-		copy(key, prefix)
-		if bytes.Compare(key, limit) < 0 {
-			keys = append(keys, key)
-			values = append(values, n)
-		}
-		return keys, values, n, false, nil
-	case *ShortNode:
-		keys, values, newnode, didResolve, err := t.tryGetAllLeftKeyAndValue(n.Val, append(prefix, n.Key...), limit)
-		if err == nil && didResolve {
-			n = n.copy()
-			n.Val = newnode
-		}
-		return keys, values, n, didResolve, err
-	case *FullNode:
-		for i := len(n.Children) - 1; i >= 0; i-- {
-			if n.Children[i] == nil {
-				continue
-			}
-			newPrefix := append(prefix, byte(i))
-			if bytes.Compare(newPrefix, limit) > 0 {
-				continue
-			}
-			allKeys, allValues, newnode, didResolve, err := t.tryGetAllLeftKeyAndValue(n.Children[i], newPrefix, limit)
-			if err != nil {
-				return nil, nil, n, false, err
-			}
-			if err == nil && didResolve {
-				n = n.copy()
-				n.Children[i] = newnode
-			}
-			keys = append(keys, allKeys...)
-			values = append(values, allValues...)
-		}
-		return keys, values, n, didResolve, err
-	case HashNode:
-		child, err := t.resolveHash(n, nil)
-		if err != nil {
-			return nil, nil, n, true, err
-		}
-		keys, values, newnode, _, err := t.tryGetAllLeftKeyAndValue(child, prefix, limit)
-		return keys, values, newnode, true, err
-	default:
-		return nil, nil, nil, false, fmt.Errorf("%T: invalid Node: %v", origNode, origNode)
-	}
-	return nil, nil, nil, false, fmt.Errorf("%T: invalid Node: %v", origNode, origNode)
-}
-func (t *Trie) TryGetBestRightKeyAndValue() ([]byte, []byte, error) {
-	key, value, newroot, didResolve, err := t.tryGetBestRightKeyAndValue(t.root, []byte{})
-	if err == nil && didResolve {
-		t.root = newroot
-	}
-	return hexToKeybytes(key), value, err
-}
+		// Path prematurely ended, abort
+		return nil, nil, 0, nil
 
-func (t *Trie) tryGetBestRightKeyAndValue(origNode Node, prefix []byte) (key []byte, value []byte, newnode Node, didResolve bool, err error) {
-	switch n := (origNode).(type) {
-	case nil:
-		return nil, nil, nil, false, nil
 	case *ShortNode:
-		switch v := n.Val.(type) {
-		case ValueNode:
-			return append(prefix, n.Key...), v, n, false, nil
-		default:
+		if len(path)-pos < len(n.Key) || !bytes.Equal(n.Key, path[pos:pos+len(n.Key)]) {
+			// Path branches off from short node
+			return nil, n, 0, nil
 		}
-		key, value, newnode, didResolve, err = t.tryGetBestRightKeyAndValue(n.Val, append(prefix, n.Key...))
-		if err == nil && didResolve {
+		item, newnode, resolved, err = t.tryGetNode(n.Val, path, pos+len(n.Key))
+		if err == nil && resolved > 0 {
 			n = n.copy()
 			n.Val = newnode
 		}
-		return key, value, n, didResolve, err
+		return item, n, resolved, err
+
 	case *FullNode:
-		for i := len(n.Children) - 1; i >= 0; i-- {
-			if n.Children[i] == nil {
-				continue
-			}
-			key, value, newnode, didResolve, err = t.tryGetBestRightKeyAndValue(n.Children[i], append(prefix, byte(i)))
-			if err == nil && didResolve {
-				n = n.copy()
-				n.Children[i] = newnode
-			}
-			return key, value, n, didResolve, err
+		item, newnode, resolved, err = t.tryGetNode(n.Children[path[pos]], path, pos+1)
+		if err == nil && resolved > 0 {
+			n = n.copy()
+			n.Children[path[pos]] = newnode
 		}
+		return item, n, resolved, err
+
 	case HashNode:
-		child, err := t.resolveHash(n, nil)
+		child, err := t.resolveHash(n, path[:pos])
 		if err != nil {
-			return nil, nil, n, true, err
+			return nil, n, 1, err
 		}
-		key, value, newnode, _, err := t.tryGetBestRightKeyAndValue(child, prefix)
-		return key, value, newnode, true, err
+		item, newnode, resolved, err := t.tryGetNode(child, path, pos)
+		return item, newnode, resolved + 1, err
+
 	default:
-		return nil, nil, nil, false, fmt.Errorf("%T: invalid Node: %v", origNode, origNode)
+		panic(fmt.Sprintf("%T: invalid node: %v", origNode, origNode))
 	}
-	return nil, nil, nil, false, fmt.Errorf("%T: invalid Node: %v", origNode, origNode)
 }
 
 // Update associates key with value in the trie. Subsequent calls to
@@ -636,4 +550,10 @@ func (t *Trie) hashRoot(db *Database) (Node, Node, error) {
 	hashed, cached := h.hash(t.root, true)
 	t.unhashed = 0
 	return hashed, cached, nil
+}
+
+// Reset drops the referenced root node and cleans all internal state.
+func (t *Trie) Reset() {
+	t.root = nil
+	t.unhashed = 0
 }
