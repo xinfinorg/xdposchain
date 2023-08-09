@@ -16,14 +16,13 @@ FROM alpine:3
 
 WORKDIR /work
 
+RUN apk add --no-cache bash curl
+
 COPY --from=builder /builder/build/bin/XDC-devnet /usr/bin
 COPY --from=builder /builder/build/bin/XDC-testnet /usr/bin
 COPY --from=builder /builder/build/bin/XDC-mainnet /usr/bin
 
-RUN apk add --no-cache bash curl
-RUN chmod +x /usr/bin/XDC*
-
-# Copy over files
+# # Copy over files
 ADD cicd/devnet /work/devnet
 ADD cicd/testnet /work/testnet
 ADD cicd/mainnet /work/mainnet
