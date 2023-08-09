@@ -99,7 +99,7 @@ jobs:
     before_script:
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - docker --version  # document the version travis is using
-      - docker build -t xinfinorg/xdposchain:$TRAVIS_TAG -f cicd/devnet/Dockerfile .
+      - docker build -t xinfinorg/xdposchain:$TRAVIS_TAG -f cicd/Dockerfile .
     script:
       - docker push xinfinorg/xdposchain:$TRAVIS_TAG
     
@@ -111,9 +111,8 @@ jobs:
     before_script:
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - docker --version  # document the version travis is using
-      - docker build -t xdc-devnet -f cicd/devnet/Dockerfile .
+      - docker build -t xinfinorg/devnet:latest -f cicd/Dockerfile .
     script:
-      - docker tag xdc-devnet:latest xinfinorg/devnet:latest # Always push to the latest
       - docker push xinfinorg/devnet:latest
 
   - stage: (Devnet)Terraform plan

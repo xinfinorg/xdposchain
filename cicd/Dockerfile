@@ -1,6 +1,6 @@
-FROM golang:1.14 as builder
+FROM golang:1.14-alpine as builder
 
-RUN apt-get update && apt-get install -y git build-essential
+RUN apk add make build-base linux-headers
 
 COPY . /builder
 RUN cd /builder && make && mv /builder/build/bin/XDC /builder/build/bin/XDC-mainnet
@@ -11,7 +11,7 @@ RUN cd /builder && make && mv /builder/build/bin/XDC /builder/build/bin/XDC-devn
 RUN mv /builder/common/constants/constants.go.testnet /builder/common/constants.go
 RUN cd /builder && make && mv /builder/build/bin/XDC /builder/build/bin/XDC-testnet
 
-# The actual image
+# The runtime image
 FROM alpine:3
 
 WORKDIR /work
@@ -20,9 +20,9 @@ COPY --from=builder /builder/build/bin/XDC-devnet /usr/bin
 COPY --from=builder /builder/build/bin/XDC-testnet /usr/bin
 COPY --from=builder /builder/build/bin/XDC-mainnet /usr/bin
 
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash curl
 RUN chmod +x /usr/bin/XDC*
-    
+
 # Copy over files
 ADD cicd/devnet /work/devnet
 ADD cicd/testnet /work/testnet
