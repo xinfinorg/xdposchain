@@ -3019,7 +3019,6 @@ func (s *PublicNetAPI) Version() string {
 func GetSignersFromBlocks(b Backend, blockNumber uint64, blockHash common.Hash, masternodes []common.Address) ([]common.Address, error) {
 	var addrs []common.Address
 	mapMN := map[common.Address]bool{}
-	log.Info("[GetSignersFromBlocks] masternodes", "len", len(masternodes))
 	for _, node := range masternodes {
 		mapMN[node] = true
 	}
@@ -3031,7 +3030,6 @@ func GetSignersFromBlocks(b Backend, blockNumber uint64, blockHash common.Hash, 
 			limitNumber = currentNumber
 		}
 		for i := blockNumber + 1; i <= limitNumber; i++ {
-			log.Info("[GetSignersFromBlocks]", "blockNumber", blockNumber, "limitNumber", limitNumber)
 			header, err := b.HeaderByNumber(nil, rpc.BlockNumber(i))
 			if err != nil {
 				return addrs, err
@@ -3044,9 +3042,7 @@ func GetSignersFromBlocks(b Backend, blockNumber uint64, blockHash common.Hash, 
 			for _, signtx := range signTxs {
 				blkHash := common.BytesToHash(signtx.Data()[len(signtx.Data())-32:])
 				from, _ := types.Sender(signer, signtx)
-				log.Info("[GetSignersFromBlocks] got signtx", "from", from, "blkHash", blkHash, "blockHash", blockHash)
 				if blkHash == blockHash && mapMN[from] {
-					log.Info("[GetSignersFromBlocks] add addrs", "from", from)
 					addrs = append(addrs, from)
 					delete(mapMN, from)
 				}
