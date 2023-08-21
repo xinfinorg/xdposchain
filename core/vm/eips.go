@@ -53,7 +53,7 @@ func enable1884(jt *JumpTable) {
 	jt[EXTCODEHASH].constantGas = params.ExtcodeHashGasEIP1884
 
 	// New opcode
-	jt[SELFBALANCE] = operation{
+	jt[SELFBALANCE] = &operation{
 		execute:     opSelfBalance,
 		constantGas: GasFastStep,
 		minStack:    minStack(0, 1),
@@ -94,6 +94,53 @@ func enable2200(jt *JumpTable) {
 	jt[SSTORE].dynamicGas = gasSStoreEIP2200
 }
 
+// enable2929 enables "EIP-2929: Gas cost increases for state access opcodes"
+// https://eips.ethereum.org/EIPS/eip-2929
+func enable2929(jt *JumpTable) {
+	jt[SSTORE].dynamicGas = gasSStoreEIP2929
+
+	jt[SLOAD].constantGas = 0
+	jt[SLOAD].dynamicGas = gasSLoadEIP2929
+
+	jt[EXTCODECOPY].constantGas = params.WarmStorageReadCostEIP2929
+	jt[EXTCODECOPY].dynamicGas = gasExtCodeCopyEIP2929
+
+	jt[EXTCODESIZE].constantGas = params.WarmStorageReadCostEIP2929
+	jt[EXTCODESIZE].dynamicGas = gasEip2929AccountCheck
+
+	jt[EXTCODEHASH].constantGas = params.WarmStorageReadCostEIP2929
+	jt[EXTCODEHASH].dynamicGas = gasEip2929AccountCheck
+
+	jt[BALANCE].constantGas = params.WarmStorageReadCostEIP2929
+	jt[BALANCE].dynamicGas = gasEip2929AccountCheck
+
+	jt[CALL].constantGas = params.WarmStorageReadCostEIP2929
+	jt[CALL].dynamicGas = gasCallEIP2929
+
+	jt[CALLCODE].constantGas = params.WarmStorageReadCostEIP2929
+	jt[CALLCODE].dynamicGas = gasCallCodeEIP2929
+
+	jt[STATICCALL].constantGas = params.WarmStorageReadCostEIP2929
+	jt[STATICCALL].dynamicGas = gasStaticCallEIP2929
+
+	jt[DELEGATECALL].constantGas = params.WarmStorageReadCostEIP2929
+	jt[DELEGATECALL].dynamicGas = gasDelegateCallEIP2929
+
+	// This was previously part of the dynamic cost, but we're using it as a constantGas
+	// factor here
+	jt[SELFDESTRUCT].constantGas = params.SelfdestructGasEIP150
+	jt[SELFDESTRUCT].dynamicGas = gasSelfdestructEIP2929
+}
+
+// enable3529 enabled "EIP-3529: Reduction in refunds":
+// - Removes refunds for selfdestructs
+// - Reduces refunds for SSTORE
+// - Reduces max refunds to 20% gas
+func enable3529(jt *JumpTable) {
+	jt[SSTORE].dynamicGas = gasSStoreEIP3529
+	jt[SELFDESTRUCT].dynamicGas = gasSelfdestructEIP3529
+}
+
 // enable3198 applies EIP-3198 (BASEFEE Opcode)
 // - Adds an opcode that returns the current block's base fee.
 func enable3198(jt *JumpTable) {
@@ -103,6 +150,35 @@ func enable3198(jt *JumpTable) {
 		constantGas: GasQuickStep,
 		minStack:    minStack(0, 1),
 		maxStack:    maxStack(0, 1),
+	}
+}
+
+// enable3855 applies EIP-3855 (PUSH0 opcode)
+func enable3855(jt *JumpTable) {
+	// New opcode
+	jt[PUSH0] = &operation{
+		execute:     opPush0,
+		constantGas: GasQuickStep,
+		minStack:    minStack(0, 1),
+		maxStack:    maxStack(0, 1),
+	}
+}
+
+// enable3860 enables "EIP-3860: Limit and meter initcode"
+// https://eips.ethereum.org/EIPS/eip-3860
+func enable3860(jt *JumpTable) {
+	jt[CREATE].dynamicGas = gasCreateEip3860
+	jt[CREATE2].dynamicGas = gasCreate2Eip3860
+}
+
+// enable4844 applies EIP-4844 (DATAHASH opcode)
+func enable4844(jt *JumpTable) {
+	// New opcode
+	jt[BLOBHASH] = &operation{
+		execute:     opBlobHash,
+		constantGas: GasFastestStep,
+		minStack:    minStack(1, 1),
+		maxStack:    maxStack(1, 1),
 	}
 }
 

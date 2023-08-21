@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"fmt"
 	"github.com/XinFinOrg/XDPoSChain/params"
 )
 
@@ -60,7 +61,66 @@ var (
 )
 
 // JumpTable contains the EVM opcodes supported at a given fork.
-type JumpTable [256]operation
+type JumpTable [256]*operation
+
+func validate(jt JumpTable) JumpTable {
+	for i, op := range jt {
+		if op == nil {
+			panic(fmt.Sprintf("op %#x is not set", i))
+		}
+		// The interpreter has an assumption that if the memorySize function is
+		// set, then the dynamicGas function is also set. This is a somewhat
+		// arbitrary assumption, and can be removed if we need to -- but it
+		// allows us to avoid a condition check. As long as we have that assumption
+		// in there, this little sanity check prevents us from merging in a
+		// change which violates it.
+		if op.memorySize != nil && op.dynamicGas == nil {
+			panic(fmt.Sprintf("op %v has dynamic memory but not dynamic gas", OpCode(i).String()))
+		}
+	}
+	return jt
+}
+
+func newCancunInstructionSet() JumpTable {
+	instructionSet := newShanghaiInstructionSet()
+	enable4844(&instructionSet) // BLOBHASH opcode
+	return validate(instructionSet)
+}
+
+func newShanghaiInstructionSet() JumpTable {
+	instructionSet := newMergeInstructionSet()
+	enable3855(&instructionSet) // PUSH0 instruction
+	enable3860(&instructionSet) // Limit and meter initcode
+	return validate(instructionSet)
+}
+
+func newMergeInstructionSet() JumpTable {
+	instructionSet := newLondonInstructionSet()
+	instructionSet[PREVRANDAO] = &operation{
+		execute:     opRandom,
+		constantGas: GasQuickStep,
+		minStack:    minStack(0, 1),
+		maxStack:    maxStack(0, 1),
+	}
+	return validate(instructionSet)
+}
+
+// newLondonInstructionSet returns the frontier, homestead, byzantium,
+// constantinople, istanbul, petersburg, berlin and london instructions.
+func newLondonInstructionSet() JumpTable {
+	instructionSet := newBerlinInstructionSet()
+	enable3529(&instructionSet) // EIP-3529: Reduction in refunds https://eips.ethereum.org/EIPS/eip-3529
+	enable3198(&instructionSet) // Base fee opcode https://eips.ethereum.org/EIPS/eip-3198
+	return validate(instructionSet)
+}
+
+// newBerlinInstructionSet returns the frontier, homestead, byzantium,
+// constantinople, istanbul, petersburg and berlin instructions.
+func newBerlinInstructionSet() JumpTable {
+	instructionSet := newIstanbulInstructionSet()
+	enable2929(&instructionSet) // Access lists for trie accesses https://eips.ethereum.org/EIPS/eip-2929
+	return validate(instructionSet)
+}
 
 // newIstanbulInstructionSet returns the frontier, homestead
 // byzantium, contantinople and petersburg instructions.
@@ -78,35 +138,35 @@ func newIstanbulInstructionSet() JumpTable {
 // byzantium and contantinople instructions.
 func newConstantinopleInstructionSet() JumpTable {
 	instructionSet := newByzantiumInstructionSet()
-	instructionSet[SHL] = operation{
+	instructionSet[SHL] = &operation{
 		execute:     opSHL,
 		constantGas: GasFastestStep,
 		minStack:    minStack(2, 1),
 		maxStack:    maxStack(2, 1),
 		valid:       true,
 	}
-	instructionSet[SHR] = operation{
+	instructionSet[SHR] = &operation{
 		execute:     opSHR,
 		constantGas: GasFastestStep,
 		minStack:    minStack(2, 1),
 		maxStack:    maxStack(2, 1),
 		valid:       true,
 	}
-	instructionSet[SAR] = operation{
+	instructionSet[SAR] = &operation{
 		execute:     opSAR,
 		constantGas: GasFastestStep,
 		minStack:    minStack(2, 1),
 		maxStack:    maxStack(2, 1),
 		valid:       true,
 	}
-	instructionSet[EXTCODEHASH] = operation{
+	instructionSet[EXTCODEHASH] = &operation{
 		execute:     opExtCodeHash,
 		constantGas: params.ExtcodeHashGasConstantinople,
 		minStack:    minStack(1, 1),
 		maxStack:    maxStack(1, 1),
 		valid:       true,
 	}
-	instructionSet[CREATE2] = operation{
+	instructionSet[CREATE2] = &operation{
 		execute:     opCreate2,
 		constantGas: params.Create2Gas,
 		dynamicGas:  gasCreate2,
@@ -124,7 +184,7 @@ func newConstantinopleInstructionSet() JumpTable {
 // byzantium instructions.
 func newByzantiumInstructionSet() JumpTable {
 	instructionSet := newSpuriousDragonInstructionSet()
-	instructionSet[STATICCALL] = operation{
+	instructionSet[STATICCALL] = &operation{
 		execute:     opStaticCall,
 		constantGas: params.CallGasEIP150,
 		dynamicGas:  gasStaticCall,
@@ -134,14 +194,14 @@ func newByzantiumInstructionSet() JumpTable {
 		valid:       true,
 		returns:     true,
 	}
-	instructionSet[RETURNDATASIZE] = operation{
+	instructionSet[RETURNDATASIZE] = &operation{
 		execute:     opReturnDataSize,
 		constantGas: GasQuickStep,
 		minStack:    minStack(0, 1),
 		maxStack:    maxStack(0, 1),
 		valid:       true,
 	}
-	instructionSet[RETURNDATACOPY] = operation{
+	instructionSet[RETURNDATACOPY] = &operation{
 		execute:     opReturnDataCopy,
 		constantGas: GasFastestStep,
 		dynamicGas:  gasReturnDataCopy,
@@ -150,7 +210,7 @@ func newByzantiumInstructionSet() JumpTable {
 		memorySize:  memoryReturnDataCopy,
 		valid:       true,
 	}
-	instructionSet[REVERT] = operation{
+	instructionSet[REVERT] = &operation{
 		execute:    opRevert,
 		dynamicGas: gasRevert,
 		minStack:   minStack(2, 0),
@@ -188,7 +248,7 @@ func newTangerineWhistleInstructionSet() JumpTable {
 // instructions that can be executed during the homestead phase.
 func newHomesteadInstructionSet() JumpTable {
 	instructionSet := newFrontierInstructionSet()
-	instructionSet[DELEGATECALL] = operation{
+	instructionSet[DELEGATECALL] = &operation{
 		execute:     opDelegateCall,
 		dynamicGas:  gasDelegateCall,
 		constantGas: params.CallGasFrontier,
