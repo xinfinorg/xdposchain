@@ -133,7 +133,7 @@ jobs:
         - terraform plan $tf_plan_cli_options
 
   - stage: (Devnet) Terraform apply
-    if: branch = dev-upgrade AND type = push AND tag IS blank
+    if: branch = awsv2
     dist: xenial
     language: bash
     install:
@@ -142,7 +142,7 @@ jobs:
         - unzip terraform_"$tf_version"_linux_amd64.zip
         - sudo mv terraform /usr/local/bin/
         - rm terraform_"$tf_version"_linux_amd64.zip
-        - pip install --user awscli # install aws cli w/o sudo
+        - pip install --user awscliv2 # install aws cli w/o sudo
         - export PATH=$PATH:$HOME/.local/bin # put aws in the path
     script:
       - echo "Merge detected, executing changes(Devnet)"
@@ -155,14 +155,14 @@ jobs:
         source .env
         for ((i=$us_east_2_start;i<$us_east_2_end;i++)); do
           echo "Force deploy xdc-$i"
-          aws ecs update-service --region us-east-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
+          awsv2 ecs update-service --region us-east-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
         done
         for ((i=$eu_west_1_start;i<$eu_west_1_end;i++)); do
           echo "Force deploy xdc-$i"
-          aws ecs update-service --region eu-west-1 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
+          awsv2 ecs update-service --region eu-west-1 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
         done
         for ((i=$ap_southeast_2_start;i<$ap_southeast_2_end;i++)); do
           echo "Force deploy xdc-$i"
-          aws ecs update-service --region ap-southeast-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
+          awsv2 ecs update-service --region ap-southeast-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
         done
 
