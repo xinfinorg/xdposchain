@@ -116,7 +116,7 @@ jobs:
       - docker push xinfinorg/devnet:latest
 
   - stage: (Devnet)Terraform plan
-    if: branch = dev-upgrade
+    if: branch = dev-upgrade AND type = push AND tag IS blank
     dist: xenial
     language: bash
     install:
@@ -133,7 +133,7 @@ jobs:
         - terraform plan $tf_plan_cli_options
 
   - stage: (Devnet) Terraform apply
-    if: branch = dev-upgrade
+    if: branch = dev-upgrade AND type = push AND tag IS blank
     dist: xenial
     language: bash
     install:
