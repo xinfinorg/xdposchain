@@ -26,8 +26,114 @@ env:
 
 jobs:
   include:
+  - stage: Tests
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: A-B tests
+    script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/[a-b].*")
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/c[a-m].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: C-[a-m] tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/c[n-o].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: C-[n-o] tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/c[p-z].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: C-[p-z] tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/[d-i].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: D-I tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/[j-n].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: J-N tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/[o-r].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: O-R tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/s.*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: S tests
+  - script: travis_retry go run build/ci.go test -coverage $(go list ./... | grep "github.com\/XinFinOrg\/XDPoSChain\/[t-z].*")
+    os: linux
+    dist: bionic
+    go: 1.14.x
+    env:
+      - GO111MODULE=auto
+    name: T-Z tests
+
+  - stage: TAG Build
+    if: tag IS present
+    services:
+      - docker
+    install: skip
+    before_script:
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - docker --version  # document the version travis is using
+      - docker build -t xinfinorg/xdposchain:$TRAVIS_TAG -f cicd/Dockerfile .
+    script:
+      - docker push xinfinorg/xdposchain:$TRAVIS_TAG
+
+  - stage: (Devnet) Build, and push images
+    if: branch = dev-upgrade AND type = push AND tag IS blank
+    services:
+      - docker
+    install: skip
+    before_script:
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - docker --version  # document the version travis is using
+      - docker build -t xinfinorg/devnet:latest -f cicd/Dockerfile .
+    script:
+      - docker push xinfinorg/devnet:latest
+
+  - stage: (Devnet)Terraform plan
+    if: branch = dev-upgrade
+    dist: xenial
+    language: bash
+    install:
+      - wget https://releases.hashicorp.com/terraform/"$tf_version"/terraform_"$tf_version"_linux_amd64.zip
+      - unzip terraform_"$tf_version"_linux_amd64.zip
+      - sudo mv terraform /usr/local/bin/
+      - rm terraform_"$tf_version"_linux_amd64.zip
+    script:
+        - echo "Pull request detected, creating change plan(Devnet)"
+        - cd cicd/devnet/terraform
+        # Terraform init, validate, then create change plan. If any fail, fail validation
+        - terraform init $tf_init_cli_options
+        - terraform validate $tf_validation_cli_options
+        - terraform plan $tf_plan_cli_options
+
   - stage: (Devnet) Terraform apply
-    if: branch = awsv2
+    if: branch = dev-upgrade
     dist: xenial
     language: bash
     install:
