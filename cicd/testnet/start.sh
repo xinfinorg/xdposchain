@@ -48,8 +48,10 @@ netstats="${NODE_NAME}-${wallet}-${INSTANCE_IP}:xdc_xinfin_apothem_network_stats
 echo "Running a node with wallet: ${wallet} at IP: ${INSTANCE_IP}"
 echo "Starting nodes with $bootnodes ..."
 
-# Note: --gcmode=archive means node will store all historical data. This will lead to high memory usage. Only needed if you need the node to perform historical operations
-XDC --ethstats ${netstats} --gcmode=full \
+# Note: --gcmode=archive means node will store all historical data. This will lead to high memory usage. But sync mode require archive to sync
+# https://github.com/XinFinOrg/XDPoSChain/issues/268
+
+XDC --ethstats ${netstats} --gcmode archive \
 --nat extip:${INSTANCE_IP} \
 --bootnodes ${bootnodes} --syncmode full \
 --datadir /work/xdcchain --networkid 51 \
