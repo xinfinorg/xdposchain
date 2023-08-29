@@ -100,10 +100,13 @@ const (
 	TIMESTAMP
 	NUMBER
 	DIFFICULTY
-	GASLIMIT
+	RANDOM      OpCode = 0x44 // Same as DIFFICULTY
+	PREVRANDAO  OpCode = 0x44 // Same as DIFFICULTY
+	GASLIMIT    OpCode = 0x45
 	CHAINID     OpCode = 0x46
 	SELFBALANCE OpCode = 0x47
 	BASEFEE     OpCode = 0x48
+	BLOBHASH    OpCode = 0x49
 )
 
 // 0x50 range - 'storage' and execution.
@@ -120,6 +123,9 @@ const (
 	MSIZE
 	GAS
 	JUMPDEST
+	TLOAD  OpCode = 0x5c
+	TSTORE OpCode = 0x5d
+	PUSH0  OpCode = 0x5f
 )
 
 // 0x60 range.

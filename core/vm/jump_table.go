@@ -81,16 +81,9 @@ func validate(jt JumpTable) JumpTable {
 	return jt
 }
 
-func newCancunInstructionSet() JumpTable {
-	instructionSet := newShanghaiInstructionSet()
-	enable4844(&instructionSet) // BLOBHASH opcode
-	return validate(instructionSet)
-}
-
 func newShanghaiInstructionSet() JumpTable {
 	instructionSet := newMergeInstructionSet()
 	enable3855(&instructionSet) // PUSH0 instruction
-	enable3860(&instructionSet) // Limit and meter initcode
 	return validate(instructionSet)
 }
 

@@ -18,6 +18,7 @@ package vm
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/params"
 )
@@ -72,7 +73,7 @@ func opSelfBalance(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx
 // - Adds an opcode that returns the current chain’s EIP-155 unique identifier
 func enable1344(jt *JumpTable) {
 	// New opcode
-	jt[CHAINID] = operation{
+	jt[CHAINID] = &operation{
 		execute:     opChainID,
 		constantGas: GasQuickStep,
 		minStack:    minStack(0, 1),
@@ -145,7 +146,7 @@ func enable3529(jt *JumpTable) {
 // - Adds an opcode that returns the current block's base fee.
 func enable3198(jt *JumpTable) {
 	// New opcode
-	jt[BASEFEE] = operation{
+	jt[BASEFEE] = &operation{
 		execute:     opBaseFee,
 		constantGas: GasQuickStep,
 		minStack:    minStack(0, 1),
@@ -164,22 +165,10 @@ func enable3855(jt *JumpTable) {
 	}
 }
 
-// enable3860 enables "EIP-3860: Limit and meter initcode"
-// https://eips.ethereum.org/EIPS/eip-3860
-func enable3860(jt *JumpTable) {
-	jt[CREATE].dynamicGas = gasCreateEip3860
-	jt[CREATE2].dynamicGas = gasCreate2Eip3860
-}
-
-// enable4844 applies EIP-4844 (DATAHASH opcode)
-func enable4844(jt *JumpTable) {
-	// New opcode
-	jt[BLOBHASH] = &operation{
-		execute:     opBlobHash,
-		constantGas: GasFastestStep,
-		minStack:    minStack(1, 1),
-		maxStack:    maxStack(1, 1),
-	}
+// opPush0 implements the PUSH0 opcode
+func opPush0(pc *uint64, interpreter *EVMInterpreter, scope *callCtx) ([]byte, error) {
+	scope.stack.push(new(big.Int))
+	return nil, nil
 }
 
 // opBaseFee implements BASEFEE opcode
