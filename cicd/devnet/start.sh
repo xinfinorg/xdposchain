@@ -49,28 +49,28 @@ fi
 port=30303
 if test -z "$PORT"
 then
-  echo "Log level not set, default to verbosity of $port"
+  echo "PORT not set, default to $port"
 else
-  echo "Log level found, set to $PORT"
+  echo "PORT found, set to $PORT"
   port=$PORT
 fi
 
-rpc_port=30303
+rpc_port=8545
 if test -z "$RPC_PORT"
 then
-  echo "Log level not set, default to verbosity of $rpc_port"
+  echo "RPC_PORT not set, default to $rpc_port"
 else
-  echo "Log level found, set to $RPC_PORT"
+  echo "RPC_PORT found, set to $RPC_PORT"
   rpc_port=$RPC_PORT
 fi
 
-ws_port=30303
-if test -z "$WC_PORT"
+ws_port=8555
+if test -z "$WS_PORT"
 then
-  echo "Log level not set, default to verbosity of $wsport"
+  echo "WS_PORT not set, default to  $ws_port"
 else
-  echo "Log level found, set to $WC_PORT"
-  wsport=$WC_PORT
+  echo "WS_PORT found, set to $WS_PORT"
+  ws_port=$WS_PORT
 fi
 
 INSTANCE_IP=$(curl https://checkip.amazonaws.com)
