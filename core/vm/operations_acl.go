@@ -38,7 +38,7 @@ func makeGasSStoreFunc(clearingRefund uint64) gasFunc {
 			cost    = uint64(0)
 		)
 		// Check slot presence in the access list
-		if addrPresent, slotPresent := evm.StateDB.SlotInAccessList(contract.Address(), slot); !slotPresent {
+		if addrPresent, slotPresent := evm.StateDB.slotInAccessList(contract.Address(), slot); !slotPresent {
 			cost = params.ColdSloadCostEIP2929
 			// If the caller cannot afford the cost, this change will be rolled back
 			evm.StateDB.AddSlotToAccessList(contract.Address(), slot)
