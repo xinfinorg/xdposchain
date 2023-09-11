@@ -16,6 +16,7 @@
 
 package vm
 
+/*
 import (
 	"errors"
 
@@ -242,3 +243,4 @@ func makeSelfdestructGasFn(refundsEnabled bool) gasFunc {
 	}
 	return gasFunc
 }
+*/
