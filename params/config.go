@@ -193,7 +193,8 @@ var (
 		EIP150Hash:          common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
 		EIP155Block:         big.NewInt(3),
 		EIP158Block:         big.NewInt(3),
-		ByzantiumBlock:      big.NewInt(1035301),
+		ByzantiumBlock:      big.NewInt(4),
+		LondonBlock:         big.NewInt(5),
 		ConstantinopleBlock: nil,
 		XDPoS: &XDPoSConfig{
 			Period: 15,
