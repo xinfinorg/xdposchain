@@ -168,7 +168,7 @@ var (
 		EIP155Block:    big.NewInt(3),
 		EIP158Block:    big.NewInt(3),
 		ByzantiumBlock: big.NewInt(4),
-		LondonBlock:    big.NewInt(11_559_000),
+		LondonBlock:    big.NewInt(11_702_000),
 		XDPoS: &XDPoSConfig{
 			Period:              2,
 			Epoch:               900,
