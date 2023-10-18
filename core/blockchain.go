@@ -2555,7 +2555,7 @@ func (bc *BlockChain) UpdateM1() error {
 			return err
 		}
 		//TODO: smart contract shouldn't return "0x0000000000000000000000000000000000000000"
-		if candidate.String() != "xdc0000000000000000000000000000000000000000" {
+		if candidate.NotZero() {
 			ms = append(ms, utils.Masternode{Address: candidate, Stake: v})
 		}
 	}

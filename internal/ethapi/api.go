@@ -756,7 +756,7 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 		candidatesAddresses := state.GetCandidates(statedb)
 		for _, address := range candidatesAddresses {
 			v := state.GetCandidateCap(statedb, address)
-			if address.String() != "xdc0000000000000000000000000000000000000000" {
+			if address.NotZero() {
 				candidates = append(candidates, utils.Masternode{Address: address, Stake: v})
 			}
 		}
@@ -882,7 +882,7 @@ func (s *PublicBlockChainAPI) GetCandidates(ctx context.Context, epoch rpc.Epoch
 		candidatesAddresses := state.GetCandidates(statedb)
 		for _, address := range candidatesAddresses {
 			v := state.GetCandidateCap(statedb, address)
-			if address.String() != "xdc0000000000000000000000000000000000000000" {
+			if address.NotZero() {
 				candidates = append(candidates, utils.Masternode{Address: address, Stake: v})
 			}
 		}
@@ -1016,7 +1016,7 @@ func (s *PublicBlockChainAPI) getCandidatesFromSmartContract() ([]utils.Masterno
 		if err != nil {
 			return []utils.Masternode{}, err
 		}
-		if candidate.String() != "xdc0000000000000000000000000000000000000000" {
+		if candidate.NotZero() {
 			candidatesWithStakeInfo = append(candidatesWithStakeInfo, utils.Masternode{Address: candidate, Stake: v})
 		}
 

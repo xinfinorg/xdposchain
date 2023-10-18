@@ -229,6 +229,16 @@ func (a Address) Format(s fmt.State, c rune) {
 	fmt.Fprintf(s, "%"+string(c), a[:])
 }
 
+// IsZero check if an address is empty
+func (a Address) IsZero() bool {
+	return a == Address{}
+}
+
+// NotZero check if an address is not empty
+func (a Address) NotZero() bool {
+	return a != Address{}
+}
+
 // Sets the address to the value of b. If b is larger than len(a) it will panic
 func (a *Address) SetBytes(b []byte) {
 	if len(b) > len(a) {
