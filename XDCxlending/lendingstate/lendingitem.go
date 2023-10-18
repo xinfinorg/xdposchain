@@ -244,13 +244,13 @@ func (l *LendingItem) VerifyLendingSide() error {
 }
 
 func (l *LendingItem) VerifyCollateral(state *state.StateDB) error {
-	if l.CollateralToken.IsZero() || l.CollateralToken.String() == l.LendingToken.String() {
+	if l.CollateralToken.IsZero() || l.CollateralToken == l.LendingToken {
 		return fmt.Errorf("invalid collateral %s", l.CollateralToken.Hex())
 	}
 	validCollateral := false
 	collateralList, _ := GetCollaterals(state, l.Relayer, l.LendingToken, l.Term)
 	for _, collateral := range collateralList {
-		if l.CollateralToken.String() == collateral.String() {
+		if l.CollateralToken == collateral {
 			validCollateral = true
 			break
 		}
