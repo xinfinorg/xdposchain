@@ -3,6 +3,8 @@ package XDCxlending
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+
 	"github.com/XinFinOrg/XDPoSChain/XDCx/tradingstate"
 	"github.com/XinFinOrg/XDPoSChain/XDCxlending/lendingstate"
 	"github.com/XinFinOrg/XDPoSChain/common"
@@ -10,7 +12,6 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/core/state"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
 	"github.com/XinFinOrg/XDPoSChain/log"
-	"math/big"
 )
 
 func (l *Lending) CommitOrder(header *types.Header, coinbase common.Address, chain consensus.ChainContext, statedb *state.StateDB, lendingStateDB *lendingstate.LendingStateDB, tradingStateDb *tradingstate.TradingStateDB, lendingOrderBook common.Hash, order *lendingstate.LendingItem) ([]*lendingstate.LendingTrade, []*lendingstate.LendingItem, error) {
@@ -262,7 +263,7 @@ func (l *Lending) processOrderList(header *types.Header, coinbase common.Address
 			collateralToken = oldestOrder.CollateralToken
 			borrowFee = lendingstate.GetFee(statedb, oldestOrder.Relayer)
 		}
-		if collateralToken.String() == lendingstate.EmptyAddress {
+		if collateralToken.IsZero() {
 			return nil, nil, nil, fmt.Errorf("empty collateral")
 		}
 		collateralPrice := common.BasePrice
