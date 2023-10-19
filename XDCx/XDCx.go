@@ -638,7 +638,7 @@ func (XDCx *XDCX) RollbackReorgTxMatch(txhash common.Hash) error {
 				continue
 			}
 			orderCacheAtTxHash := c.(map[common.Hash]tradingstate.OrderHistoryItem)
-			orderHistoryItem, _ := orderCacheAtTxHash[tradingstate.GetOrderHistoryKey(order.BaseToken, order.QuoteToken, order.Hash)]
+			orderHistoryItem := orderCacheAtTxHash[tradingstate.GetOrderHistoryKey(order.BaseToken, order.QuoteToken, order.Hash)]
 			if (orderHistoryItem == tradingstate.OrderHistoryItem{}) {
 				log.Debug("XDCx reorg: remove order due to empty orderHistory", "order", tradingstate.ToJSON(order))
 				if err := db.DeleteObject(order.Hash, &tradingstate.OrderItem{}); err != nil {
