@@ -337,7 +337,6 @@ func (c *XDPoSConfig) String() string {
 }
 
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, extraCheck bool) string {
-
 	if c.V2 != nil && c.V2.SwitchBlock != nil && num.Cmp(c.V2.SwitchBlock) > 0 {
 		return ConsensusEngineVersion2
 	}

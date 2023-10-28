@@ -219,9 +219,10 @@ func (x *XDPoS_v2) initial(chain consensus.ChainReader, header *types.Header) er
 			log.Error("[initial] Error while get masternodes", "error", err)
 			return err
 		}
+
 		if len(masternodes) == 0 {
-			log.Error("[initial] masternodes are empty", "v2switch", x.config.V2.SwitchBlock.Uint64(), "")
-			return err
+			log.Error("[initial] masternodes are empty", "v2switch", x.config.V2.SwitchBlock.Uint64())
+			return fmt.Errorf("masternodes are empty v2 switch number: %d", x.config.V2.SwitchBlock.Uint64())
 		}
 
 		snap := newSnapshot(lastGapNum, lastGapHeader.Hash(), masternodes)
