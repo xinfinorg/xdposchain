@@ -17,6 +17,7 @@
 package XDPoS
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
@@ -93,6 +94,10 @@ func New(chainConfig *params.ChainConfig, db ethdb.Database) *XDPoS {
 			CurrentConfig: params.MainnetV2Configs[0],
 			AllConfigs:    params.MainnetV2Configs,
 		}
+	}
+
+	if config.V2.SwitchBlock.Uint64()%config.Epoch != 0 {
+		panic(fmt.Sprintf("v2 switch number is not epoch switch block %d", config.V2.SwitchBlock.Uint64()))
 	}
 
 	log.Info("xdc config loading", "config", config)

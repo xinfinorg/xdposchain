@@ -45,7 +45,7 @@ var (
 			CertThreshold:        73, // based on masternode is 108
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
-			MinePeriod:           10,
+			MinePeriod:           2,
 		},
 	}
 
@@ -337,6 +337,7 @@ func (c *XDPoSConfig) String() string {
 }
 
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, extraCheck bool) string {
+	// https://github.com/XinFinOrg/XDPoSChain/pull/186
 	if extraCheck && (len(extraByte) == 0 || extraByte[0] != 2) {
 		return ConsensusEngineVersion1
 	}
