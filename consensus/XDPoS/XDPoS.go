@@ -97,7 +97,7 @@ func New(chainConfig *params.ChainConfig, db ethdb.Database) *XDPoS {
 	}
 
 	if config.V2.SwitchBlock.Uint64()%config.Epoch != 0 {
-		panic(fmt.Sprintf("v2 switch number is not epoch switch block %d", config.V2.SwitchBlock.Uint64()))
+		panic(fmt.Sprintf("v2 switch number is not epoch switch block %d, epoch %d", config.V2.SwitchBlock.Uint64(), config.Epoch))
 	}
 
 	log.Info("xdc config loading", "v2 config", config.V2)
