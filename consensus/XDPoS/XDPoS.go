@@ -100,7 +100,7 @@ func New(chainConfig *params.ChainConfig, db ethdb.Database) *XDPoS {
 		panic(fmt.Sprintf("v2 switch number is not epoch switch block %d", config.V2.SwitchBlock.Uint64()))
 	}
 
-	log.Info("xdc config loading", "config", config)
+	log.Info("xdc config loading", "v2 config", config.V2)
 
 	minePeriodCh := make(chan int)
 
