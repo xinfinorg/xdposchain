@@ -64,7 +64,7 @@ func (s *SnapshotV2) GetMappedMasterNodes() map[common.Address]struct{} {
 
 func (s *SnapshotV2) IsMasterNodes(address common.Address) bool {
 	for _, n := range s.NextEpochMasterNodes {
-		if n.String() == address.String() {
+		if n == address {
 			return true
 		}
 	}

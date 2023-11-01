@@ -2,18 +2,16 @@ package XDCx
 
 import (
 	"encoding/json"
-	"github.com/XinFinOrg/XDPoSChain/core/types"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
 
-	"github.com/XinFinOrg/XDPoSChain/consensus"
-
-	"fmt"
-
 	"github.com/XinFinOrg/XDPoSChain/XDCx/tradingstate"
 	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/consensus"
 	"github.com/XinFinOrg/XDPoSChain/core/state"
+	"github.com/XinFinOrg/XDPoSChain/core/types"
 	"github.com/XinFinOrg/XDPoSChain/log"
 )
 
@@ -373,7 +371,7 @@ func (XDCx *XDCX) getTradeQuantity(quotePrice *big.Int, coinbase common.Address,
 	if makerOrder.QuoteToken.String() == common.XDCNativeAddress {
 		quotePrice = quoteTokenDecimal
 	}
-	if takerOrder.ExchangeAddress.String() == makerOrder.ExchangeAddress.String() {
+	if takerOrder.ExchangeAddress == makerOrder.ExchangeAddress {
 		if err := tradingstate.CheckRelayerFee(takerOrder.ExchangeAddress, new(big.Int).Mul(common.RelayerFee, big.NewInt(2)), statedb); err != nil {
 			log.Debug("Reject order Taker Exchnage = Maker Exchange , relayer not enough fee ", "err", err)
 			return tradingstate.Zero, false, nil, nil
