@@ -403,8 +403,8 @@ func (tx *Transaction) CacheHash() {
 }
 
 // Cost returns amount + gasprice * gaslimit.
-func (tx *Transaction) TRC21Cost() *big.Int {
-	total := new(big.Int).Mul(common.TRC21GasPrice, new(big.Int).SetUint64(tx.inner.gas()))
+func (tx *Transaction) TxCost(number *big.Int) *big.Int {
+	total := new(big.Int).Mul(common.GetGasPrice(number), new(big.Int).SetUint64(tx.inner.gas()))
 	total.Add(total, tx.inner.value())
 	return total
 }
