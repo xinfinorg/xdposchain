@@ -85,11 +85,11 @@ type Header struct {
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
 	MixDigest   common.Hash    `json:"mixHash"`
 	Nonce       BlockNonce     `json:"nonce"`
+	Validators  []byte         `json:"validators"       gencodec:"required"`
+	Validator   []byte         `json:"validator"        gencodec:"required"`
+	Penalties   []byte         `json:"penalties"        gencodec:"required"`
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
-	BaseFee    *big.Int `json:"baseFee" gencodec:"required"`
-	Validators []byte   `json:"validators"       gencodec:"required"`
-	Validator  []byte   `json:"validator"        gencodec:"required"`
-	Penalties  []byte   `json:"penalties"        gencodec:"required"`
+	BaseFee *big.Int `json:"baseFee" rlp:"optional"`
 }
 
 // field type overrides for gencodec
