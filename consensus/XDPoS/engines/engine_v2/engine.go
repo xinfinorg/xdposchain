@@ -208,7 +208,7 @@ func (x *XDPoS_v2) initial(chain consensus.ChainReader, header *types.Header) er
 	lastGapNum := x.config.V2.SwitchBlock.Uint64() - x.config.Gap
 	lastGapHeader := chain.GetHeaderByNumber(lastGapNum)
 
-	snap, _ := loadSnapshot(x.db, lastGapHeader.Hash()) // TODO: get snapshot and error handling
+	snap, _ := loadSnapshot(x.db, lastGapHeader.Hash())
 
 	if snap == nil {
 		checkpointHeader := chain.GetHeaderByNumber(x.config.V2.SwitchBlock.Uint64())
