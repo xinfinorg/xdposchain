@@ -1017,6 +1017,14 @@ func (x *XDPoS_v2) calcMasternodes(chain consensus.ChainReader, blockNum *big.In
 		return candidates, []common.Address{}, nil
 	}
 
+	if x.HookPenalty == nil {
+		log.Info("[calcMasternodes] no hook penalty defined")
+		if len(candidates) > maxMasternodes {
+			candidates = candidates[:maxMasternodes]
+		}
+		return candidates, []common.Address{}, nil
+	}
+
 	penalties, err := x.HookPenalty(chain, blockNum, parentHash, candidates)
 	if err != nil {
 		log.Error("[calcMasternodes] Adaptor v2 HookPenalty has error", "err", err)

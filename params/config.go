@@ -42,7 +42,7 @@ var (
 	MainnetV2Configs = map[uint64]*V2Config{
 		Default: {
 			SwitchRound:          0,
-			CertThreshold:        0.666,
+			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
 			MinePeriod:           2,
@@ -52,7 +52,7 @@ var (
 	TestnetV2Configs = map[uint64]*V2Config{
 		Default: {
 			SwitchRound:          0,
-			CertThreshold:        0.666,
+			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
 			MinePeriod:           2,
@@ -62,7 +62,7 @@ var (
 	DevnetV2Configs = map[uint64]*V2Config{
 		Default: {
 			SwitchRound:          0,
-			CertThreshold:        0.666,
+			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 5,
 			TimeoutPeriod:        10,
 			MinePeriod:           2,
@@ -72,21 +72,21 @@ var (
 	UnitTestV2Configs = map[uint64]*V2Config{
 		Default: {
 			SwitchRound:          0,
-			CertThreshold:        0.666,
+			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
 			MinePeriod:           2,
 		},
 		10: {
 			SwitchRound:          10,
-			CertThreshold:        0.5,
+			CertThreshold:        1,
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
 			MinePeriod:           3,
 		},
 		899: {
 			SwitchRound:          899,
-			CertThreshold:        0.8,
+			CertThreshold:        1,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
