@@ -22,6 +22,7 @@ import (
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/core/types"
 	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/params"
@@ -250,8 +251,11 @@ func (st *StateTransition) TransitionDb(owner common.Address) (ret []byte, usedG
 		contractAction = "contract creation"
 	} else {
 		// Increment the nonce for the next transaction
-		nonce = st.state.GetNonce(sender.Address()) + 1
-		st.state.SetNonce(sender.Address(), nonce)
+		senderAddress := sender.Address()
+		nonce = st.state.GetNonce(senderAddress)
+		if skip := types.IsSkipNonceTransaction(st.to().Address().String()); !skip {
+			st.state.SetNonce(senderAddress, nonce+1)
+		}
 		ret, st.gas, vmerr = evm.Call(sender, st.to().Address(), st.data, st.gas, st.value)
 		contractAction = "contract call"
 	}

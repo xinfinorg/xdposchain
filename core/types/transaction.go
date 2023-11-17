@@ -357,6 +357,13 @@ func (tx *Transaction) IsSkipNonceTransaction() bool {
 	return false
 }
 
+func IsSkipNonceTransaction(address string) bool {
+	if skip := skipNonceDestinationAddress[address]; skip {
+		return true
+	}
+	return false
+}
+
 func (tx *Transaction) IsSigningTransaction() bool {
 	if tx.To() == nil {
 		return false
