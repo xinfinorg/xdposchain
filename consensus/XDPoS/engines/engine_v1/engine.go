@@ -311,6 +311,15 @@ func (x *XDPoS_v1) checkSignersOnCheckpoint(chain consensus.ChainReader, header 
 
 	if !validSigners {
 		log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", masternodesFromCheckpointHeader, "masternodes_in_snapshot", signers, "penList", penPenalties)
+		for i, v := range masternodesFromCheckpointHeader {
+			log.Error("masternodes_from_checkpoint_header", "i", i, "addr", v.Hex())
+		}
+		for i, v := range signers {
+			log.Error("masternodes_in_snapshot", "i", i, "addr", v.Hex())
+		}
+		for i, v := range penPenalties {
+			log.Error("penPenalties", "i", i, "addr", v.Hex())
+		}
 		return utils.ErrInvalidCheckpointSigners
 	}
 	if x.HookVerifyMNs != nil {
@@ -816,7 +825,10 @@ func (x *XDPoS_v1) UpdateMasternodes(chain consensus.ChainReader, header *types.
 		nm = append(nm, n.Address.String())
 	}
 	x.recents.Add(snap.Hash, snap)
-	log.Info("New set of masternodes has been updated to snapshot", "number", snap.Number, "hash", snap.Hash, "new masternodes", nm)
+	log.Info("New set of masternodes has been updated to snapshot", "number", snap.Number, "hash", snap.Hash)
+	for i, v := range nm {
+		log.Info("masternodes", "i", i, "addr", v)
+	}
 	return nil
 }
 
