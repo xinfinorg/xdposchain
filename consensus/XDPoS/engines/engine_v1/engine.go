@@ -310,7 +310,7 @@ func (x *XDPoS_v1) checkSignersOnCheckpoint(chain consensus.ChainReader, header 
 	validSigners := utils.CompareSignersLists(masternodesFromCheckpointHeader, signers)
 
 	if !validSigners {
-		log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", masternodesFromCheckpointHeader, "masternodes_in_snapshot", signers, "penList", penPenalties)
+		log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number)
 		for i, v := range masternodesFromCheckpointHeader {
 			log.Error("masternodes_from_checkpoint_header", "i", i, "addr", v.Hex())
 		}
