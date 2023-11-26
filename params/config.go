@@ -97,9 +97,9 @@ var (
 			TimeoutPeriod:        4,
 			MinePeriod:           3,
 		},
-		899: {
-			MaxMasternodes:       18,
-			SwitchRound:          899,
+		900: {
+			MaxMasternodes:       20,
+			SwitchRound:          900,
 			CertThreshold:        1,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
@@ -377,7 +377,8 @@ func (v *V2) UpdateConfig(round uint64) {
 }
 
 func (v *V2) Config(round uint64) *V2Config {
-	configRound := round - 1 //start from next block from SwitchRound number
+	//configRound := round - 1 //start from next block from SwitchRound number
+	configRound := round //start from next block from SwitchRound number
 	var index uint64
 
 	//find the right config
