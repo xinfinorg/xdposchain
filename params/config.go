@@ -54,7 +54,7 @@ var (
 		Default: {
 			MaxMasternodes:       15,
 			SwitchRound:          0,
-			CertThreshold:        0.4,
+			CertThreshold:        0.45,
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        20,
 			MinePeriod:           2,
