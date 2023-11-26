@@ -41,26 +41,37 @@ var (
 var (
 	MainnetV2Configs = map[uint64]*V2Config{
 		Default: {
+			MaxMasternodes:       108,
 			SwitchRound:          0,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 3,
-			TimeoutPeriod:        60,
+			TimeoutPeriod:        20,
 			MinePeriod:           2,
 		},
 	}
 
 	TestnetV2Configs = map[uint64]*V2Config{
 		Default: {
+			MaxMasternodes:       15,
 			SwitchRound:          0,
+			CertThreshold:        0.4,
+			TimeoutSyncThreshold: 3,
+			TimeoutPeriod:        20,
+			MinePeriod:           2,
+		},
+		900000: {
+			MaxMasternodes:       108,
+			SwitchRound:          900000,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 3,
-			TimeoutPeriod:        60,
+			TimeoutPeriod:        20,
 			MinePeriod:           2,
 		},
 	}
 
 	DevnetV2Configs = map[uint64]*V2Config{
 		Default: {
+			MaxMasternodes:       108,
 			SwitchRound:          0,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 5,
@@ -71,6 +82,7 @@ var (
 
 	UnitTestV2Configs = map[uint64]*V2Config{
 		Default: {
+			MaxMasternodes:       18,
 			SwitchRound:          0,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 2,
@@ -78,6 +90,7 @@ var (
 			MinePeriod:           2,
 		},
 		10: {
+			MaxMasternodes:       18,
 			SwitchRound:          10,
 			CertThreshold:        1,
 			TimeoutSyncThreshold: 2,
@@ -85,6 +98,7 @@ var (
 			MinePeriod:           3,
 		},
 		899: {
+			MaxMasternodes:       18,
 			SwitchRound:          899,
 			CertThreshold:        1,
 			TimeoutSyncThreshold: 4,
@@ -325,6 +339,7 @@ type V2 struct {
 }
 
 type V2Config struct {
+	MaxMasternodes       int     `json:"maxMasternodes"`       // v2 max masternodes
 	SwitchRound          uint64  `json:"switchRound"`          // v1 to v2 switch block number
 	MinePeriod           int     `json:"minePeriod"`           // Miner mine period to mine a block
 	TimeoutSyncThreshold int     `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
