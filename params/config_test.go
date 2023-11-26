@@ -91,7 +91,7 @@ func TestUpdateV2Config(t *testing.T) {
 	c = TestXDPoSMockChainConfig.XDPoS.V2.CurrentConfig
 	assert.Equal(t, float64(1), c.CertThreshold)
 
-	TestXDPoSMockChainConfig.XDPoS.V2.UpdateConfig(899)
+	TestXDPoSMockChainConfig.XDPoS.V2.UpdateConfig(900)
 	c = TestXDPoSMockChainConfig.XDPoS.V2.CurrentConfig
 	assert.Equal(t, 4, c.TimeoutSyncThreshold)
 }

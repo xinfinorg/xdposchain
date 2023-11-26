@@ -290,6 +290,6 @@ func TestUpdateMultipleMasterNodes(t *testing.T) {
 	adaptor.EngineV2.AuthorizeFaker(voterAddr)
 	err = adaptor.Prepare(blockchain, header1800)
 	assert.Nil(t, err)
-	assert.Equal(t, common.MaxMasternodesV2, len(header1800.Validators)/common.AddressLength) // although 128 masternode candidates, we can only pick MaxMasternodes
+	assert.Equal(t, blockchain.Config().XDPoS.V2.Config(900).MaxMasternodes, len(header1800.Validators)/common.AddressLength)
 	assert.Equal(t, 0, len(header1800.Penalties)/common.AddressLength)
 }

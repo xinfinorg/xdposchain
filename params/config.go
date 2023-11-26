@@ -92,7 +92,7 @@ var (
 		10: {
 			MaxMasternodes:       18,
 			SwitchRound:          10,
-			CertThreshold:        1,
+			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
 			MinePeriod:           3,
@@ -100,7 +100,7 @@ var (
 		900: {
 			MaxMasternodes:       20,
 			SwitchRound:          900,
-			CertThreshold:        1,
+			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
