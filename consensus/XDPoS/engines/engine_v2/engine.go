@@ -264,13 +264,7 @@ func (x *XDPoS_v2) YourTurn(chain consensus.ChainReader, parent *types.Header, s
 	}
 
 	waitedTime := time.Now().Unix() - parent.Time.Int64()
-	_, parentRound, _, err := x.getExtraFields(parent)
-	if err != nil {
-		log.Warn("[Yourturn] Error getting extra fields", "error", err)
-		return false, err
-	}
-	//minePeriod := x.config.V2.Config(uint64(parentRound) + 1).MinePeriod // plus 1 means current block
-	minePeriod := x.config.V2.Config(uint64(parentRound)).MinePeriod
+	minePeriod := x.config.V2.Config(uint64(x.currentRound)).MinePeriod
 	if waitedTime < int64(minePeriod) {
 		log.Trace("[YourTurn] wait after mine period", "minePeriod", minePeriod, "waitedTime", waitedTime)
 		return false, nil
