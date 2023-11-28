@@ -999,9 +999,7 @@ func (x *XDPoS_v2) GetStandbynodes(chain consensus.ChainReader, header *types.He
 // Calculate masternodes for a block number and parent hash. In V2, truncating candidates[:MaxMasternodes] is done in this function.
 func (x *XDPoS_v2) calcMasternodes(chain consensus.ChainReader, blockNum *big.Int, parentHash common.Hash) ([]common.Address, []common.Address, error) {
 	// using new max masterndoes
-	fmt.Println("current Round ", x.currentRound)
 	maxMasternodes := x.config.V2.Config(uint64(x.currentRound)).MaxMasternodes
-	fmt.Println("maxMasternodes", maxMasternodes)
 	snap, err := x.getSnapshot(chain, blockNum.Uint64(), false)
 	if err != nil {
 		log.Error("[calcMasternodes] Adaptor v2 getSnapshot has error", "err", err)
