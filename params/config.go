@@ -23,6 +23,7 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/log"
+	xdcposconfig "github.com/XinFinOrg/XDPoSChain/params_api/xdposconfig"
 )
 
 const (
@@ -39,7 +40,7 @@ var (
 )
 
 var (
-	MainnetV2Configs = map[uint64]*V2Config{
+	MainnetV2Configs = map[uint64]*xdcposconfig.V2Config{
 		Default: {
 			MaxMasternodes:       108,
 			SwitchRound:          0,
@@ -50,7 +51,7 @@ var (
 		},
 	}
 
-	TestnetV2Configs = map[uint64]*V2Config{
+	TestnetV2Configs = map[uint64]*xdcposconfig.V2Config{
 		Default: {
 			MaxMasternodes:       15,
 			SwitchRound:          0,
@@ -69,7 +70,7 @@ var (
 		},
 	}
 
-	DevnetV2Configs = map[uint64]*V2Config{
+	DevnetV2Configs = map[uint64]*xdcposconfig.V2Config{
 		Default: {
 			MaxMasternodes:       108,
 			SwitchRound:          0,
@@ -80,7 +81,7 @@ var (
 		},
 	}
 
-	UnitTestV2Configs = map[uint64]*V2Config{
+	UnitTestV2Configs = map[uint64]*xdcposconfig.V2Config{
 		Default: {
 			MaxMasternodes:       18,
 			SwitchRound:          0,
@@ -330,21 +331,12 @@ type XDPoSConfig struct {
 type V2 struct {
 	lock sync.RWMutex // Protects the signer fields
 
-	SwitchBlock   *big.Int             `json:"switchBlock"`
-	CurrentConfig *V2Config            `json:"config"`
-	AllConfigs    map[uint64]*V2Config `json:"allConfigs"`
-	configIndex   []uint64             //list of switch block of configs
+	SwitchBlock   *big.Int                          `json:"switchBlock"`
+	CurrentConfig *xdcposconfig.V2Config            `json:"config"`
+	AllConfigs    map[uint64]*xdcposconfig.V2Config `json:"allConfigs"`
+	configIndex   []uint64                          //list of switch block of configs
 
 	SkipV2Validation bool //Skip Block Validation for testing purpose, V2 consensus only
-}
-
-type V2Config struct {
-	MaxMasternodes       int     `json:"maxMasternodes"`       // v2 max masternodes
-	SwitchRound          uint64  `json:"switchRound"`          // v1 to v2 switch block number
-	MinePeriod           int     `json:"minePeriod"`           // Miner mine period to mine a block
-	TimeoutSyncThreshold int     `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
-	TimeoutPeriod        int     `json:"timeoutPeriod"`        // Duration in ms
-	CertThreshold        float64 `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
 }
 
 func (c *XDPoSConfig) String() string {
@@ -376,7 +368,7 @@ func (v *V2) UpdateConfig(round uint64) {
 	v.CurrentConfig = v.AllConfigs[index]
 }
 
-func (v *V2) Config(round uint64) *V2Config {
+func (v *V2) Config(round uint64) *xdcposconfig.V2Config {
 	configRound := round
 	var index uint64
 

@@ -23,6 +23,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/consensus"
 	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS/utils"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
+	xdcposconfig "github.com/XinFinOrg/XDPoSChain/params_api/xdposconfig"
 	"github.com/XinFinOrg/XDPoSChain/rlp"
 	"github.com/XinFinOrg/XDPoSChain/rpc"
 )
@@ -53,6 +54,7 @@ type NetworkInformation struct {
 	XDCXListingAddress         common.Address
 	XDCZAddress                common.Address
 	LendingAddress             common.Address
+	V2Config                   xdcposconfig.V2Config
 }
 
 type SignerTypes struct {
@@ -278,6 +280,8 @@ func (api *API) NetworkInformation() NetworkInformation {
 		info.XDCXListingAddress = common.XDCXListingSMC
 		info.XDCZAddress = common.TRC21IssuerSMC
 	}
+
+	info.V2Config = *api.chain.Config().XDPoS.V2.CurrentConfig
 	return info
 }
 

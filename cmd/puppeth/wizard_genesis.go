@@ -28,6 +28,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/core"
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/params"
+	xdcposconfig "github.com/XinFinOrg/XDPoSChain/params_api/xdposconfig"
 
 	"context"
 	"math/big"
@@ -118,8 +119,8 @@ func (w *wizard) makeGenesis() {
 			Reward: 0,
 			V2: &params.V2{
 				SwitchBlock:   big.NewInt(0),
-				CurrentConfig: &params.V2Config{},
-				AllConfigs:    make(map[uint64]*params.V2Config),
+				CurrentConfig: &xdcposconfig.V2Config{},
+				AllConfigs:    make(map[uint64]*xdcposconfig.V2Config),
 			},
 		}
 		fmt.Println()
