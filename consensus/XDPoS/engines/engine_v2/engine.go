@@ -527,6 +527,7 @@ func (x *XDPoS_v2) VerifyHeader(chain consensus.ChainReader, header *types.Heade
 func (x *XDPoS_v2) VerifyHeaders(chain consensus.ChainReader, headers []*types.Header, fullVerifies []bool, abort <-chan struct{}, results chan<- error) {
 	go func() {
 		for i, header := range headers {
+			log.Info("[VerifyHeaders] verify header", "blockNum", header.Number)
 			err := x.verifyHeader(chain, header, headers[:i], fullVerifies[i])
 			if err != nil {
 				log.Warn("[VerifyHeaders] Fail to verify header", "fullVerify", fullVerifies[i], "blockNum", header.Number, "blockHash", header.Hash(), "error", err)
@@ -1081,7 +1082,7 @@ func (x *XDPoS_v2) allowedToSend(chain consensus.ChainReader, blockHeader *types
 	for _, mn := range masterNodes {
 		log.Debug("[allowedToSend] Master node list", "masterNodeAddress", mn.Hash())
 	}
-	log.Info("[allowedToSend] Not in the Masternode list, not suppose to send message", "sendType", sendType, "MyAddress", signer.Hex())
+	log.Debug("[allowedToSend] Not in the Masternode list, not suppose to send message", "sendType", sendType, "MyAddress", signer.Hex())
 	return false
 }
 
