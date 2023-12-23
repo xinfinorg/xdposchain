@@ -1505,6 +1505,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 		if err == nil {
 			err = bc.Validator().ValidateBody(block)
 		}
+		log.Info("[insertChain] ValidateBody", "err", err)
 		switch {
 		case err == ErrKnownBlock:
 			// Block and state both already known. However if the current block is below
