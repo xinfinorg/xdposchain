@@ -60,7 +60,8 @@ module "ap-southeast-2" {
   }
 }
 
-# Temporary workaround to avoid conflicts with existing ecs cluster in existing regions
+# WARNING: APSE-1 will only be used to host rpc node
+# Workaround to avoid conflicts with existing ecs cluster in existing regions
 provider "aws" {
   alias = "ap-southeast-1"
   region  = "ap-southeast-1"

@@ -23,6 +23,7 @@ resource "aws_lb_target_group" "rpc_node_tg_8545" {
   port     = 8545
   protocol = "TCP"
   vpc_id   = aws_vpc.devnet_vpc.id
+  target_type = "ip"
 }
 
 resource "aws_lb_listener" "rpc_node_listener_8545" {
@@ -82,6 +83,7 @@ resource "aws_lb_target_group" "rpc_node_tg_30303" {
   port     = 30303
   protocol = "TCP"
   vpc_id   = aws_vpc.devnet_vpc.id
+  target_type = "ip"
 }
 
 # Listener for port 30303
