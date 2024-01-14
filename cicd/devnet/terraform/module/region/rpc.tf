@@ -1,10 +1,11 @@
 # Allocate an Elastic IP for the NLB
 resource "aws_eip" "nlb_eip" {
-  vpc = true
+  domain = "vpc"
 }
 
+
 # Create a Network Load Balancer
-resource "aws_lb" "single_container_nlb" {
+resource "aws_lb" "rpc_node_nlb" {
   name               = "rpc-node-nlb"
   load_balancer_type = "network"
   subnets            = [aws_subnet.devnet_subnet.id]
@@ -32,7 +33,7 @@ resource "aws_lb_listener" "rpc_node_listener_8545" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.rpc_node_tg.arn
+    target_group_arn = aws_lb_target_group.rpc_node_tg_8545.arn
   }
 }
 
@@ -62,13 +63,13 @@ resource "aws_ecs_service" "devnet_rpc_node_ecs_service" {
   }
   
   load_balancer {
-    target_group_arn = aws_lb_target_group.rpc_node_tg.arn
+    target_group_arn = aws_lb_target_group.rpc_node_tg_8545.arn
     container_name   = "tfXdcNode"
     container_port   = 8545
   }
 
   depends_on = [
-    aws_lb_listener.rpc_node_listener
+    aws_lb_listener.rpc_node_listener_8545
   ]
 
   tags = {
@@ -77,21 +78,21 @@ resource "aws_ecs_service" "devnet_rpc_node_ecs_service" {
 }
 
 # Target Group for port 30303
-# resource "aws_lb_target_group" "rpc_node_tg_30303" {
-#   name     = "rpc-node-tg-30303"
-#   port     = 30303
-#   protocol = "TCP"
-#   vpc_id   = aws_vpc.devnet_vpc.id
-# }
+resource "aws_lb_target_group" "rpc_node_tg_30303" {
+  name     = "rpc-node-tg-30303"
+  port     = 30303
+  protocol = "TCP"
+  vpc_id   = aws_vpc.devnet_vpc.id
+}
 
-# # Listener for port 30303
-# resource "aws_lb_listener" "rpc_node_listener_30303" {
-#   load_balancer_arn = aws_lb.rpc_node_nlb.arn
-#   port              = 30303
-#   protocol          = "TCP"
+# Listener for port 30303
+resource "aws_lb_listener" "rpc_node_listener_30303" {
+  load_balancer_arn = aws_lb.rpc_node_nlb.arn
+  port              = 30303
+  protocol          = "TCP"
 
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = aws_lb_target_group.rpc_node_tg_30303.arn
-#   }
-# }
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.rpc_node_tg_30303.arn
+  }
+}

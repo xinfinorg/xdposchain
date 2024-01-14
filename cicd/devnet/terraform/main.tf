@@ -67,7 +67,7 @@ module "ap-southeast-2-rpc" {
   source = "./module/region"
   region = "ap-southeast-2"
   devnetNodeKeys = local.rpcNodeKeys
-  enableFixedIp = true // pass this to next level file so that we can use this flag to create or skip the NLB and other resource for the fixed ip
+  enableFixedIp = true
   logLevel = local.logLevel
   devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
 
