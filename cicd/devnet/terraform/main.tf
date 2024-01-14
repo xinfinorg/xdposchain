@@ -60,15 +60,21 @@ module "ap-southeast-2" {
   }
 }
 
-module "ap-southeast-2-rpc" {
+# Temporary workaround to avoid conflicts with existing ecs cluster in existing regions
+provider "aws" {
+  alias = "ap-southeast-1"
+  region  = "ap-southeast-1"
+}
+
+module "ap-southeast-1-rpc" {
   source = "./module/region"
-  region = "ap-southeast-2"
+  region = "ap-southeast-1"
   devnetNodeKeys = local.rpcNodeKeys
   enableFixedIp = true
   logLevel = local.logLevel
   devnet_xdc_ecs_tasks_execution_role_arn = aws_iam_role.devnet_xdc_ecs_tasks_execution_role.arn
 
   providers = {
-    aws = aws.ap-southeast-2
+    aws = aws.ap-southeast-1
   }
 }
