@@ -8,7 +8,6 @@ resource "aws_eip" "nlb_eip" {
 resource "aws_lb" "rpc_node_nlb" {
   name               = "rpc-node-nlb"
   load_balancer_type = "network"
-  subnets            = [aws_subnet.devnet_subnet.id]
 
   enable_deletion_protection = false
 
@@ -37,10 +36,19 @@ resource "aws_lb_listener" "rpc_node_listener_8545" {
   }
 }
 
+# ECS cluster
+resource "aws_ecs_cluster" "devnet_rpc_ecs_cluster" {
+  name    = "devnet-xdcnode-rpc-cluster"
+  tags    = {
+    Name        = "TfDevnetRpcEcsCluster"
+  }
+}
+
+
 resource "aws_ecs_service" "devnet_rpc_node_ecs_service" {
   for_each             = var.enableFixedIp ? var.devnetNodeKeys : {}
   name                 = "ecs-service-${each.key}"
-  cluster              = aws_ecs_cluster.devnet_ecs_cluster.id
+  cluster              = aws_ecs_cluster.devnet_rpc_ecs_cluster.id
   task_definition      = "${aws_ecs_task_definition.devnet_task_definition_group[each.key].family}:${max(aws_ecs_task_definition.devnet_task_definition_group[each.key].revision, data.aws_ecs_task_definition.devnet_ecs_task_definition[each.key].revision)}"
   launch_type          = "FARGATE"
   scheduling_strategy  = "REPLICA"

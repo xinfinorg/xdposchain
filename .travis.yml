@@ -156,22 +156,22 @@ jobs:
       # Terraform init and then apply changes to environment
       - terraform init $tf_init_cli_options
       - terraform apply $tf_apply_cli_options
-      - sleep 5
-      - |
-        source .env
-        for ((i=$us_east_2_start;i<$us_east_2_end;i++)); do
-          echo "Force deploy xdc-$i"
-          aws ecs update-service --region us-east-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
-        done
-        for ((i=$eu_west_1_start;i<$eu_west_1_end;i++)); do
-          echo "Force deploy xdc-$i"
-          aws ecs update-service --region eu-west-1 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
-        done
-        for ((i=$ap_southeast_2_start;i<$ap_southeast_2_end;i++)); do
-          echo "Force deploy xdc-$i"
-          aws ecs update-service --region ap-southeast-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
-        done
-        aws ecs update-service --region ap-southeast-2 --cluster devnet-xdcnode-cluster --service ecs-service-rpc1 --force-new-deployment --no-cli-pager;
+      # - sleep 5
+      # - |
+      #   source .env
+      #   for ((i=$us_east_2_start;i<$us_east_2_end;i++)); do
+      #     echo "Force deploy xdc-$i"
+      #     aws ecs update-service --region us-east-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
+      #   done
+      #   for ((i=$eu_west_1_start;i<$eu_west_1_end;i++)); do
+      #     echo "Force deploy xdc-$i"
+      #     aws ecs update-service --region eu-west-1 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
+      #   done
+      #   for ((i=$ap_southeast_2_start;i<$ap_southeast_2_end;i++)); do
+      #     echo "Force deploy xdc-$i"
+      #     aws ecs update-service --region ap-southeast-2 --cluster devnet-xdcnode-cluster --service ecs-service-xdc$i --force-new-deployment --no-cli-pager;
+      #   done
+      #   aws ecs update-service --region ap-southeast-2 --cluster devnet-xdcnode-rpc-cluster --service ecs-service-rpc1 --force-new-deployment --no-cli-pager;
 
   # - stage: (Devnet) Send Deployment Notification
   #   if: branch = dev-upgrade AND type = push AND tag IS blank
