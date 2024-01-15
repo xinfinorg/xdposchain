@@ -6,6 +6,7 @@ resource "aws_eip" "nlb_eip" {
 
 # Create a Network Load Balancer
 resource "aws_lb" "rpc_node_nlb" {
+  count = var.enableFixedIp ? 1 : 0
   name               = "rpc-node-nlb"
   load_balancer_type = "network"
 
@@ -19,6 +20,7 @@ resource "aws_lb" "rpc_node_nlb" {
 
 # Listener and Target Group for the rpc node container
 resource "aws_lb_target_group" "rpc_node_tg_8545" {
+  count = var.enableFixedIp ? 1 : 0
   name     = "rpc-node-tg"
   port     = 8545
   protocol = "TCP"
@@ -27,13 +29,14 @@ resource "aws_lb_target_group" "rpc_node_tg_8545" {
 }
 
 resource "aws_lb_listener" "rpc_node_listener_8545" {
-  load_balancer_arn = aws_lb.rpc_node_nlb.arn
+  count = var.enableFixedIp ? 1 : 0
+  load_balancer_arn = aws_lb.rpc_node_nlb[0].arn
   port              = 8545
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.rpc_node_tg_8545.arn
+    target_group_arn = aws_lb_target_group.rpc_node_tg_8545[0].arn
   }
 }
 
@@ -63,7 +66,7 @@ resource "aws_ecs_service" "devnet_rpc_node_ecs_service" {
   }
   
   load_balancer {
-    target_group_arn = aws_lb_target_group.rpc_node_tg_8545.arn
+    target_group_arn = aws_lb_target_group.rpc_node_tg_8545[0].arn
     container_name   = "tfXdcNode"
     container_port   = 8545
   }
@@ -79,6 +82,7 @@ resource "aws_ecs_service" "devnet_rpc_node_ecs_service" {
 
 # Target Group for port 30303
 resource "aws_lb_target_group" "rpc_node_tg_30303" {
+  count = var.enableFixedIp ? 1 : 0
   name     = "rpc-node-tg-30303"
   port     = 30303
   protocol = "TCP"
@@ -88,12 +92,13 @@ resource "aws_lb_target_group" "rpc_node_tg_30303" {
 
 # Listener for port 30303
 resource "aws_lb_listener" "rpc_node_listener_30303" {
-  load_balancer_arn = aws_lb.rpc_node_nlb.arn
+  count = var.enableFixedIp ? 1 : 0
+  load_balancer_arn = aws_lb.rpc_node_nlb[0].arn
   port              = 30303
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.rpc_node_tg_30303.arn
+    target_group_arn = aws_lb_target_group.rpc_node_tg_30303[0].arn
   }
 }
