@@ -213,7 +213,10 @@ func (self *tradingExchanges) updateAsksTrie(db Database) Trie {
 				self.setError(tr.TryDelete(price[:]))
 				continue
 			}
-			orderList.updateRoot(db)
+			err := orderList.updateRoot(db)
+			if err != nil {
+				//todo
+			}
 			// Encoding []byte cannot fail, ok to ignore the error.
 			v, _ := rlp.EncodeToBytes(orderList)
 			self.setError(tr.TryUpdate(price[:], v))
@@ -279,7 +282,10 @@ func (self *tradingExchanges) updateBidsTrie(db Database) Trie {
 				self.setError(tr.TryDelete(price[:]))
 				continue
 			}
-			orderList.updateRoot(db)
+			err := orderList.updateRoot(db)
+			if err != nil {
+				//todo
+			}
 			// Encoding []byte cannot fail, ok to ignore the error.
 			v, _ := rlp.EncodeToBytes(orderList)
 			self.setError(tr.TryUpdate(price[:], v))
@@ -753,7 +759,10 @@ func (self *tradingExchanges) updateLiquidationPriceTrie(db Database) Trie {
 				self.setError(tr.TryDelete(price[:]))
 				continue
 			}
-			stateObject.updateRoot(db)
+			err := stateObject.updateRoot(db)
+			if err != nil {
+				//todo
+			}
 			// Encoding []byte cannot fail, ok to ignore the error.
 			v, _ := rlp.EncodeToBytes(stateObject)
 			self.setError(tr.TryUpdate(price[:], v))

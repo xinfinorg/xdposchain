@@ -78,13 +78,19 @@ type (
 )
 
 func (ch insertOrder) undo(s *TradingStateDB) {
-	s.CancelOrder(ch.orderBook, ch.order)
+	err := s.CancelOrder(ch.orderBook, ch.order)
+	if err != nil {
+		//todo
+	}
 }
 func (ch cancelOrder) undo(s *TradingStateDB) {
 	s.InsertOrderItem(ch.orderBook, ch.orderId, ch.order)
 }
 func (ch insertLiquidationPrice) undo(s *TradingStateDB) {
-	s.RemoveLiquidationPrice(ch.orderBook, ch.price, ch.lendingBook, ch.tradeId)
+	err := s.RemoveLiquidationPrice(ch.orderBook, ch.price, ch.lendingBook, ch.tradeId)
+	if err != nil {
+		//todo
+	}
 }
 func (ch removeLiquidationPrice) undo(s *TradingStateDB) {
 	s.InsertLiquidationPrice(ch.orderBook, ch.price, ch.lendingBook, ch.tradeId)
