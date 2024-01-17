@@ -20,6 +20,7 @@ import (
 	"math/big"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
+	"github.com/XinFinOrg/XDPoSChain/log"
 )
 
 type journalEntry interface {
@@ -80,7 +81,7 @@ type (
 func (ch insertOrder) undo(s *TradingStateDB) {
 	err := s.CancelOrder(ch.orderBook, ch.order)
 	if err != nil {
-		//todo
+		log.Debug("undo CancelOrder", "err", err)
 	}
 }
 func (ch cancelOrder) undo(s *TradingStateDB) {
@@ -89,7 +90,7 @@ func (ch cancelOrder) undo(s *TradingStateDB) {
 func (ch insertLiquidationPrice) undo(s *TradingStateDB) {
 	err := s.RemoveLiquidationPrice(ch.orderBook, ch.price, ch.lendingBook, ch.tradeId)
 	if err != nil {
-		//todo
+		log.Debug("undo RemoveLiquidationPrice", "err", err)
 	}
 }
 func (ch removeLiquidationPrice) undo(s *TradingStateDB) {

@@ -541,7 +541,7 @@ func (s *TradingStateDB) Finalise() {
 			// Write any storage changes in the state object to its storage trie.
 			err := stateObject.updateAsksRoot(s.db)
 			if err != nil {
-				//todo
+				log.Debug("Finalise updateAsksRoot", "err", err)
 			}
 			stateObject.updateBidsRoot(s.db)
 			stateObject.updateOrdersRoot(s.db)
@@ -718,7 +718,7 @@ func (self *TradingStateDB) RemoveLiquidationPrice(orderBook common.Hash, price 
 	if liquidationPriceState.Volume().Sign() == 0 {
 		err := orderbookState.getLiquidationPriceTrie(self.db).TryDelete(priceHash[:])
 		if err != nil {
-			//todo
+			log.Debug("RemoveLiquidationPrice getLiquidationPriceTrie.TryDelete", "err", err)
 		}
 	}
 	orderbookState.subLendingCount(One)
