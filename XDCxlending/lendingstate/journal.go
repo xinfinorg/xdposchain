@@ -80,7 +80,7 @@ type (
 func (ch insertOrder) undo(s *LendingStateDB) {
 	err := s.CancelLendingOrder(ch.orderBook, ch.order)
 	if err != nil {
-		log.Debug("undo CancelLendingOrder", "err", err)
+		log.Warn("undo CancelLendingOrder", "err", err)
 	}
 }
 func (ch cancelOrder) undo(s *LendingStateDB) {

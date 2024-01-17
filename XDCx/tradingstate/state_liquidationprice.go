@@ -120,7 +120,7 @@ func (self *liquidationPriceState) updateTrie(db Database) Trie {
 		}
 		err := stateObject.updateRoot(db)
 		if err != nil {
-			log.Debug("updateTrie updateRoot", "err", err)
+			log.Warn("updateTrie updateRoot", "err", err)
 		}
 
 		// Encoding []byte cannot fail, ok to ignore the error.

@@ -81,7 +81,7 @@ type (
 func (ch insertOrder) undo(s *TradingStateDB) {
 	err := s.CancelOrder(ch.orderBook, ch.order)
 	if err != nil {
-		log.Debug("undo CancelOrder", "err", err)
+		log.Warn("undo CancelOrder", "err", err)
 	}
 }
 func (ch cancelOrder) undo(s *TradingStateDB) {
@@ -90,7 +90,7 @@ func (ch cancelOrder) undo(s *TradingStateDB) {
 func (ch insertLiquidationPrice) undo(s *TradingStateDB) {
 	err := s.RemoveLiquidationPrice(ch.orderBook, ch.price, ch.lendingBook, ch.tradeId)
 	if err != nil {
-		log.Debug("undo RemoveLiquidationPrice", "err", err)
+		log.Warn("undo RemoveLiquidationPrice", "err", err)
 	}
 }
 func (ch removeLiquidationPrice) undo(s *TradingStateDB) {

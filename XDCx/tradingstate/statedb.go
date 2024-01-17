@@ -541,7 +541,7 @@ func (s *TradingStateDB) Finalise() {
 			// Write any storage changes in the state object to its storage trie.
 			err := stateObject.updateAsksRoot(s.db)
 			if err != nil {
-				log.Debug("Finalise updateAsksRoot", "err", err)
+				log.Warn("Finalise updateAsksRoot", "err", err)
 			}
 			stateObject.updateBidsRoot(s.db)
 			stateObject.updateOrdersRoot(s.db)
