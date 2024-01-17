@@ -718,7 +718,7 @@ func (self *TradingStateDB) RemoveLiquidationPrice(orderBook common.Hash, price 
 	if liquidationPriceState.Volume().Sign() == 0 {
 		err := orderbookState.getLiquidationPriceTrie(self.db).TryDelete(priceHash[:])
 		if err != nil {
-			log.Debug("RemoveLiquidationPrice getLiquidationPriceTrie.TryDelete", "err", err)
+			log.Warn("RemoveLiquidationPrice getLiquidationPriceTrie.TryDelete", "err", err)
 		}
 	}
 	orderbookState.subLendingCount(One)
