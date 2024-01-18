@@ -526,7 +526,7 @@ func (s *LendingStateDB) Finalise() {
 			// Write any storage changes in the state object to its storage trie.
 			err := stateObject.updateInvestingRoot(s.db)
 			if err != nil {
-				log.Warn("Finalise updateInvestingRoot", "err", err)
+				log.Warn("Finalise updateInvestingRoot", "err", err, "addr", addr, "stateObject", *stateObject)
 			}
 			stateObject.updateBorrowingRoot(s.db)
 			stateObject.updateOrderRoot(s.db)
@@ -635,7 +635,7 @@ func (self *LendingStateDB) RemoveLiquidationTime(lendingBook common.Hash, trade
 	if liquidationTime.Volume().Sign() == 0 {
 		err := lendingExchangeState.getLiquidationTimeTrie(self.db).TryDelete(timeHash[:])
 		if err != nil {
-			log.Warn("RemoveLiquidationTime getLiquidationTimeTrie.TryDelete", "err", err)
+			log.Warn("RemoveLiquidationTime getLiquidationTimeTrie.TryDelete", "err", err, "timeHash[:]", timeHash[:])
 		}
 	}
 	return nil
