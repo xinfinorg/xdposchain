@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sync/atomic"
 	"time"
 
@@ -62,7 +61,7 @@ func (msg Msg) String() string {
 
 // Discard reads any remaining payload data into a black hole.
 func (msg Msg) Discard() error {
-	_, err := io.Copy(ioutil.Discard, msg.Payload)
+	_, err := io.Copy(io.Discard, msg.Payload)
 	return err
 }
 
