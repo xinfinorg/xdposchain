@@ -1,9 +1,10 @@
 package privacy
 
 import (
+	"encoding/binary"
 	"fmt"
 	"testing"
-	)
+)
 
 func TestSign(t *testing.T) {
 	/*for i := 14; i < 15; i++ {
@@ -43,4 +44,41 @@ func TestSign(t *testing.T) {
 		t.Error("Failed to verify Ring signature")
 	}
 
+}
+
+func TestDeserialize(t *testing.T) {
+	numRing := 5
+	ringSize := 10
+	s := 5
+	rings, privkeys, m, err := GenerateMultiRingParams(numRing, ringSize, s)
+
+	ringSignature, err := Sign(m, rings, privkeys, s)
+	if err != nil {
+		t.Error("Failed to create Ring signature")
+	}
+
+	// A normal signature.
+	sig, err := ringSignature.Serialize()
+	if err != nil {
+		t.Error("Failed to Serialize input Ring signature")
+	}
+
+	// Modify the serialized signature s.t.
+	// the new signature passes the length check
+	// but triggers buffer overflow in Deserialize().
+	// ringSize: 10 -> 56759212534490939
+	// len(sig): 3495 -> 3804
+	// 80 + 5 * (56759212534490939*65 + 33) = 18446744073709551616 + 3804
+	bs := make([]byte, 8)
+	binary.BigEndian.PutUint64(bs, 56759212534490939)
+	for i := 0; i < 8; i++ {
+		sig[i+8] = bs[i]
+	}
+	tail := make([]byte, 3804-len(sig))
+	sig = append(sig, tail...)
+
+	_, err = Deserialize(sig)
+	if err != nil {
+		t.Error("Failed to Serialize input Ring signature")
+	}
 }

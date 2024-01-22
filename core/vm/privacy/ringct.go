@@ -8,8 +8,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/XinFinOrg/XDPoSChain/common"
 	"math/big"
+
+	"github.com/XinFinOrg/XDPoSChain/common"
 
 	"github.com/XinFinOrg/XDPoSChain/crypto"
 	"github.com/XinFinOrg/XDPoSChain/log"
@@ -28,18 +29,18 @@ const (
 	pubkeyHybrid       byte = 0x6 // y_bit + x coord + y coord
 )
 
-//The proof contains pretty much stuffs
-//The proof contains pretty much stuffs
-//Ring size rs: 1 byte => proof[0]
-//num input: number of real inputs: 1 byte => proof[1]
-//List of inputs/UTXO index typed uint64 => total size = rs * numInput * 8 = proof[0]*proof[1]*8
-//List of key images: total size = numInput * 33 = proof[1] * 33
-//number of output n: 1 byte
-//List of output => n * 130 bytes
-//transaction fee: uint256 => 32 byte
-//ringCT proof size ctSize: uint16 => 2 byte
-//ringCT proof: ctSize bytes
-//bulletproofs: bp
+// The proof contains pretty much stuffs
+// The proof contains pretty much stuffs
+// Ring size rs: 1 byte => proof[0]
+// num input: number of real inputs: 1 byte => proof[1]
+// List of inputs/UTXO index typed uint64 => total size = rs * numInput * 8 = proof[0]*proof[1]*8
+// List of key images: total size = numInput * 33 = proof[1] * 33
+// number of output n: 1 byte
+// List of output => n * 130 bytes
+// transaction fee: uint256 => 32 byte
+// ringCT proof size ctSize: uint16 => 2 byte
+// ringCT proof: ctSize bytes
+// bulletproofs: bp
 type PrivateSendVerifier struct {
 	proof []byte
 	//ringCT 	RingCT
@@ -174,7 +175,24 @@ func (r *RingSignature) Serialize() ([]byte, error) {
 }
 
 func computeSignatureSize(numRing int, ringSize int) int {
-	return 8 + 8 + 32 + 32 + numRing*ringSize*32 + numRing*ringSize*33 + numRing*33
+	const MaxInt = int(^uint(0) >> 1)
+
+	if numRing < 0 || ringSize < 0 {
+		return -1
+	}
+
+	// Calculate each term separately and check for overflow
+	term1 := 8 + 8 + 32 + 32
+	term2 := numRing * ringSize * 32
+	term3 := numRing * ringSize * 33
+	term4 := numRing * 33
+
+	if term2 < 0 || term3 < 0 || term4 < 0 || term2 > MaxInt-term1 || term3 > MaxInt-(term1+term2) || term4 > MaxInt-(term1+term2+term3) {
+		return -1
+	}
+
+	result := term1 + term2 + term3 + term4
+	return result
 }
 
 // deserializes the byteified signature into a RingSignature struct
@@ -198,7 +216,7 @@ func Deserialize(r []byte) (*RingSignature, error) {
 	sig.NumRing = size_int
 
 	if len(r) != computeSignatureSize(sig.NumRing, sig.Size) {
-		return nil, errors.New("incorrect ring size")
+		return nil, fmt.Errorf("incorrect ring size, len r: %d, sig.NumRing: %d sig.Size: %d", len(r), sig.NumRing, sig.Size)
 	}
 
 	m := r[offset : offset+32]
@@ -544,7 +562,7 @@ func Link(sig_a *RingSignature, sig_b *RingSignature) bool {
 	return false
 }
 
-//function returns(mutiple rings, private keys, message, error)
+// function returns(mutiple rings, private keys, message, error)
 func GenerateMultiRingParams(numRing int, ringSize int, s int) (rings []Ring, privkeys []*ecdsa.PrivateKey, m [32]byte, err error) {
 	for i := 0; i < numRing; i++ {
 		privkey, err := crypto.GenerateKey()
