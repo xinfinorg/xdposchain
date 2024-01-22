@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSign(t *testing.T) {
@@ -78,7 +80,5 @@ func TestDeserialize(t *testing.T) {
 	sig = append(sig, tail...)
 
 	_, err = Deserialize(sig)
-	if err != nil {
-		t.Error("Failed to Serialize input Ring signature")
-	}
+	assert.EqualError(t, err, "incorrect ring size, len r: 3804, sig.NumRing: 5 sig.Size: 56759212534490939")
 }
