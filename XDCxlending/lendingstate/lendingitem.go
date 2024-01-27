@@ -27,6 +27,7 @@ const (
 	LendingStatusCancelled     = "CANCELLED"
 	Market                     = "MO"
 	Limit                      = "LO"
+	MaxLendingExtraDataSize    = 200
 )
 
 var ValidInputLendingStatus = map[string]bool{
@@ -233,6 +234,9 @@ func (l *LendingItem) VerifyLendingItem(state *state.StateDB) error {
 	if err := l.VerifyLendingSignature(); err != nil {
 		return err
 	}
+	if err := l.VerifyLendingExtraData(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -278,6 +282,13 @@ func (l *LendingItem) VerifyLendingQuantity() error {
 func (l *LendingItem) VerifyLendingType() error {
 	if valid, ok := ValidInputLendingType[l.Type]; !ok && !valid {
 		return fmt.Errorf("VerifyLendingType: invalid lending type. Type: %s", l.Type)
+	}
+	return nil
+}
+
+func (l *LendingItem) VerifyLendingExtraData() error {
+	if len(l.ExtraData) > MaxLendingExtraDataSize {
+		return fmt.Errorf("VerifyLendingExtraData: invalid lending extraData size. Size: %v", len(l.ExtraData))
 	}
 	return nil
 }
