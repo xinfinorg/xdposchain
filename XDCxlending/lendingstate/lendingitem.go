@@ -27,7 +27,13 @@ const (
 	LendingStatusCancelled     = "CANCELLED"
 	Market                     = "MO"
 	Limit                      = "LO"
-	MaxLendingExtraDataSize    = 200
+	/*
+		Based on all structs that were used to encode into extraData, we can see the liquidationData is likely be the one with max length in payload.
+		A assumptions was made that each numeric value (RecallAmount, LiquidationAmount, CollateralPrice) is up to 30 digits long and the Reason field is 20 characters long, the estimated maximum size of the ExtraData JSON string in the ProcessLiquidationData function would be approximately 185 bytes.
+		Hence the value of 200 has been chosen to safeguard the block/tx in XDC in terms of sizes.
+
+	*/
+	MaxLendingExtraDataSize = 200
 )
 
 var ValidInputLendingStatus = map[string]bool{
