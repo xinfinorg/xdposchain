@@ -218,7 +218,9 @@ contract XDCValidator {
         candidateCount = candidateCount.sub(1);
         for (uint256 i = 0; i < candidates.length; i++) {
             if (candidates[i] == _candidate) {
-                delete candidates[i];
+                //delete element by swapping with last element then reduce array length
+                candidates[i] = candidates[candidates.length-1];
+                candidates.length--;
                 break;
             }
         }
@@ -249,17 +251,22 @@ contract XDCValidator {
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
-                    delete candidates[i];
                     delete validatorsState[candidates[i]];
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
+                    //delete element by swapping with last element then reduce array length
+                    candidates[i] = candidates[candidates.length-1];
+                    candidates.length--;
+                    break;
                 }
             }
             for(uint k=0;k<owners.length;k++){
                         if (owners[k]==_invalidMasternode){
-                            delete owners[k];
                             ownerCount--;
+                            //delete element by swapping with last element then reduce array length
+                            owners[k] = owners[owners.length-1];
+                            owners.length--;
                             break;
                 } 
             }
