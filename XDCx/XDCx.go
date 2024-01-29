@@ -207,19 +207,11 @@ func (XDCx *XDCX) ProcessOrderPending(header *types.Header, coinbase common.Addr
 				S: common.BigToHash(S),
 			},
 		}
-		cancel := false
-		if order.Status == tradingstate.OrderStatusCancelled {
-			cancel = true
-		}
 
 		log.Info("Process order pending", "orderPending", order, "BaseToken", order.BaseToken.Hex(), "QuoteToken", order.QuoteToken)
 		originalOrder := &tradingstate.OrderItem{}
 		*originalOrder = *order
 		originalOrder.Quantity = tradingstate.CloneBigInt(order.Quantity)
-
-		if cancel {
-			order.Status = tradingstate.OrderStatusCancelled
-		}
 
 		newTrades, newRejectedOrders, err := XDCx.CommitOrder(header, coinbase, chain, statedb, XDCXstatedb, tradingstate.GetTradingOrderBookHash(order.BaseToken, order.QuoteToken), order)
 
@@ -588,17 +580,16 @@ func (XDCX *XDCX) GetEmptyTradingState() (*tradingstate.TradingStateDB, error) {
 func (XDCx *XDCX) GetStateCache() tradingstate.Database {
 	return XDCx.StateCache
 }
+
 func (XDCx *XDCX) HasTradingState(block *types.Block, author common.Address) bool {
 	root, err := XDCx.GetTradingStateRoot(block, author)
 	if err != nil {
 		return false
 	}
 	_, err = XDCx.StateCache.OpenTrie(root)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
+
 func (XDCx *XDCX) GetTriegc() *prque.Prque {
 	return XDCx.Triegc
 }
