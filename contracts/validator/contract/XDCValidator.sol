@@ -218,12 +218,11 @@ contract XDCValidator {
         candidateCount = candidateCount.sub(1);
         for (uint256 i = 0; i < candidates.length; i++) {
             if (candidates[i] == _candidate) {
-                //delete element by swapping with last element then reduce array length
-                candidates[i] = candidates[candidates.length-1];
-                candidates.length--;
+                delete candidates[i];
                 break;
             }
         }
+        candidates = removeZeroAddresses(candidates);        
         uint256 cap = validatorsState[_candidate].voters[msg.sender];
         validatorsState[_candidate].cap = validatorsState[_candidate].cap.sub(cap);
         validatorsState[_candidate].voters[msg.sender] = 0;
@@ -251,25 +250,22 @@ contract XDCValidator {
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
+                    delete candidates[i];
                     delete validatorsState[candidates[i]];
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
-                    //delete element by swapping with last element then reduce array length
-                    candidates[i] = candidates[candidates.length-1];
-                    candidates.length--;
-                    break;
                 }
             }
+            candidates = removeZeroAddresses(candidates);           
             for(uint k=0;k<owners.length;k++){
                         if (owners[k]==_invalidMasternode){
+                            delete owners[k];
                             ownerCount--;
-                            //delete element by swapping with last element then reduce array length
-                            owners[k] = owners[owners.length-1];
-                            owners.length--;
                             break;
                 } 
             }
+            owners = removeZeroAddresses(owners);
             emit InvalidatedNode(_invalidMasternode,allMasternodes);
         }
     }
@@ -306,5 +302,23 @@ contract XDCValidator {
         delete withdrawsState[msg.sender].blockNumbers[_index];
         msg.sender.transfer(cap);
         emit Withdraw(msg.sender, _blockNumber, cap);
+    }
+
+    function removeZeroAddresses(
+        address[] memory addresses
+    ) private pure returns (address[] memory) {
+        address[] memory newAddresses = new address[](addresses.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < addresses.length; i++) {
+            if (addresses[i] != address(0)) {
+                newAddresses[j] = addresses[i];
+                j++;
+            }
+        }
+        // Resize the array.
+        assembly {
+            mstore(newAddresses, j)
+        }
+        return newAddresses;
     }
 }
