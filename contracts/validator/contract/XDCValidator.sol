@@ -220,14 +220,12 @@ contract XDCValidator {
             if (candidates[i] == _candidate) {
                 for (uint256 j = 0; j < ownerToCandidate[msg.sender].length; j++) {
                   if (ownerToCandidate[msg.sender][j] == candidates[i]){
-                    //delete element by swapping with last element then reduce array length
-                    ownerToCandidate[msg.sender][j] = ownerToCandidate[msg.sender][ownerToCandidate[msg.sender].length-1];
-                    ownerToCandidate[msg.sender].length--;
-                    if (ownerToCandidate[msg.sender].length == 0){
-                      ownerCount--;
-                    }
-                    break;
+                    delete ownerToCandidate[msg.sender][j];
                   }
+                }
+                ownerToCandidate[msg.sender] = removeZeroAddresses(ownerToCandidate[msg.sender]);
+                if (ownerToCandidate[msg.sender].length == 0){
+                      ownerCount--;
                 }
                 delete candidates[i];
                 break;
@@ -311,4 +309,22 @@ contract XDCValidator {
         msg.sender.transfer(cap);
         emit Withdraw(msg.sender, _blockNumber, cap);
     }
+
+    function removeZeroAddresses(
+        address[] memory addresses
+    ) private pure returns (address[] memory) {
+        address[] memory newAddresses = new address[](addresses.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < addresses.length; i++) {
+            if (addresses[i] != address(0)) {
+                newAddresses[j] = addresses[i];
+                j++;
+            }
+        }
+        // Resize the array.
+        assembly {
+            mstore(newAddresses, j)
+        }
+        return newAddresses;
+    }    
 }
