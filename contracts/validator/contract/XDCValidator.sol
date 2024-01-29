@@ -218,6 +218,17 @@ contract XDCValidator {
         candidateCount = candidateCount.sub(1);
         for (uint256 i = 0; i < candidates.length; i++) {
             if (candidates[i] == _candidate) {
+                for (uint256 j = 0; j < ownerToCandidate[msg.sender].length; j++) {
+                  if (ownerToCandidate[msg.sender][j] == candidates[i]){
+                    //delete element by swapping with last element then reduce array length
+                    ownerToCandidate[msg.sender][j] = ownerToCandidate[msg.sender][ownerToCandidate[msg.sender].length-1];
+                    ownerToCandidate[msg.sender].length--;
+                    if (ownerToCandidate[msg.sender].length == 0){
+                      ownerCount--;
+                    }
+                    break;
+                  }
+                }
                 delete candidates[i];
                 break;
             }
