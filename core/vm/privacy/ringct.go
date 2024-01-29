@@ -183,16 +183,13 @@ func computeSignatureSize(numRing int, ringSize int) int {
 
 	// Calculate each term separately and check for overflow
 	term1 := 8 + 8 + 32 + 32
-	term2 := numRing * ringSize * 32
-	term3 := numRing * ringSize * 33
-	term4 := numRing * 33
+	term2 := numRing * ringSize * 65
 
-	if term2 < 0 || term3 < 0 || term4 < 0 || term2 > MaxInt-term1 || term3 > MaxInt-(term1+term2) || term4 > MaxInt-(term1+term2+term3) {
+	if term2 < 0 || term2 > MaxInt-term1 {
 		return -1
 	}
 
-	result := term1 + term2 + term3 + term4
-	return result
+	return 8 + 8 + 32 + 32 + numRing*ringSize*32 + numRing*ringSize*33 + numRing*33
 }
 
 // deserializes the byteified signature into a RingSignature struct
