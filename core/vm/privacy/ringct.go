@@ -181,11 +181,11 @@ func computeSignatureSize(numRing int, ringSize int) int {
 		return -1
 	}
 
-	// Calculate each term separately and check for overflow
-	term1 := 8 + 8 + 32 + 32
-	term2 := numRing * ringSize * 65
+	// Calculate term and check for overflow
 
-	if term2 < 0 || term2 > MaxInt-term1 {
+	term := numRing * ringSize * 65
+
+	if term < 0 || term < numRing || term < ringSize {
 		return -1
 	}
 
