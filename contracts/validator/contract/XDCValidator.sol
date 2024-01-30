@@ -218,12 +218,14 @@ contract XDCValidator {
         candidateCount = candidateCount.sub(1);
         for (uint256 i = 0; i < candidates.length; i++) {
             if (candidates[i] == _candidate) {
-                for (uint256 j = 0; j < ownerToCandidate[msg.sender].length; j++) {
-                  if (ownerToCandidate[msg.sender][j] == candidates[i]){
-                    delete ownerToCandidate[msg.sender][j];
-                  }
+                address[] memory cacheArray = ownerToCandidate[msg.sender];
+                uint256 cacheArrayLength = cacheArray.length;
+                for (uint256 j = 0; j < cacheArrayLength; j++) {
+                    if (cacheArray[j] == _candidate){
+                        delete cacheArray[j];
+                    }
                 }
-                ownerToCandidate[msg.sender] = removeZeroAddresses(ownerToCandidate[msg.sender]);
+                ownerToCandidate[msg.sender] = removeZeroAddresses(cacheArray);
                 if (ownerToCandidate[msg.sender].length == 0){
                       ownerCount--;
                 }
