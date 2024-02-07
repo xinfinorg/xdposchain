@@ -261,6 +261,10 @@ func Deserialize(r []byte) (*RingSignature, error) {
 
 	sig.SerializedRing = r
 
+	if !Verify(sig, false) {
+		return nil, errors.New("failed to deserialize, invalid ring signature")
+	}
+
 	return sig, nil
 }
 
@@ -510,6 +514,20 @@ func Verify(sig *RingSignature, verifyMes bool) bool {
 	//cast to BitCurve used in go-eth since elliptic.Curve.Add() and elliptic.Curve.ScalarMult() is deprecated
 	curve := sig.Curve.(*secp256k1.BitCurve)
 	image := sig.I
+
+	//check on curve
+	for i := 0; i < numRing; i++ {
+		onCurve := curve.IsOnCurve(image[i].X, image[i].Y)
+		if !onCurve {
+			return false
+		}
+		for j := 0; j < ringsize; j++ {
+			onCurve := curve.IsOnCurve(rings[i][j].X, rings[i][j].Y)
+			if !onCurve {
+				return false
+			}
+		}
+	}
 
 	// calculate c[i+1] = H(m, s[i]*G + c[i]*P[i])
 	// and c[0] = H)(m, s[n-1]*G + c[n-1]*P[n-1]) where n is the ring size
