@@ -391,7 +391,7 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 	for i := 0; i < numRing; i++ {
 		for j := 0; j < ringsize; j++ {
 			if j != s {
-				randomGenerated, err := rand.Int(rand.Reader, curve.Params().P)
+				randomGenerated, err := rand.Int(rand.Reader, curve.Params().N)
 				if err != nil {
 					return nil, err
 				}
@@ -411,7 +411,7 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 	var l []byte
 	//compute L[i][s], R[i][s], i = 0..numRing
 	for i := 0; i < numRing; i++ {
-		randomGenerated, err := rand.Int(rand.Reader, curve.Params().P)
+		randomGenerated, err := rand.Int(rand.Reader, curve.Params().N)
 		if err != nil {
 			return nil, err
 		}
