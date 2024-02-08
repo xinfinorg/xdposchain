@@ -133,18 +133,6 @@ func TestPadTo32Bytes(t *testing.T) {
 	assert.True(t, bytes.Equal(PadTo32Bytes(arr[10:41]), arr[9:41]), "Test PadTo32Bytes shorter than 32 bytes #10")
 }
 
-func TestCurveAddItself(t *testing.T) {
-	curve := crypto.S256().(*secp256k1.BitCurve)
-
-	x1, y1 := curve.ScalarBaseMult(new(big.Int).SetUint64(uint64(1)).Bytes())
-	fmt.Printf("Point(%x, %x)\n", x1, y1)
-
-	x2, y2 := curve.Add(x1, y1, x1, y1)
-	fmt.Printf("Output is Point(%x, %x)\n", x2, y2)
-
-	//pass if no nil pointer error
-}
-
 func TestCurveAddNegative(t *testing.T) {
 	curve := crypto.S256().(*secp256k1.BitCurve)
 
@@ -157,7 +145,15 @@ func TestCurveAddNegative(t *testing.T) {
 	x3, y3 := curve.Add(x1, y1, x2, y2)
 	fmt.Printf("Output is Point(%x, %x)\n", x3, y3)
 
-	//pass if no nil pointer error
+	x0 := new(big.Int).SetUint64(uint64(0))
+	y0 := new(big.Int).SetUint64(uint64(0)) // infinity
+
+
+	if (x3.Cmp(x0) == 0) && (y3.Cmp(y0) == 0) {
+		// fmt.Printf("Correct, add negative of self should yield (0,0)")
+	} else {
+		t.Error("Incorrect, add negative of self did not yield (0,0)") 
+	}
 }
 
 func TestCurveAddZero(t *testing.T) {
