@@ -7,9 +7,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/XinFinOrg/XDPoSChain/crypto"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/XinFinOrg/XDPoSChain/crypto/secp256k1"
 )
@@ -148,11 +147,10 @@ func TestCurveAddNegative(t *testing.T) {
 	x0 := new(big.Int).SetUint64(uint64(0))
 	y0 := new(big.Int).SetUint64(uint64(0)) // infinity
 
-
 	if (x3.Cmp(x0) == 0) && (y3.Cmp(y0) == 0) {
 		// fmt.Printf("Correct, add negative of self should yield (0,0)")
 	} else {
-		t.Error("Incorrect, add negative of self did not yield (0,0)") 
+		t.Error("Incorrect, add negative of self did not yield (0,0)")
 	}
 }
 
@@ -175,8 +173,8 @@ func TestCurveAddZero(t *testing.T) {
 	} else {
 		t.Error("Incorrect, Point on curve changed after Zero addition\n")
 	}
-
 }
+
 func TestOnCurveVerify(t *testing.T) {
 	numRing := 5
 	ringSize := 10
@@ -230,4 +228,47 @@ func TestOnCurveDeserialize(t *testing.T) {
 	}
 	_, err = Deserialize(sig)
 	assert.EqualError(t, err, "failed to deserialize, invalid ring signature")
+}
+
+func TestCurveScalarMult(t *testing.T) {
+	curve := crypto.S256()
+
+	x, y := curve.ScalarBaseMult(curve.Params().N.Bytes())
+	if x == nil && y == nil {
+		fmt.Println("Scalar multiplication with base point returns nil when scalar is the scalar field")
+	}
+
+	x2, y2 := curve.ScalarMult(new(big.Int).SetUint64(uint64(100)), new(big.Int).SetUint64(uint64(2)), curve.Params().N.Bytes())
+	if x2 == nil && y2 == nil {
+		fmt.Println("Scalar multiplication with a point (not necessarily on curve) returns nil when scalar is the scalar field")
+	}
+}
+
+func TestNilPointerDereferencePanic(t *testing.T) {
+	numRing := 5
+	ringSize := 10
+	s := 7
+	rings, privkeys, m, err := GenerateMultiRingParams(numRing, ringSize, s)
+
+	ringSig, err := Sign(m, rings, privkeys, s)
+	if err != nil {
+		fmt.Println("Failed to set up")
+	}
+
+	ringSig.S[0][0] = curve.Params().N // change one sig to the scalar field
+
+	sig, err := ringSig.Serialize()
+	if err != nil {
+		t.Error("Failed to Serialize input Ring signature")
+	}
+
+	deserializedSig, err := Deserialize(sig)
+	if err != nil {
+		t.Error("Failed to Deserialize Ring signature")
+	}
+
+	verified := Verify(deserializedSig, false)
+	if verified {
+		t.Error("Should failed to verify Ring signature as the signature is invalid")
+	}
 }
