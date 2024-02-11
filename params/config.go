@@ -520,22 +520,18 @@ func (c *ChainConfig) IsTIPNoHalvingMNReward(num *big.Int) bool {
 	return isForked(common.TIPNoHalvingMNReward, num)
 }
 func (c *ChainConfig) IsTIPXDCX(num *big.Int) bool {
-	if common.IsTestnet {
-		return isForked(common.TIPXDCXTestnet, num)
-	} else {
-		return isForked(common.TIPXDCX, num)
-	}
+	return isForked(common.TIPXDCX, num) && !isForked(common.TIPXDCXDISABLE, num)
 }
 func (c *ChainConfig) IsTIPXDCXDisable(num *big.Int) bool {
 	return isForked(common.TIPXDCXDISABLE, num)
 }
 
 func (c *ChainConfig) IsTIPXDCXLending(num *big.Int) bool {
-	return isForked(common.TIPXDCXLending, num)
+	return isForked(common.TIPXDCXLending, num) && !isForked(common.TIPXDCXDISABLE, num)
 }
 
 func (c *ChainConfig) IsTIPXDCXCancellationFee(num *big.Int) bool {
-	return isForked(common.TIPXDCXCancellationFee, num)
+	return isForked(common.TIPXDCXCancellationFee, num) && !isForked(common.TIPXDCXDISABLE, num)
 }
 
 // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
