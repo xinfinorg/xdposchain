@@ -526,6 +526,9 @@ func (c *ChainConfig) IsTIPXDCX(num *big.Int) bool {
 		return isForked(common.TIPXDCX, num)
 	}
 }
+func (c *ChainConfig) IsTIPXDCXDisable(num *big.Int) bool {
+	return isForked(common.TIPXDCXDISABLE, num)
+}
 
 func (c *ChainConfig) IsTIPXDCXLending(num *big.Int) bool {
 	return isForked(common.TIPXDCXLending, num)
