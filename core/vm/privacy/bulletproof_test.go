@@ -525,3 +525,30 @@ func TestMRPGeneration(t *testing.T) {
 		t.Error("failed to verify bulletproof")
 	}
 }
+
+func TestDeserializeOutOfRange(t *testing.T) {
+	mRangeProof, _ := MRPProve(Rand64Vector(1))
+	serializedRangeProof := mRangeProof.Serialize()
+	fmt.Printf("proof size: %d\n", len(serializedRangeProof))
+
+	mrp1 := new(MultiRangeProof)
+	err := mrp1.Deserialize(serializedRangeProof)
+	assert.Nil(t, err, " MRProof incorrect")
+
+	mv1 := MRPVerify(mrp1)
+	assert.Equal(t, mv1, true, " MRProof incorrect")
+
+	mrp := new(MultiRangeProof)
+
+	p := make([]byte, 950)
+	copy(p, serializedRangeProof) //take a subslice as the malformed proof
+	fmt.Printf("Malformed proof size: %d\n", len(p))
+
+	err = mrp.Deserialize(p)
+	assert.NotNil(t, err)
+	assert.Error(t, err, "invalid input data")
+	fmt.Println("Successfully checked invalid input data error")
+
+	mv := MRPVerify(mrp)
+	assert.Equal(t, false, mv)
+}

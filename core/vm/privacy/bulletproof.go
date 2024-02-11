@@ -904,6 +904,9 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += 33
 	mrp.A = *toECPoint(compressed)
 
+	if len(proof) <= offset+33 {
+		return errors.New("invalid input data")
+	}
 	compressed = DeserializeCompressed(curve, proof[offset:offset+33])
 	if compressed == nil {
 		return errors.New("failed to decode S")
@@ -911,6 +914,9 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += 33
 	mrp.S = *toECPoint(compressed)
 
+	if len(proof) <= offset+33 {
+		return errors.New("invalid input data")
+	}
 	compressed = DeserializeCompressed(curve, proof[offset:offset+33])
 	if compressed == nil {
 		return errors.New("failed to decode T2")
@@ -918,6 +924,9 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += 33
 	mrp.T1 = *toECPoint(compressed)
 
+	if len(proof) <= offset+33 {
+		return errors.New("invalid input data")
+	}
 	compressed = DeserializeCompressed(curve, proof[offset:offset+33])
 	if compressed == nil {
 		return errors.New("failed to decode T2")
@@ -925,6 +934,9 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += 33
 	mrp.T2 = *toECPoint(compressed)
 
+	if len(proof) <= offset+32*3 {
+		return errors.New("invalid input data")
+	}
 	mrp.Tau = new(big.Int).SetBytes(proof[offset : offset+32])
 	offset += 32
 
@@ -938,6 +950,10 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	mrp.IPP.Deserialize(proof[offset:], numChallenges)
 	offset += len(mrp.IPP.L)*33 + len(mrp.IPP.R)*33 + len(mrp.IPP.Challenges)*32 + 2*32
 
+	// The last `offset += 32` will be the same value as the length of the proof
+	if len(proof) < offset+3*32 {
+		return errors.New("invalid input data")
+	}
 	mrp.Cy = new(big.Int).SetBytes(proof[offset : offset+32])
 	offset += 32
 
@@ -1189,6 +1205,10 @@ func MRPVerify(mrp *MultiRangeProof) bool {
 
 	cy := new(big.Int).SetBytes(chal1s256[:])
 
+	if mrp.Cy == nil || mrp.Cz == nil || mrp.Cx == nil {
+		log.Debug("MRPVerify challenge failed, some of the challenges are nil", "Cy", mrp.Cy, "Cz", mrp.Cz, "Cx", mrp.Cx)
+		return false
+	}
 	if cy.Cmp(mrp.Cy) != 0 {
 		log.Debug("MRPVerify challenge failed!", "Cy", common.Bytes2Hex(mrp.Cy.Bytes()))
 		return false
