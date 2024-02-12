@@ -652,7 +652,7 @@ func (self *worker) commitNewWork() {
 			log.Warn("Can't find coinbase account wallet", "coinbase", self.coinbase, "err", err)
 			return
 		}
-		if self.config.XDPoS != nil && self.chain.Config().IsTIPXDCX(header.Number) && !self.chain.Config().IsTIPXDCXDisable(header.Number) {
+		if self.config.XDPoS != nil && self.chain.Config().IsTIPXDCXMiner(header.Number) {
 			XDCX := self.eth.GetXDCX()
 			XDCXLending := self.eth.GetXDCXLending()
 			if XDCX != nil && header.Number.Uint64() > self.config.XDPoS.Epoch {
