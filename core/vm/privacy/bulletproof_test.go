@@ -525,3 +525,37 @@ func TestMRPGeneration(t *testing.T) {
 		t.Error("failed to verify bulletproof")
 	}
 }
+func TestMRPVerifyOutOfRange(t *testing.T) {
+	values := make([]*big.Int, 2)
+	values[0] = big.NewInt(1000)
+	values[1] = big.NewInt(100000)
+	mrp, err := MRPProve(values)
+	if err != nil {
+		t.Error("failed to generate bulletproof")
+	}
+
+	success := MRPVerify(&mrp)
+	if success {
+		fmt.Printf("The multi-range proof has been successfully verified: %t\n", success)
+	}
+
+	fmt.Printf("Original proof size %d \n", len(mrp.Serialize()))
+	mrp.IPP.Challenges = []*big.Int{} // modify the challenge to empty
+
+	serializedBp := mrp.Serialize()
+	fmt.Println("Successfully serialize the bulletproof")
+	fmt.Printf("Modified proof size %d \n", len(mrp.Serialize()))
+
+	newMRP := new(MultiRangeProof)
+	err = newMRP.Deserialize(serializedBp)
+	if err != nil{
+		assert.EqualError(t, err, "failed to deserialize IPP: input data too short")
+		return
+	}
+	
+	//below is the natural continuation after Deserialize, it shouldn't run because err caught at Deserialize
+	result := MRPVerify(newMRP)
+	if !result {
+		t.Error("failed to verify bulletproof")
+	}
+}

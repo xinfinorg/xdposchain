@@ -435,6 +435,12 @@ func InnerProductVerifyFast(c *big.Int, P, U ECPoint, G, H []ECPoint, ipp InnerP
 
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.Mult(chal1)
+
+	if len(ipp.Challenges) == 0 {
+		log.Debug("No Challenges found len(ipp.Challenges)", len(ipp.Challenges))
+		return false
+	}	
+
 	curIt := len(ipp.Challenges) - 1
 
 	// check all challenges
@@ -935,7 +941,11 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += 32
 
 	numChallenges := int(math.Log2(float64(len(mrp.Comms)*bitsPerValue))) + 1
-	mrp.IPP.Deserialize(proof[offset:], numChallenges)
+	err = mrp.IPP.Deserialize(proof[offset:], numChallenges)
+	if err != nil{
+		return fmt.Errorf("failed to deserialize IPP: %s", err)
+	}
+
 	offset += len(mrp.IPP.L)*33 + len(mrp.IPP.R)*33 + len(mrp.IPP.Challenges)*32 + 2*32
 
 	mrp.Cy = new(big.Int).SetBytes(proof[offset : offset+32])
