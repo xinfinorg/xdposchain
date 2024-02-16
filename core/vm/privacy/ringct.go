@@ -91,7 +91,20 @@ func SerializeCompressed(p *ecdsa.PublicKey) []byte {
 }
 
 func DeserializeCompressed(curve elliptic.Curve, b []byte) *ecdsa.PublicKey {
+	if len(b) < 33 {
+		// Not enough data to represent a compressed public key
+		return nil
+	}
+
 	x := new(big.Int).SetBytes(b[1:33])
+	if x.Sign() == 0 {
+		// This condition checks if the x-coordinate is zero, which is not a
+		// perfect check for the infinity point but serves as a simple proxy.
+		// A more accurate approach might involve checking against specific
+		// representations of the infinity point depending on the curve and
+		// usage context.
+		return nil // or return a representation of the infinity point if your application requires it
+	}
 	// Y = +-sqrt(x^3 + B)
 	x3 := new(big.Int).Mul(x, x)
 	x3.Mul(x3, x)

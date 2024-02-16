@@ -322,7 +322,19 @@ func TestNilPointerDereferencePanic(t *testing.T) {
 		t.Error("Failed to Serialize input Ring signature")
 	}
 
-	_ , err = Deserialize(sig)
+	_, err = Deserialize(sig)
 	// Should failed to verify Ring signature as the signature is invalid
 	assert.EqualError(t, err, "failed to deserialize, invalid ring signature")
+}
+
+func TestDeserializeCompressedForInfinity(t *testing.T) {
+	curve := crypto.S256()
+	pub := []byte{}
+	pub = append(pub, byte(2))
+	xCoordinate := make([]byte, 32) // 0 x-coordinate
+	pub = append(pub, xCoordinate...)
+
+	fmt.Printf("Compressed public key: %x\n", pub) // infinity point
+	pubkey := DeserializeCompressed(curve, pub)
+	assert.Nil(t, pubkey, "DeserializeCompressed should return nil")
 }
