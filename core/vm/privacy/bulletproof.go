@@ -17,6 +17,8 @@ import (
 
 	"github.com/XinFinOrg/XDPoSChain/crypto"
 	"github.com/btcsuite/btcd/btcec"
+
+	"github.com/XinFinOrg/XDPoSChain/crypto/secp256k1"
 )
 
 type Bulletproof struct {
@@ -799,6 +801,7 @@ func (ipp *InnerProdArg) Serialize() []byte {
 }
 
 func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
+	//check L, R points on curve, then check A,B is scalar in field
 	if len(proof) <= 12 {
 		return errors.New("proof data too short")
 	}
@@ -807,6 +810,11 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 	if err != nil {
 		return err
 	}
+	for i := 0; i < len(L); i++ {
+		if !curve.(*secp256k1.BitCurve).IsOnCurve(L[i].X, L[i].Y) || L[i].isZeroPoint() {
+			return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+		}
+	}
 	ipp.L = append(ipp.L, L[:]...)
 	offset += len(L) * 33
 
@@ -814,7 +822,11 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 	if err != nil {
 		return err
 	}
-
+	for i := 0; i < len(R); i++ {
+		if !curve.(*secp256k1.BitCurve).IsOnCurve(R[i].X, R[i].Y) || R[i].isZeroPoint() {
+			return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+		}
+	}
 	ipp.R = append(ipp.R, R[:]...)
 	offset += len(R) * 33
 
@@ -822,9 +834,18 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 		return errors.New("proof data too short")
 	}
 
-	ipp.A = new(big.Int).SetBytes(proof[offset : offset+32])
+	A := new(big.Int).SetBytes(proof[offset : offset+32])
+	if A.Cmp(big.NewInt(0)) == 0 || A.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	ipp.A = A
 	offset += 32
-	ipp.B = new(big.Int).SetBytes(proof[offset : offset+32])
+
+	B := new(big.Int).SetBytes(proof[offset : offset+32])
+	if B.Cmp(big.NewInt(0)) == 0 || B.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	ipp.B = B
 	offset += 32
 
 	if len(proof) <= (offset + 32*numChallenges) {
@@ -890,6 +911,11 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	if err != nil {
 		return err
 	}
+	for i := 0; i < len(Cs); i++ {
+		if !curve.(*secp256k1.BitCurve).IsOnCurve(Cs[i].X, Cs[i].Y) || Cs[i].isZeroPoint() {
+			return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+		}
+	}
 	mrp.Comms = append(mrp.Comms, Cs[:]...)
 
 	offset := 4 + len(Cs)*33
@@ -902,49 +928,89 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 		return errors.New("failed to decode A")
 	}
 	offset += 33
-	mrp.A = *toECPoint(compressed)
+	A := *toECPoint(compressed)
+	if !curve.(*secp256k1.BitCurve).IsOnCurve(A.X, A.Y) || A.isZeroPoint() {
+		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	}
+	mrp.A = A
 
 	compressed = DeserializeCompressed(curve, proof[offset:offset+33])
 	if compressed == nil {
 		return errors.New("failed to decode S")
 	}
 	offset += 33
-	mrp.S = *toECPoint(compressed)
+	S := *toECPoint(compressed)
+	if !curve.(*secp256k1.BitCurve).IsOnCurve(S.X, S.Y) || S.isZeroPoint() {
+		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	}
+	mrp.S = S
 
 	compressed = DeserializeCompressed(curve, proof[offset:offset+33])
 	if compressed == nil {
 		return errors.New("failed to decode T2")
 	}
 	offset += 33
-	mrp.T1 = *toECPoint(compressed)
+	T1 := *toECPoint(compressed)
+	if !curve.(*secp256k1.BitCurve).IsOnCurve(T1.X, T1.Y) || T1.isZeroPoint() {
+		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	}
+	mrp.T1 = T1
 
 	compressed = DeserializeCompressed(curve, proof[offset:offset+33])
 	if compressed == nil {
 		return errors.New("failed to decode T2")
 	}
 	offset += 33
-	mrp.T2 = *toECPoint(compressed)
+	T2 := *toECPoint(compressed)
+	if !curve.(*secp256k1.BitCurve).IsOnCurve(T2.X, T2.Y) || T2.isZeroPoint() {
+		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	}
+	mrp.T2 = T2
 
-	mrp.Tau = new(big.Int).SetBytes(proof[offset : offset+32])
+	Tau := new(big.Int).SetBytes(proof[offset : offset+32])
+	if Tau.Cmp(big.NewInt(0)) == 0 || Tau.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	mrp.Tau = Tau
 	offset += 32
 
-	mrp.Th = new(big.Int).SetBytes(proof[offset : offset+32])
+	Th := new(big.Int).SetBytes(proof[offset : offset+32])
+	if Th.Cmp(big.NewInt(0)) == 0 || Th.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	mrp.Th = Th
 	offset += 32
 
-	mrp.Mu = new(big.Int).SetBytes(proof[offset : offset+32])
+	Mu := new(big.Int).SetBytes(proof[offset : offset+32])
+	if Mu.Cmp(big.NewInt(0)) == 0 || Mu.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	mrp.Mu = Mu
 	offset += 32
 
 	numChallenges := int(math.Log2(float64(len(mrp.Comms)*bitsPerValue))) + 1
 	mrp.IPP.Deserialize(proof[offset:], numChallenges)
 	offset += len(mrp.IPP.L)*33 + len(mrp.IPP.R)*33 + len(mrp.IPP.Challenges)*32 + 2*32
 
-	mrp.Cy = new(big.Int).SetBytes(proof[offset : offset+32])
+	Cy := new(big.Int).SetBytes(proof[offset : offset+32])
+	if Cy.Cmp(big.NewInt(0)) == 0 || Cy.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	mrp.Cy = Cy
 	offset += 32
 
-	mrp.Cz = new(big.Int).SetBytes(proof[offset : offset+32])
+	Cz := new(big.Int).SetBytes(proof[offset : offset+32])
+	if Cz.Cmp(big.NewInt(0)) == 0 || Cz.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	mrp.Cz = Cz
 	offset += 32
 
-	mrp.Cx = new(big.Int).SetBytes(proof[offset : offset+32])
+	Cx := new(big.Int).SetBytes(proof[offset : offset+32])
+	if Cx.Cmp(big.NewInt(0)) == 0 || Cx.CmpAbs(curve.Params().N) != 1 {
+		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+	}
+	mrp.Cx = Cx
 	offset += 32
 
 	return nil
@@ -1383,6 +1449,14 @@ func genECPrimeGroupKey(n int) CryptoParams {
 		n,
 		ch,
 		cg}
+}
+
+func (Point *ECPoint) isZeroPoint() bool {
+	zero := big.NewInt(0)
+	if Point.X.Cmp(zero) == 0 && Point.Y.Cmp(zero) == 0 {
+		return true
+	}
+	return false
 }
 
 func init() {
