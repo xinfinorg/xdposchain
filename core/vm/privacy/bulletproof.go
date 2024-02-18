@@ -801,7 +801,6 @@ func (ipp *InnerProdArg) Serialize() []byte {
 }
 
 func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
-	//check L, R points on curve, then check A,B is scalar in field
 	if len(proof) <= 12 {
 		return errors.New("proof data too short")
 	}
