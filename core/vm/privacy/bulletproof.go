@@ -29,6 +29,9 @@ var EC CryptoParams
 var VecLength = 512 // support maximum 8 spending value, each 64 bit (gwei is unit)
 var curve elliptic.Curve = crypto.S256()
 
+var errScalarOutOfRange = errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+var errECPointNotOnCurve = errors.New("invalid ECPoint, point is (0,0) or not on curve")
+
 /*
 Implementation of BulletProofs
 */
@@ -810,8 +813,8 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 		return err
 	}
 	for i := 0; i < len(L); i++ {
-		if !curve.(*secp256k1.BitCurve).IsOnCurve(L[i].X, L[i].Y) || L[i].isZeroPoint() {
-			return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+		if L[i].isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(L[i].X, L[i].Y) {
+			return errECPointNotOnCurve
 		}
 	}
 	ipp.L = append(ipp.L, L[:]...)
@@ -822,8 +825,8 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 		return err
 	}
 	for i := 0; i < len(R); i++ {
-		if !curve.(*secp256k1.BitCurve).IsOnCurve(R[i].X, R[i].Y) || R[i].isZeroPoint() {
-			return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+		if R[i].isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(R[i].X, R[i].Y) {
+			return errECPointNotOnCurve
 		}
 	}
 	ipp.R = append(ipp.R, R[:]...)
@@ -835,14 +838,14 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 
 	A := new(big.Int).SetBytes(proof[offset : offset+32])
 	if A.Cmp(big.NewInt(0)) == 0 || A.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	ipp.A = A
 	offset += 32
 
 	B := new(big.Int).SetBytes(proof[offset : offset+32])
 	if B.Cmp(big.NewInt(0)) == 0 || B.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	ipp.B = B
 	offset += 32
@@ -911,8 +914,8 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 		return err
 	}
 	for i := 0; i < len(Cs); i++ {
-		if !curve.(*secp256k1.BitCurve).IsOnCurve(Cs[i].X, Cs[i].Y) || Cs[i].isZeroPoint() {
-			return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+		if Cs[i].isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(Cs[i].X, Cs[i].Y) {
+			return errECPointNotOnCurve
 		}
 	}
 	mrp.Comms = append(mrp.Comms, Cs[:]...)
@@ -928,8 +931,8 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	}
 	offset += 33
 	A := *toECPoint(compressed)
-	if !curve.(*secp256k1.BitCurve).IsOnCurve(A.X, A.Y) || A.isZeroPoint() {
-		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	if A.isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(A.X, A.Y) {
+		return errECPointNotOnCurve
 	}
 	mrp.A = A
 
@@ -939,8 +942,8 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	}
 	offset += 33
 	S := *toECPoint(compressed)
-	if !curve.(*secp256k1.BitCurve).IsOnCurve(S.X, S.Y) || S.isZeroPoint() {
-		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	if S.isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(S.X, S.Y) {
+		return errECPointNotOnCurve
 	}
 	mrp.S = S
 
@@ -950,8 +953,8 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	}
 	offset += 33
 	T1 := *toECPoint(compressed)
-	if !curve.(*secp256k1.BitCurve).IsOnCurve(T1.X, T1.Y) || T1.isZeroPoint() {
-		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	if T1.isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(T1.X, T1.Y) {
+		return errECPointNotOnCurve
 	}
 	mrp.T1 = T1
 
@@ -961,28 +964,28 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	}
 	offset += 33
 	T2 := *toECPoint(compressed)
-	if !curve.(*secp256k1.BitCurve).IsOnCurve(T2.X, T2.Y) || T2.isZeroPoint() {
-		return errors.New("invalid ECPoint, point is (0,0) or not on curve")
+	if T2.isZeroPoint() || !curve.(*secp256k1.BitCurve).IsOnCurve(T2.X, T2.Y) {
+		return errECPointNotOnCurve
 	}
 	mrp.T2 = T2
 
 	Tau := new(big.Int).SetBytes(proof[offset : offset+32])
 	if Tau.Cmp(big.NewInt(0)) == 0 || Tau.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	mrp.Tau = Tau
 	offset += 32
 
 	Th := new(big.Int).SetBytes(proof[offset : offset+32])
 	if Th.Cmp(big.NewInt(0)) == 0 || Th.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	mrp.Th = Th
 	offset += 32
 
 	Mu := new(big.Int).SetBytes(proof[offset : offset+32])
 	if Mu.Cmp(big.NewInt(0)) == 0 || Mu.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	mrp.Mu = Mu
 	offset += 32
@@ -993,21 +996,21 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 
 	Cy := new(big.Int).SetBytes(proof[offset : offset+32])
 	if Cy.Cmp(big.NewInt(0)) == 0 || Cy.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	mrp.Cy = Cy
 	offset += 32
 
 	Cz := new(big.Int).SetBytes(proof[offset : offset+32])
 	if Cz.Cmp(big.NewInt(0)) == 0 || Cz.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	mrp.Cz = Cz
 	offset += 32
 
 	Cx := new(big.Int).SetBytes(proof[offset : offset+32])
 	if Cx.Cmp(big.NewInt(0)) == 0 || Cx.CmpAbs(curve.Params().N) != 1 {
-		return errors.New("invalid scalar, scalar should be nonzero within the range of the scalar field")
+		return errScalarOutOfRange
 	}
 	mrp.Cx = Cx
 	offset += 32
@@ -1452,10 +1455,7 @@ func genECPrimeGroupKey(n int) CryptoParams {
 
 func (Point *ECPoint) isZeroPoint() bool {
 	zero := big.NewInt(0)
-	if Point.X.Cmp(zero) == 0 && Point.Y.Cmp(zero) == 0 {
-		return true
-	}
-	return false
+	return Point.X.Cmp(zero) == 0 && Point.Y.Cmp(zero) == 0
 }
 
 func init() {
