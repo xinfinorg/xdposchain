@@ -837,14 +837,14 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 	}
 
 	A := new(big.Int).SetBytes(proof[offset : offset+32])
-	if A.Cmp(big.NewInt(0)) == 0 || A.CmpAbs(curve.Params().N) != 1 {
+	if A.Cmp(big.NewInt(0)) == 0 || A.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	ipp.A = A
 	offset += 32
 
 	B := new(big.Int).SetBytes(proof[offset : offset+32])
-	if B.Cmp(big.NewInt(0)) == 0 || B.CmpAbs(curve.Params().N) != 1 {
+	if B.Cmp(big.NewInt(0)) == 0 || B.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	ipp.B = B
@@ -970,21 +970,21 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	mrp.T2 = T2
 
 	Tau := new(big.Int).SetBytes(proof[offset : offset+32])
-	if Tau.Cmp(big.NewInt(0)) == 0 || Tau.CmpAbs(curve.Params().N) != 1 {
+	if Tau.Cmp(big.NewInt(0)) == 0 || Tau.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	mrp.Tau = Tau
 	offset += 32
 
 	Th := new(big.Int).SetBytes(proof[offset : offset+32])
-	if Th.Cmp(big.NewInt(0)) == 0 || Th.CmpAbs(curve.Params().N) != 1 {
+	if Th.Cmp(big.NewInt(0)) == 0 || Th.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	mrp.Th = Th
 	offset += 32
 
 	Mu := new(big.Int).SetBytes(proof[offset : offset+32])
-	if Mu.Cmp(big.NewInt(0)) == 0 || Mu.CmpAbs(curve.Params().N) != 1 {
+	if Mu.Cmp(big.NewInt(0)) == 0 || Mu.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	mrp.Mu = Mu
@@ -995,21 +995,21 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += len(mrp.IPP.L)*33 + len(mrp.IPP.R)*33 + len(mrp.IPP.Challenges)*32 + 2*32
 
 	Cy := new(big.Int).SetBytes(proof[offset : offset+32])
-	if Cy.Cmp(big.NewInt(0)) == 0 || Cy.CmpAbs(curve.Params().N) != 1 {
+	if Cy.Cmp(big.NewInt(0)) == 0 || Cy.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	mrp.Cy = Cy
 	offset += 32
 
 	Cz := new(big.Int).SetBytes(proof[offset : offset+32])
-	if Cz.Cmp(big.NewInt(0)) == 0 || Cz.CmpAbs(curve.Params().N) != 1 {
+	if Cz.Cmp(big.NewInt(0)) == 0 || Cz.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	mrp.Cz = Cz
 	offset += 32
 
 	Cx := new(big.Int).SetBytes(proof[offset : offset+32])
-	if Cx.Cmp(big.NewInt(0)) == 0 || Cx.CmpAbs(curve.Params().N) != 1 {
+	if Cx.Cmp(big.NewInt(0)) == 0 || Cx.CmpAbs(curve.Params().N) == 1 {
 		return errScalarOutOfRange
 	}
 	mrp.Cx = Cx

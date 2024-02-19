@@ -508,6 +508,7 @@ func TestMRPGeneration(t *testing.T) {
 	values[1] = big.NewInt(100000)
 	mrp, err := MRPProve(values)
 	if err != nil {
+		fmt.Println(err)
 		t.Error("failed to generate bulletproof")
 	}
 
@@ -515,7 +516,9 @@ func TestMRPGeneration(t *testing.T) {
 	serilizedBp := mrp.Serialize()
 
 	newMRP := new(MultiRangeProof)
-	if newMRP.Deserialize(serilizedBp) != nil {
+	err = newMRP.Deserialize(serilizedBp)
+	if err != nil {
+		fmt.Println(err)
 		t.Error("failed to deserialized bulletproof")
 	}
 
