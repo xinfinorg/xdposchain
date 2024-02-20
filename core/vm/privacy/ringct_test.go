@@ -322,3 +322,19 @@ func TestNilPointerDereferencePanic(t *testing.T) {
 	// Should failed to verify Ring signature as the signature is invalid
 	assert.EqualError(t, err, "failed to deserialize, invalid ring signature")
 }
+
+func TestCustom(t *testing.T){
+	sample := "just a string"
+	sample_b := []byte(sample)
+	fmt.Println(sample_b)
+	h := crypto.Keccak256(sample_b)
+	fmt.Println(h)
+	fmt.Println(len(h))
+	fmt.Println(curve.Params().N)
+	h_scalar, err := HashToScalar(sample_b, curve)
+	if err != nil{
+		fmt.Println(err)
+		t.Error("")
+	}
+	fmt.Println(h_scalar)
+}
