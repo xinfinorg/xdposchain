@@ -1454,8 +1454,7 @@ func genECPrimeGroupKey(n int) CryptoParams {
 }
 
 func (Point *ECPoint) isZeroPoint() bool {
-	zero := big.NewInt(0)
-	return Point.X.Cmp(zero) == 0 && Point.Y.Cmp(zero) == 0
+	return Point.X.Cmp(common.Big0) == 0 && Point.Y.Cmp(common.Big0) == 0
 }
 
 func init() {
