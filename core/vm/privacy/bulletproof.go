@@ -233,7 +233,14 @@ func HashPointsToBytes(points []ECPoint) []byte {
 		input = append(input, pointInByte...)
 	}
 
-	return crypto.Keccak256(input)
+	hashedInt, err := HashToScalar(input, curve)
+	if err != nil {
+		check(err)
+	}
+
+	hashedBytes := hashedInt.Bytes()
+
+	return hashedBytes
 }
 
 /*
