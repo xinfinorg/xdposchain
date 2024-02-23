@@ -438,7 +438,6 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 	}
 
 	// concatenate m and u*G and calculate c[s+1] = H(m, L_s, R_s)
-	// C_j := crypto.Keccak256(append(m[:], l...))
 	C_j, err := HashToScalar(append(m[:], l...), curve)
 	if err != nil{
 		return nil, err
@@ -448,10 +447,8 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 		idx = 0
 	}
 	if idx == 0 {
-		// C[0] = new(big.Int).SetBytes(C_j[:])
 		C[0] = C_j
 	} else {
-		// C[idx] = new(big.Int).SetBytes(C_j[:])
 		C[idx] = C_j
 	}
 	for idx != s {
@@ -492,12 +489,10 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 		} else {
 			ciIdx = idx
 		}
-		// cSha := crypto.Keccak256(append(PadTo32Bytes(m[:]), l...))
 		cSha, err := HashToScalar(append(PadTo32Bytes(m[:]), l...), curve)
 		if err != nil {
 			return nil, err
 		}
-		// C[ciIdx] = new(big.Int).SetBytes(cSha[:])
 		C[ciIdx] = cSha
 	}
 
@@ -590,9 +585,6 @@ func Verify(sig *RingSignature, verifyMes bool) bool {
 
 		// calculate c[i+1] = H(m, L_i, R_i)
 		//cj_mes := append(PadTo32Bytes(sig.M[:]), l...)
-		
-
-		// C_j := crypto.Keccak256(append(PadTo32Bytes(sig.M[:]), l...))
 		C_j, err := HashToScalar(append(PadTo32Bytes(sig.M[:]), l...), curve)
 		if err != nil{
 			return false //or handle the error as required
@@ -604,12 +596,7 @@ func Verify(sig *RingSignature, verifyMes bool) bool {
 		/*if j == ringsize-1 {
 			C[0] = new(big.Int).SetBytes(C_j[:])
 		} else {*/
-		
-
-		// C[j+1] = new(big.Int).SetBytes(C_j[:])
 		C[j+1] = C_j
-
-
 		//log.Info("C", "j", j + 1, "C", common.Bytes2Hex(C[j + 1].Bytes()))
 		//}
 	}
