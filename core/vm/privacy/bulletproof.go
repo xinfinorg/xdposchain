@@ -803,6 +803,13 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 		return errors.New("proof data too short")
 	}
 	offset := 0
+
+	// Check for L array
+	expectedLSize := (numChallenges - 1) * 33
+	if len(proof) < offset+expectedLSize {
+		return errors.New("proof data too short for L array")
+	}
+	// Deserialize L array
 	L, err := deserializePointArray(proof[:], uint32(numChallenges)-1)
 	if err != nil {
 		return err
@@ -810,6 +817,11 @@ func (ipp *InnerProdArg) Deserialize(proof []byte, numChallenges int) error {
 	ipp.L = append(ipp.L, L[:]...)
 	offset += len(L) * 33
 
+	// Check for R array with adjusted numPoints
+	expectedRSize := (numChallenges - 1) * 33
+	if len(proof) < offset+expectedRSize {
+		return errors.New("proof data too short for R array")
+	}
 	R, err := deserializePointArray(proof[offset:], uint32(numChallenges)-1)
 	if err != nil {
 		return err
@@ -947,9 +959,6 @@ func (mrp *MultiRangeProof) Deserialize(proof []byte) error {
 	offset += 32
 
 	numChallenges := int(math.Log2(float64(len(mrp.Comms)*bitsPerValue))) + 1
-	if len(proof) <= offset+numChallenges {
-		return errors.New("invalid input data")
-	}
 	mrp.IPP.Deserialize(proof[offset:], numChallenges)
 	offset += len(mrp.IPP.L)*33 + len(mrp.IPP.R)*33 + len(mrp.IPP.Challenges)*32 + 2*32
 
