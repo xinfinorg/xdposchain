@@ -280,7 +280,7 @@ func GenerateNewParams(G, H []ECPoint, x *big.Int, L, R, P ECPoint) ([]ECPoint, 
 Proves that <a,b>=c
 This is a building block for BulletProofs
 */
-func InnerProductProveSub(proof InnerProdArg, G, H []ECPoint, a []*big.Int, b []*big.Int, u ECPoint, P ECPoint) InnerProdArg {
+func InnerProductProveSub(proof InnerProdArg, G, H []ECPoint, a []*big.Int, b []*big.Int, u ECPoint, P ECPoint, cumulativeTranscript []ECPoint) InnerProdArg {
 	if len(a) == 1 {
 		// Prover sends a & b
 		proof.A = a[0]
@@ -299,12 +299,15 @@ func InnerProductProveSub(proof InnerProdArg, G, H []ECPoint, a []*big.Int, b []
 	proof.L[curIt] = L
 	proof.R[curIt] = R
 
+	// Append current L and R to the cumulative transcript
+	cumulativeTranscript = append(cumulativeTranscript, L, R)
+
 	// prover sends L & R and gets a challenge
 	// LvalInBytes := append(PadTo32Bytes(L.X.Bytes()), PadTo32Bytes(L.Y.Bytes())...)
 	// RvalInBytes := append(PadTo32Bytes(R.X.Bytes()), PadTo32Bytes(R.Y.Bytes())...)
 	// input := append(LvalInBytes, RvalInBytes...)
 	// s256 := crypto.Keccak256(input)
-	s256 := HashPointsToBytes([]ECPoint{L, R})
+	s256 := HashPointsToBytes(cumulativeTranscript)
 
 	x := new(big.Int).SetBytes(s256[:])
 
@@ -322,7 +325,7 @@ func InnerProductProveSub(proof InnerProdArg, G, H []ECPoint, a []*big.Int, b []
 		ScalarVectorMul(b[:nprime], xinv),
 		ScalarVectorMul(b[nprime:], x))
 
-	return InnerProductProveSub(proof, Gprime, Hprime, aprime, bprime, u, Pprime)
+	return InnerProductProveSub(proof, Gprime, Hprime, aprime, bprime, u, Pprime, cumulativeTranscript)
 }
 
 // rpresult.IPP = InnerProductProve(left, right, that, P, EC.U, EC.BPG, HPrime)
@@ -352,7 +355,7 @@ func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U ECPoint, G, 
 	ux := U.Mult(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
 
-	return InnerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
+	return InnerProductProveSub(runningProof, G, H, a, b, ux, Pprime, []ECPoint{})
 }
 
 /*
@@ -365,13 +368,11 @@ P : the Pedersen commitment we are verifying is a commitment to the innner produ
 ipp : the proof
 */
 func InnerProductVerify(c *big.Int, P, U ECPoint, G, H []ECPoint, ipp InnerProdArg) bool {
-	//fmt.Println("Verifying Inner Product Argument")
-	//fmt.Printf("Commitment Value: %s \n", P)
-	// s1 := sha256.Sum256([]byte(P.X.String() + P.Y.String()))
+	// Initialize the cumulative transcript with P and U, as they are part of the public input
+	cumulativeTranscript := []ECPoint{P, U}
 
-	// input := append(PadTo32Bytes(P.X.Bytes()), PadTo32Bytes(P.Y.Bytes())...)
-	// s1 := crypto.Keccak256(input)
-	s1 := HashPointsToBytes([]ECPoint{P})
+	// The initial challenge is derived from the commitment P and point U
+	s1 := HashPointsToBytes(cumulativeTranscript)
 
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.Mult(chal1)
@@ -393,15 +394,9 @@ func InnerProductVerify(c *big.Int, P, U ECPoint, G, H []ECPoint, ipp InnerProdA
 		Lval := ipp.L[curIt]
 		Rval := ipp.R[curIt]
 
-		// prover sends L & R and gets a challenge
-		// s256 := sha256.Sum256([]byte(
-		// 	Lval.X.String() + Lval.Y.String() +
-		// 		Rval.X.String() + Rval.Y.String()))
-		// LvalInBytes := append(PadTo32Bytes(Lval.X.Bytes()), PadTo32Bytes(Lval.Y.Bytes())...)
-		// RvalInBytes := append(PadTo32Bytes(Rval.X.Bytes()), PadTo32Bytes(Rval.Y.Bytes())...)
-		// input := append(LvalInBytes, RvalInBytes...)
-		// s256 := crypto.Keccak256(input)
-		s256 := HashPointsToBytes([]ECPoint{Lval, Rval})
+		// Append L and R of the current iteration to the cumulative transcript before generating the challenge
+		cumulativeTranscript = append(cumulativeTranscript, Lval, Rval)
+		s256 := HashPointsToBytes(cumulativeTranscript)
 
 		chal2 := new(big.Int).SetBytes(s256[:])
 
@@ -429,9 +424,10 @@ we replace n separate exponentiations with a single multi-exponentiation.
 */
 
 func InnerProductVerifyFast(c *big.Int, P, U ECPoint, G, H []ECPoint, ipp InnerProdArg) bool {
-	// input := append(PadTo32Bytes(P.X.Bytes()), PadTo32Bytes(P.Y.Bytes())...)
-	// s1 := crypto.Keccak256(input)
-	s1 := HashPointsToBytes([]ECPoint{P})
+	// Initialize the cumulative transcript with P and U
+	cumulativeTranscript := []ECPoint{P, U}
+	// The initial challenge incorporates U
+	s1 := HashPointsToBytes(cumulativeTranscript)
 
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.Mult(chal1)
@@ -447,12 +443,9 @@ func InnerProductVerifyFast(c *big.Int, P, U ECPoint, G, H []ECPoint, ipp InnerP
 		Lval := ipp.L[j]
 		Rval := ipp.R[j]
 
-		// prover sends L & R and gets a challenge
-		// LvalInBytes := append(PadTo32Bytes(Lval.X.Bytes()), PadTo32Bytes(Lval.Y.Bytes())...)
-		// RvalInBytes := append(PadTo32Bytes(Rval.X.Bytes()), PadTo32Bytes(Rval.Y.Bytes())...)
-		// input := append(LvalInBytes, RvalInBytes...)
-		// s256 := crypto.Keccak256(input)
-		s256 := HashPointsToBytes([]ECPoint{Lval, Rval})
+		// Update the cumulative transcript for the current round
+		cumulativeTranscript = append(cumulativeTranscript, Lval, Rval)
+		s256 := HashPointsToBytes(cumulativeTranscript)
 
 		chal2 := new(big.Int).SetBytes(s256[:])
 
