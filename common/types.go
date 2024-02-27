@@ -41,6 +41,7 @@ const (
 	XDCXLendingFinalizedTradeAddress = "xdc0000000000000000000000000000000000000094"
 	XDCNativeAddress                 = "xdc0000000000000000000000000000000000000001"
 	LendingLockAddress               = "xdc0000000000000000000000000000000000000011"
+	Rewards                          = "xdc9999999999999999999999999999999999999999" //TODO Replace with the acutual address
 	VoteMethod                       = "0x6dd7d8ea"
 	UnvoteMethod                     = "0x02aa9be2"
 	ProposeMethod                    = "0x01267951"

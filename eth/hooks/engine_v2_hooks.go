@@ -16,6 +16,9 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/eth/util"
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/params"
+	"github.com/XinFinOrg/XDPoSChain/accounts/abi/bind"
+
+	contractRewards "github.com/XinFinOrg/XDPoSChain/contracts/rewards"
 )
 
 func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConfig *params.ChainConfig) {
@@ -212,8 +215,60 @@ func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 		}
 		rewards["rewards"] = voterResults
 		log.Debug("Time Calculated HookReward ", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
+
+
+		client, err := bc.GetClient()
+		if err != nil {
+			return nil, err
+		}
+
+		addr := common.HexToAddress(common.Rewards)
+		rewardsContract, err := contractRewards.NewRewards(addr, client)
+
+		opts := new(bind.TransactOpts)
+
+		epochNum, blockHashes, standbyNodes, err := GetStandByNodeRewardsData(adaptor, chain, header)
+		if err != nil {
+			log.Error("[HookReward] Fail to get data for standby nodes rewards.", "error", err)
+			return nil, err
+		}
+
+		rewardsContract.CalculateRewards(opts, chainReward, blockHashes, standbyNodes, new(big.Int).SetUint64(epochNum))
+
 		return rewards, nil
 	}
+}
+
+func GetStandByNodeRewardsData(c *XDPoS.XDPoS, chain consensus.ChainReader, header *types.Header) (uint64, [][common.HashLength]byte, []common.Address, error) {
+	_, epochNum, err := c.IsEpochSwitch(header)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+
+	number := header.Number.Uint64()
+	rewardEpochCount := 2
+	var blockHashes [][common.HashLength]byte
+	
+	epochCount := 0
+	var standbynodes []common.Address
+	for i := number - 1; ; i-- {
+		header = chain.GetHeader(header.ParentHash, i)
+		isEpochSwitch, _, err := c.IsEpochSwitch(header)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		if isEpochSwitch && i != chain.Config().XDPoS.V2.SwitchBlock.Uint64()+1 {
+			epochCount += 1
+			if epochCount == rewardEpochCount {
+				standbynodes = c.EngineV2.GetStandbynodes(chain, header);
+				break
+			}
+		}
+		blockHashes = append(blockHashes, [32]byte(header.Hash().Bytes()))
+	}
+
+	return epochNum, blockHashes, standbynodes, nil
+
 }
 
 // get signing transaction sender count
