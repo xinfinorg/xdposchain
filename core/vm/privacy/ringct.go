@@ -334,9 +334,9 @@ func GenKeyImage(privkey *ecdsa.PrivateKey) *ecdsa.PublicKey {
 func HashPoint(p *ecdsa.PublicKey) (*big.Int, *big.Int) {
 	input := append(PadTo32Bytes(p.X.Bytes()), PadTo32Bytes(p.Y.Bytes())...)
 	log.Info("HashPoint", "input ", common.Bytes2Hex(input))
-	hash := crypto.Keccak256(input)
-	log.Info("HashPoint", "hash ", common.Bytes2Hex(hash))
-	return p.Curve.ScalarBaseMult(hash[:])
+	point := hashToPoint(input, p.Curve)
+
+	return point.X, point.Y
 }
 
 // create ring signature from list of public keys given inputs:
@@ -438,15 +438,15 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 	}
 
 	// concatenate m and u*G and calculate c[s+1] = H(m, L_s, R_s)
-	C_j := crypto.Keccak256(append(m[:], l...))
+	C_j := hashToScalar(append(m[:], l...), curve)
 	idx := s + 1
 	if idx == ringsize {
 		idx = 0
 	}
 	if idx == 0 {
-		C[0] = new(big.Int).SetBytes(C_j[:])
+		C[0] = C_j
 	} else {
-		C[idx] = new(big.Int).SetBytes(C_j[:])
+		C[idx] = C_j
 	}
 	for idx != s {
 		var l []byte
@@ -486,8 +486,8 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 		} else {
 			ciIdx = idx
 		}
-		cSha := crypto.Keccak256(append(PadTo32Bytes(m[:]), l...))
-		C[ciIdx] = new(big.Int).SetBytes(cSha[:])
+		cSha := hashToScalar(append(PadTo32Bytes(m[:]), l...), curve)
+		C[ciIdx] = cSha
 	}
 
 	//compute S[j][s] = alpha[j] - c[s] * privkeys[j], privkeys[j] = private key corresponding to key image I[j]
@@ -579,13 +579,14 @@ func Verify(sig *RingSignature, verifyMes bool) bool {
 
 		// calculate c[i+1] = H(m, L_i, R_i)
 		//cj_mes := append(PadTo32Bytes(sig.M[:]), l...)
-		C_j := crypto.Keccak256(append(PadTo32Bytes(sig.M[:]), l...))
+		C_j := hashToScalar(append(PadTo32Bytes(sig.M[:]), l...), curve)
+
 		//log.Info("C hash input", "j", j + 1, "C_input", common.Bytes2Hex(cj_mes))
 
 		/*if j == ringsize-1 {
 			C[0] = new(big.Int).SetBytes(C_j[:])
 		} else {*/
-		C[j+1] = new(big.Int).SetBytes(C_j[:])
+		C[j+1] = C_j
 		//log.Info("C", "j", j + 1, "C", common.Bytes2Hex(C[j + 1].Bytes()))
 		//}
 	}

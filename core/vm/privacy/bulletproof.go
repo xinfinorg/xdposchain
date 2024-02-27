@@ -225,7 +225,7 @@ func ScalarVectorMul(v []*big.Int, s *big.Int) []*big.Int {
 	return result
 }
 
-func HashPointsToBytes(points []ECPoint) []byte {
+func HashPointsToBytes(points []ECPoint) ([]byte) {
 	input := []byte{}
 
 	for index := 0; index < len(points); index++ {
@@ -233,7 +233,11 @@ func HashPointsToBytes(points []ECPoint) []byte {
 		input = append(input, pointInByte...)
 	}
 
-	return crypto.Keccak256(input)
+	hashedInt := hashToScalar(input, curve)
+
+	hashedBytes := hashedInt.Bytes()
+
+	return hashedBytes
 }
 
 /*
