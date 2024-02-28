@@ -120,7 +120,8 @@ func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, m
 			// Only process when private key empty in state db.
 			// Save randomize key into state db.
 			randomizeKeyValue := RandStringByte(32)
-			tx, err := BuildTxSecretRandomize(nonce+1, common.HexToAddress(common.RandomizeSMC), chainConfig.XDPoS.Epoch, randomizeKeyValue)
+			nonce := pool.State().GetNonce(account.Address)
+			tx, err := BuildTxSecretRandomize(nonce, common.HexToAddress(common.RandomizeSMC), chainConfig.XDPoS.Epoch, randomizeKeyValue)
 			if err != nil {
 				log.Error("Fail to get tx opening for randomize", "error", err)
 				return err
@@ -149,7 +150,8 @@ func CreateTransactionSign(chainConfig *params.ChainConfig, pool *core.TxPool, m
 				return err
 			}
 
-			tx, err := BuildTxOpeningRandomize(nonce+1, common.HexToAddress(common.RandomizeSMC), randomizeKeyValue)
+			nonce := pool.State().GetNonce(account.Address)
+			tx, err := BuildTxOpeningRandomize(nonce, common.HexToAddress(common.RandomizeSMC), randomizeKeyValue)
 			if err != nil {
 				log.Error("Fail to get tx opening for randomize", "error", err)
 				return err
