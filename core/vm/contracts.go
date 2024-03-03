@@ -446,6 +446,7 @@ func (c *bn256PairingByzantium) Run(input []byte) ([]byte, error) {
 	return runBn256Pairing(input)
 }
 
+
 type blake2F struct{}
 
 func (c *blake2F) RequiredGas(input []byte) uint64 {
