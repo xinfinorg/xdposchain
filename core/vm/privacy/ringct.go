@@ -349,12 +349,25 @@ func Sign(m [32]byte, rings []Ring, privkeys []*ecdsa.PrivateKey, s int) (*RingS
 	if numRing < 1 {
 		return nil, errors.New("there is no ring to make signature")
 	}
+
+	//check private keys is the same as number of rings
+	if len(privkeys) != numRing {
+		return nil, errors.New("number of privkeys is not the same as number of rings")
+	}
+
 	// check ringsize > 1
 	ringsize := len(rings[0])
 	if ringsize < 2 {
 		return nil, errors.New("size of ring less than two")
 	} else if s >= ringsize || s < 0 {
 		return nil, errors.New("secret index out of range of ring size")
+	}
+
+	//check all rings are the same size
+	for _, r := range rings {
+		if len(r) != ringsize {
+			return nil, errors.New("ringsize is not equal for all rings")
+		}
 	}
 
 	// setup
