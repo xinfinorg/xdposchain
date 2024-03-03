@@ -1176,6 +1176,12 @@ Takes in a MultiRangeProof and verifies its correctness
 */
 func MRPVerify(mrp *MultiRangeProof) bool {
 	m := len(mrp.Comms)
+	// size of multi-range has to be a power of 2
+	if !isPowerOfTwo(m){
+		log.Debug("MRPVerify size of multi-range is not a power of 2", "size", m)
+		return false
+	}
+
 	EC = genECPrimeGroupKey(m * bitsPerValue)
 
 	//changes:
@@ -1383,6 +1389,14 @@ func genECPrimeGroupKey(n int) CryptoParams {
 		n,
 		ch,
 		cg}
+}
+
+func isPowerOfTwo(num int) bool {
+	if num <= 0 {
+		return false
+	}
+	logResult := math.Log2(float64(num))
+	return math.Floor(logResult) == logResult
 }
 
 func init() {
