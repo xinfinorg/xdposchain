@@ -525,3 +525,46 @@ func TestMRPGeneration(t *testing.T) {
 		t.Error("failed to verify bulletproof")
 	}
 }
+
+func TestPedersenCommitmentsLen4(t *testing.T) {
+	// EC := genECPrimeGroupKey(4) 	//this is old method, which fails this test
+	EC := NewECPrimeGroupKey(4)
+
+	a1 := make([]*big.Int, 4)
+	a2 := make([]*big.Int, 4)
+	b1 := make([]*big.Int, 4)
+	b2 := make([]*big.Int, 4)
+
+	a1[0] = big.NewInt(0) // vector a1 = [0, 0, 1, 1]
+	a1[1] = big.NewInt(0)
+	a1[2] = big.NewInt(1)
+	a1[3] = big.NewInt(1)
+
+	b1[0] = big.NewInt(0) // vector b1 = [0, 0, 1, 1]
+	b1[1] = big.NewInt(0)
+	b1[2] = big.NewInt(1)
+	b1[3] = big.NewInt(1)
+
+	// second vector
+	a2[0] = big.NewInt(1) // vector a2 = [1, 1, 0, 1], which is different from a1
+	a2[1] = big.NewInt(1)
+	a2[2] = big.NewInt(0)
+	a2[3] = big.NewInt(1)
+
+	b2[0] = big.NewInt(0) // vector b2 = [0, 0, 1, 1]
+	b2[1] = big.NewInt(0)
+	b2[2] = big.NewInt(1)
+	b2[3] = big.NewInt(1)
+
+	P := TwoVectorPCommitWithGens(EC.BPG, EC.BPH, a1, b1)
+	fmt.Printf("P: %x \n", P)
+	P2 := TwoVectorPCommitWithGens(EC.BPG, EC.BPH, a2, b2)
+	fmt.Printf("P2: %x \n", P2)
+
+	if P.X.Cmp(P2.X) == 0 && P.Y.Cmp(P2.Y) == 0 {
+		t.Error("Same Pedersen commitment with different witnesses, this is a security flaw")
+		
+	} else {
+		fmt.Println("Different Pedersen commitments NewECPrimeGroupKey is working correctly")
+	}
+}

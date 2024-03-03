@@ -988,7 +988,7 @@ func MRPProve(values []*big.Int) (MultiRangeProof, error) {
 		return MultiRangeProof{}, errors.New("Value number is not supported - just 1, 2, 4, 8")
 	}
 
-	EC = genECPrimeGroupKey(m * bitsPerValue)
+	EC = NewECPrimeGroupKey(m * bitsPerValue)
 
 	// we concatenate the binary representation of the values
 
@@ -1176,7 +1176,7 @@ Takes in a MultiRangeProof and verifies its correctness
 */
 func MRPVerify(mrp *MultiRangeProof) bool {
 	m := len(mrp.Comms)
-	EC = genECPrimeGroupKey(m * bitsPerValue)
+	EC = NewECPrimeGroupKey(m * bitsPerValue)
 
 	//changes:
 	// check 1 changes since it includes all commitments
