@@ -322,3 +322,69 @@ func TestNilPointerDereferencePanic(t *testing.T) {
 	// Should failed to verify Ring signature as the signature is invalid
 	assert.EqualError(t, err, "failed to deserialize, invalid ring signature")
 }
+
+func TestSignatureMalleability(t *testing.T) {
+	numRing := 1
+	ringSize := 10
+	s := 7
+	ringSig, err := setup(numRing, ringSize, s)
+	if err != nil {
+		fmt.Println("Failed to set up")
+	}
+
+	sig, err := ringSig.Serialize()
+	if err != nil {
+		t.Error("Failed to Serialize input Ring signature")
+	}
+
+	fmt.Printf("Parity in first public key of the original ring is: %x \n", sig[400]) // 8 + 8 + 32 + 32 + 10 * 32 = 400
+
+	deserializedSig, err := Deserialize(sig)
+	if err != nil {
+		t.Error("Failed to Deserialize Ring signature")
+	}
+
+	verified := Verify(deserializedSig, false)
+	if !verified {
+		t.Error("Failed to verify Ring signature")
+	}
+
+	if sig[400] == 0x2 {
+		sig[400] = 0x0
+	}
+	if sig[400] == 0x3 {
+		sig[400] = 0x1
+	}
+
+	fmt.Printf("Parity in first public key of the modified ring is: %x \n", sig[400])
+
+	//expect to error here as modified ring should not deserialize successfully
+	deserializedModifiedSig, err := Deserialize(sig)
+	if err != nil {
+		assert.EqualError(t, err, "DeserializeCompressed on compressedKey failed")
+		return
+	}
+
+	//should err in previous step and deserializeModifiedSig = nil
+	verifiedModified := Verify(deserializedModifiedSig, false)
+	if !verifiedModified {
+		t.Error("Failed to verify Ring signature")
+		t.FailNow()
+	}
+		t.Error("Incorrect, a modified signature passed verification")
+}
+
+func setup(numRing, ringSize, s int) (*RingSignature, error) {
+	rings, privkeys, m, err := GenerateMultiRingParams(numRing, ringSize, s)
+
+	if err != nil {
+		fmt.Println("Failed to generate ring params")
+	}
+
+	ringSignature, err := Sign(m, rings, privkeys, s)
+	if err != nil {
+		return nil, err
+	}
+
+	return ringSignature, nil
+}

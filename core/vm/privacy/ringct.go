@@ -104,6 +104,13 @@ func DeserializeCompressed(curve elliptic.Curve, b []byte) *ecdsa.PublicKey {
 	PPlus1Div4 := new(big.Int).Add(curve.Params().P, big.NewInt(1))
 	PPlus1Div4 = PPlus1Div4.Div(PPlus1Div4, big.NewInt(4))
 	y := new(big.Int).Exp(x3, PPlus1Div4, curve.Params().P)
+
+	//according to Tonelli-Shanks algorithm, b[0] must be 0x02 or 0x03
+	if b[0] != 0x2 && b[0] != 0x3 {
+		log.Debug("DeserializeCompressed invalid parity bit", "input", b)
+		return nil
+	}
+
 	ybit := b[0]%2 == 1
 	if ybit != isOdd(y) {
 		y.Sub(curve.Params().P, y)
@@ -247,6 +254,9 @@ func Deserialize(r []byte) (*RingSignature, error) {
 			compressedKey := r[offset : offset+33]
 			offset += 33
 			compressedPubKey := DeserializeCompressed(sig.Curve, compressedKey)
+			if compressedPubKey == nil {
+				return nil, errors.New("DeserializeCompressed on compressedKey failed")
+			}
 			sig.Ring[i][j] = compressedPubKey
 		}
 	}
@@ -256,6 +266,9 @@ func Deserialize(r []byte) (*RingSignature, error) {
 		compressedKey := r[offset : offset+33]
 		offset += 33
 		compressedPubKey := DeserializeCompressed(sig.Curve, compressedKey)
+		if compressedPubKey == nil {
+			return nil, errors.New("DeserializeCompressed on compressedKey failed")
+		}
 		sig.I[i] = compressedPubKey
 	}
 
