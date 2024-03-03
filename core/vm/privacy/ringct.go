@@ -91,6 +91,10 @@ func SerializeCompressed(p *ecdsa.PublicKey) []byte {
 }
 
 func DeserializeCompressed(curve elliptic.Curve, b []byte) *ecdsa.PublicKey {
+	if len(b) != 33 {
+		log.Debug("DeserializeCompresed input []byte is not len 33", "len(b)", len(b))
+		return nil
+	}
 	x := new(big.Int).SetBytes(b[1:33])
 	// Y = +-sqrt(x^3 + B)
 	x3 := new(big.Int).Mul(x, x)
