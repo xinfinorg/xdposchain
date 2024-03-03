@@ -241,31 +241,74 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil}
+	AllEthashProtocolChanges = &ChainConfig{
+		ChainId: big.NewInt(1337),
+		HomesteadBlock: big.NewInt(0),
+		DAOForkBlock: nil,
+		DAOForkSupport: false,
+		EIP150Block: big.NewInt(0),
+		EIP150Hash: common.Hash{},
+		EIP155Block: big.NewInt(0),
+		EIP158Block: big.NewInt(0),
+		ByzantiumBlock: big.NewInt(0),
+		ConstantinopleBlock: nil,
+		Ethash: new(EthashConfig),
+		Clique: nil,
+		XDPoS: nil,
+	}
 
 	// AllXDPoSProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the XDPoS consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllXDPoSProtocolChanges  = &ChainConfig{big.NewInt(89), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, &XDPoSConfig{Period: 0, Epoch: 900}}
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 900}, nil}
+	AllXDPoSProtocolChanges  = &ChainConfig{
+		ChainId: big.NewInt(89),
+		HomesteadBlock: big.NewInt(0),
+		DAOForkBlock: nil,
+		DAOForkSupport: false,
+		EIP150Block: big.NewInt(0),
+		EIP150Hash: common.Hash{},
+		EIP155Block: big.NewInt(0),
+		EIP158Block: big.NewInt(0),
+		ByzantiumBlock: big.NewInt(0),
+		ConstantinopleBlock: nil,
+		Ethash: nil,
+		Clique: nil,
+		XDPoS: &XDPoSConfig{Period: 0, Epoch: 900},
+	}
+
+	AllCliqueProtocolChanges = &ChainConfig{
+		ChainId: big.NewInt(1337),
+		HomesteadBlock: big.NewInt(0),
+		DAOForkBlock: nil,
+		DAOForkSupport: false,
+		EIP150Block: big.NewInt(0),
+		EIP150Hash: common.Hash{},
+		EIP155Block: big.NewInt(0),
+		EIP158Block: big.NewInt(0),
+		ByzantiumBlock: big.NewInt(0),
+		ConstantinopleBlock: nil,
+		Ethash: nil,
+		Clique: &CliqueConfig{Period: 0, Epoch: 900},
+		XDPoS: nil,
+	}
 
 	// XDPoS config with v2 engine after block 901
 	TestXDPoSMockChainConfig = &ChainConfig{
-		big.NewInt(1337),
-		big.NewInt(0),
-		nil,
-		false,
-		big.NewInt(0),
-		common.Hash{},
-		big.NewInt(0),
-		big.NewInt(0),
-		big.NewInt(0),
-		nil,
-		new(EthashConfig),
-		nil,
-		&XDPoSConfig{
+		ChainId: big.NewInt(1337),
+		HomesteadBlock: big.NewInt(0),
+		DAOForkBlock: nil,
+		DAOForkSupport: false,
+		EIP150Block: big.NewInt(0),
+		EIP150Hash: common.Hash{},
+		EIP155Block: big.NewInt(0),
+		EIP158Block: big.NewInt(0),
+		ByzantiumBlock: big.NewInt(0),
+		ConstantinopleBlock: nil,
+		Ethash: new(EthashConfig),
+		Clique: nil,
+		XDPoS: &XDPoSConfig{
 			Epoch:               900,
 			Gap:                 450,
 			SkipV1Validation:    true,
@@ -279,7 +322,21 @@ var (
 		},
 	}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil, nil}
+	TestChainConfig = &ChainConfig{
+		ChainId: big.NewInt(1),
+		HomesteadBlock: big.NewInt(0),
+		DAOForkBlock: nil,
+		DAOForkSupport: false,
+		EIP150Block: big.NewInt(0),
+		EIP150Hash: common.Hash{},
+		EIP155Block: big.NewInt(0),
+		EIP158Block: big.NewInt(0),
+		ByzantiumBlock: big.NewInt(0),
+		ConstantinopleBlock: nil,
+		Ethash: new(EthashConfig),
+		Clique: nil,
+		XDPoS: nil,
+	}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -305,6 +362,8 @@ type ChainConfig struct {
 
 	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
 	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
+	BerlinBlock         *big.Int `json:"berlinBlock,omitempty"`         // Berlin switch block (nil = no fork, 0 = already on berlin)
+	LondonBlock         *big.Int `json:"londonBlock,omitempty"`         // London switch block (nil = no fork, 0 = already on london)
 
 	// Various consensus engines
 	Ethash *EthashConfig `json:"ethash,omitempty"`
@@ -388,7 +447,7 @@ func (v *V2) UpdateConfig(round uint64) {
 		}
 	}
 	// update to current config
-	log.Warn("[updateV2Config] Update config", "index", index, "round", round, "SwitchRound", v.AllConfigs[index].SwitchRound)
+	log.Info("[updateV2Config] Update config", "index", index, "round", round, "SwitchRound", v.AllConfigs[index].SwitchRound)
 	v.CurrentConfig = v.AllConfigs[index]
 }
 
@@ -441,7 +500,7 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v BerlinBlock: %v LondonBlock: %v Engine: %v}",
 		c.ChainId,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -451,6 +510,8 @@ func (c *ChainConfig) String() string {
 		c.EIP158Block,
 		c.ByzantiumBlock,
 		c.ConstantinopleBlock,
+		c.BerlinBlock,
+		c.LondonBlock,
 		engine,
 	)
 }
@@ -495,6 +556,16 @@ func (c *ChainConfig) IsPetersburg(num *big.Int) bool {
 // IsIstanbul returns whether num is either equal to the Istanbul fork block or greater.
 func (c *ChainConfig) IsIstanbul(num *big.Int) bool {
 	return isForked(common.TIPXDCXCancellationFee, num)
+}
+
+// IsBerlin returns whether num is either equal to the Berlin fork block or greater.
+func (c *ChainConfig) IsBerlin(num *big.Int) bool {
+	return isForked(common.BerlinBlock, num)
+}
+
+// IsLondon returns whether num is either equal to the London fork block or greater.
+func (c *ChainConfig) IsLondon(num *big.Int) bool {
+	return isForked(common.LondonBlock, num)
 }
 
 func (c *ChainConfig) IsTIP2019(num *big.Int) bool {
@@ -597,6 +668,13 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 	if isForkIncompatible(c.ConstantinopleBlock, newcfg.ConstantinopleBlock, head) {
 		return newCompatError("Constantinople fork block", c.ConstantinopleBlock, newcfg.ConstantinopleBlock)
 	}
+	if isForkIncompatible(c.BerlinBlock, newcfg.BerlinBlock, head) {
+		return newCompatError("Berlin fork block", c.BerlinBlock, newcfg.BerlinBlock)
+	}
+	if isForkIncompatible(c.LondonBlock, newcfg.LondonBlock, head) {
+		return newCompatError("London fork block", c.LondonBlock, newcfg.LondonBlock)
+	}
+
 	return nil
 }
 
@@ -664,6 +742,7 @@ type Rules struct {
 	ChainId                                                 *big.Int
 	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
 	IsByzantium, IsConstantinople, IsPetersburg, IsIstanbul bool
+	IsBerlin, IsLondon                                      bool
 }
 
 func (c *ChainConfig) Rules(num *big.Int) Rules {
@@ -681,5 +760,7 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 		IsConstantinople: c.IsConstantinople(num),
 		IsPetersburg:     c.IsPetersburg(num),
 		IsIstanbul:       c.IsIstanbul(num),
+		IsBerlin:         c.IsBerlin(num),
+        IsLondon:         c.IsLondon(num),
 	}
 }
