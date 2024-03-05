@@ -483,7 +483,6 @@ func dump(ctx *cli.Context) error {
 			fmt.Printf("%s\n", state.Dump())
 		}
 	}
-	chainDb.Close()
 	return nil
 }
 
