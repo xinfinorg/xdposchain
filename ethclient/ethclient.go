@@ -348,6 +348,14 @@ func (ec *Client) CodeAt(ctx context.Context, account common.Address, blockNumbe
 	return result, err
 }
 
+// CodeHashAt returns the contract code of the given account.
+// The block number can be nil, in which case the code is taken from the latest known block.
+func (ec *Client) CodeHashAt(ctx context.Context, account common.Address, blockNumber *big.Int) (common.Hash, error) {
+	var result common.Hash
+	err := ec.c.CallContext(ctx, &result, "eth_getCodeHash", account, toBlockNumArg(blockNumber))
+	return result, err
+}
+
 // NonceAt returns the account nonce of the given account.
 // The block number can be nil, in which case the nonce is taken from the latest known block.
 func (ec *Client) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {

@@ -5329,6 +5329,13 @@ var methods = function () {
         inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter]
     });
 
+    var getCodeHash = new Method({
+        name: 'getCodeHash',
+        call: 'eth_getCodeHash',
+        params: 2,
+        inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter]
+    });
+
     var getBlock = new Method({
         name: 'getBlock',
         call: blockCall,
@@ -5513,6 +5520,7 @@ var methods = function () {
         getBalance,
         getStorageAt,
         getCode,
+        getCodeHash,
         getBlock,
         getBlockSigners,
         getStakerROI,
