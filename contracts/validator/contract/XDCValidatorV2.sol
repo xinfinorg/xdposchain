@@ -277,7 +277,7 @@ contract XDCValidator {
                 break;
             }
         }
-        candidates = removeZeroAddresses(candidates);
+  
         uint256 cap = validatorsState[_candidate].voters[msg.sender];
         validatorsState[_candidate].cap = validatorsState[_candidate].cap.sub(
             cap
@@ -342,7 +342,7 @@ contract XDCValidator {
                     delete invalidKYCCount[_invalidMasternode];
                 }
             }
-            candidates = removeZeroAddresses(candidates);
+      
             for (uint k = 0; k < owners.length; k++) {
                 if (owners[k] == _invalidMasternode) {
                     delete owners[k];
