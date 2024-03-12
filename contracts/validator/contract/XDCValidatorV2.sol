@@ -320,6 +320,15 @@ contract XDCValidator {
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
+
+                    //delete voters[candidates[i]];
+                    for (uint256 y = 0; y < voters[candidates[i]].length; y++) {
+                        //delete mapping
+                        validatorsState[candidates[i]].voters[
+                            voters[candidates[i]][y]
+                        ] = 0;
+                        voters[candidates[i]][y] = address(0);
+                    }
                     delete validatorsState[candidates[i]];
                     delete candidates[i];
                     delete KYCString[_invalidMasternode];
