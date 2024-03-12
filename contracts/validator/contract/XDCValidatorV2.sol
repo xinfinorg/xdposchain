@@ -272,7 +272,8 @@ contract XDCValidator {
                 if (ownerToCandidate[msg.sender].length == 0) {
                     ownerCount--;
                 }
-                delete candidates[i];
+                deleteCandidateFromArrayBySwapWithLastElement(candidates[i]);
+
                 break;
             }
         }
@@ -333,7 +334,9 @@ contract XDCValidator {
                         voters[candidates[i]]
                     );
                     delete validatorsState[candidates[i]];
-                    delete candidates[i];
+                    deleteCandidateFromArrayBySwapWithLastElement(
+                        candidates[i]
+                    );
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
@@ -408,5 +411,17 @@ contract XDCValidator {
             mstore(newAddresses, j)
         }
         return newAddresses;
+    }
+
+    function deleteCandidateFromArrayBySwapWithLastElement(
+        address addr
+    ) public {
+        for (uint256 i = 0; i < candidates.length; i++) {
+            if (candidates[i] == addr) {
+                candidates[i] = candidates[candidates.length - 1];
+                candidates.length--;
+                break;
+            }
+        }
     }
 }
