@@ -329,6 +329,9 @@ contract XDCValidator {
                         ] = 0;
                         voters[candidates[i]][y] = address(0);
                     }
+                    voters[candidates[i]] = removeZeroAddresses(
+                        voters[candidates[i]]
+                    );
                     delete validatorsState[candidates[i]];
                     delete candidates[i];
                     delete KYCString[_invalidMasternode];
