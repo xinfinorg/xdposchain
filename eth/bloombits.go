@@ -17,8 +17,9 @@
 package eth
 
 import (
-	"github.com/XinFinOrg/XDPoSChain/core/rawdb"
 	"time"
+
+	"github.com/XinFinOrg/XDPoSChain/core/rawdb"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/common/bitutil"
@@ -44,7 +45,7 @@ const (
 
 	// bloomRetrievalWait is the maximum time to wait for enough bloom bit requests
 	// to accumulate request an entire batch (avoiding hysteresis).
-	bloomRetrievalWait = time.Duration(0)
+	bloomRetrievalWait = time.Microsecond * 100
 )
 
 // startBloomHandlers starts a batch of goroutines to accept bloom bit database
