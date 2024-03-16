@@ -412,38 +412,6 @@ contract XDCValidator {
         return newAddresses;
     }
 
-    function removeCandidatesZeroAddresses() external {
-        address[] memory newAddresses = new address[](candidates.length);
-        uint256 j = 0;
-        for (uint256 i = 0; i < candidates.length; i++) {
-            if (candidates[i] != address(0)) {
-                newAddresses[j] = candidates[i];
-                j++;
-            }
-        }
-        // Resize the array.
-        assembly {
-            mstore(newAddresses, j)
-        }
-        candidates = newAddresses;
-    }
-
-    function removeOwnersZeroAddresses() external {
-        address[] memory newAddresses = new address[](owners.length);
-        uint256 j = 0;
-        for (uint256 i = 0; i < owners.length; i++) {
-            if (owners[i] != address(0)) {
-                newAddresses[j] = owners[i];
-                j++;
-            }
-        }
-        // Resize the array.
-        assembly {
-            mstore(newAddresses, j)
-        }
-        owners = newAddresses;
-    }
-
     function deleteCandidateFromArrayBySwapWithLastElement(
         address addr
     ) public {
