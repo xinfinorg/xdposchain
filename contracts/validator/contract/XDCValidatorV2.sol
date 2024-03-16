@@ -313,11 +313,11 @@ contract XDCValidator {
             address[] memory allMasternodes = new address[](
                 candidates.length - 1
             );
-            //make the masternode invalid
-            withdrawInvalid[_invalidMasternode] = true;
             uint count = 0;
             for (uint i = 0; i < candidates.length; i++) {
                 if (getCandidateOwner(candidates[i]) == _invalidMasternode) {
+                    //make the masternode invalid
+                    withdrawInvalid[candidates[i]] = true;
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
@@ -413,9 +413,41 @@ contract XDCValidator {
         return newAddresses;
     }
 
+    function removeCandidatesZeroAddresses() external {
+        address[] memory newAddresses = new address[](candidates.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < candidates.length; i++) {
+            if (candidates[i] != address(0)) {
+                newAddresses[j] = candidates[i];
+                j++;
+            }
+        }
+        // Resize the array.
+        assembly {
+            mstore(newAddresses, j)
+        }
+        candidates = newAddresses;
+    }
+
+    function removeOwnersZeroAddresses() external {
+        address[] memory newAddresses = new address[](owners.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < owners.length; i++) {
+            if (owners[i] != address(0)) {
+                newAddresses[j] = owners[i];
+                j++;
+            }
+        }
+        // Resize the array.
+        assembly {
+            mstore(newAddresses, j)
+        }
+        owners = newAddresses;
+    }
+
     function deleteCandidateFromArrayBySwapWithLastElement(
         address addr
-    ) public {
+    ) private {
         for (uint256 i = 0; i < candidates.length; i++) {
             if (candidates[i] == addr) {
                 candidates[i] = candidates[candidates.length - 1];
@@ -425,7 +457,7 @@ contract XDCValidator {
         }
     }
 
-    function deleteOwnersFromArrayBySwapWithLastElement(address addr) public {
+    function deleteOwnersFromArrayBySwapWithLastElement(address addr) private {
         for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == addr) {
                 owners[i] = owners[owners.length - 1];
