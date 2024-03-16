@@ -272,13 +272,11 @@ contract XDCValidator {
                 if (ownerToCandidate[msg.sender].length == 0) {
                     ownerCount--;
                 }
-                delete candidates[i];
+                deleteCandidateFromArrayBySwapWithLastElement(candidates[i]);
 
                 break;
             }
         }
-
-        candidates = removeZeroAddresses(candidates);
 
         uint256 cap = validatorsState[_candidate].voters[msg.sender];
         validatorsState[_candidate].cap = validatorsState[_candidate].cap.sub(
@@ -347,12 +345,11 @@ contract XDCValidator {
 
             for (uint k = 0; k < owners.length; k++) {
                 if (owners[k] == _invalidMasternode) {
-                    delete owners[k];
+                    deleteOwnersFromArrayBySwapWithLastElement(owners[k]);
                     ownerCount--;
                     break;
                 }
             }
-            owners = removeZeroAddresses(owners);
             emit InvalidatedNode(_invalidMasternode, allMasternodes);
         }
     }
@@ -413,5 +410,59 @@ contract XDCValidator {
             mstore(newAddresses, j)
         }
         return newAddresses;
+    }
+
+    function removeCandidatesZeroAddresses() external {
+        address[] memory newAddresses = new address[](candidates.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < candidates.length; i++) {
+            if (candidates[i] != address(0)) {
+                newAddresses[j] = candidates[i];
+                j++;
+            }
+        }
+        // Resize the array.
+        assembly {
+            mstore(newAddresses, j)
+        }
+        candidates = newAddresses;
+    }
+
+    function removeOwnersZeroAddresses() external {
+        address[] memory newAddresses = new address[](owners.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < owners.length; i++) {
+            if (owners[i] != address(0)) {
+                newAddresses[j] = owners[i];
+                j++;
+            }
+        }
+        // Resize the array.
+        assembly {
+            mstore(newAddresses, j)
+        }
+        owners = newAddresses;
+    }
+
+    function deleteCandidateFromArrayBySwapWithLastElement(
+        address addr
+    ) public {
+        for (uint256 i = 0; i < candidates.length; i++) {
+            if (candidates[i] == addr) {
+                candidates[i] = candidates[candidates.length - 1];
+                candidates.length--;
+                break;
+            }
+        }
+    }
+
+    function deleteOwnersFromArrayBySwapWithLastElement(address addr) public {
+        for (uint256 i = 0; i < owners.length; i++) {
+            if (owners[i] == addr) {
+                owners[i] = owners[owners.length - 1];
+                owners.length--;
+                break;
+            }
+        }
     }
 }
