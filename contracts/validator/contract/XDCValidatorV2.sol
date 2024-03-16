@@ -334,14 +334,15 @@ contract XDCValidator {
                         voters[candidates[i]]
                     );
                     delete validatorsState[candidates[i]];
-                    delete candidates[i];
+                    deleteCandidateFromArrayBySwapWithLastElement(
+                        candidates[i]
+                    );
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
+                    break;
                 }
             }
-
-            candidates = removeZeroAddresses(candidates);
 
             for (uint k = 0; k < owners.length; k++) {
                 if (owners[k] == _invalidMasternode) {
