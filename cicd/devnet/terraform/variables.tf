@@ -1,3 +1,9 @@
+variable docker_tag {
+  type        = string
+  default     = "latest"
+  description = "description"
+}
+
 locals {
     /**
     Load the nodes data from s3
