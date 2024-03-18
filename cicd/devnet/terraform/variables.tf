@@ -45,8 +45,4 @@ locals {
       for r in local.regions : 
         r.name => { for i in local.keyNames[r.name]: i => local.predefinedNodesConfig[i] }
     }
-    
-    rpcNodeKeys = { "rpc1": local.predefinedNodesConfig["rpc1"]} // we hardcode the rpc to a single node for now
-
-    s3BucketName = "tf-devnet-bucket"
 }

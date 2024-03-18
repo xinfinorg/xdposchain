@@ -27,7 +27,7 @@ module "devnet-rpc" {
   logLevel = local.logLevel
   xdc_ecs_tasks_execution_role_arn = aws_iam_role.xdc_ecs_tasks_execution_role.arn
 
-  cpu = 2048 
+  cpu = 1024 
   memory = 4096
 
   network = "devnet"
@@ -46,7 +46,7 @@ module "testnet-rpc" {
   logLevel = local.logLevel
   xdc_ecs_tasks_execution_role_arn = aws_iam_role.xdc_ecs_tasks_execution_role.arn
 
-  cpu = 2048 
+  cpu = 1024
   memory = 4096
 
   network = "testnet"
@@ -65,7 +65,7 @@ module "mainnet-rpc" {
   logLevel = local.logLevel
   xdc_ecs_tasks_execution_role_arn = aws_iam_role.xdc_ecs_tasks_execution_role.arn
 
-  cpu = 2048
+  cpu = 1024
   memory = 4096
 
   network = "mainnet"
