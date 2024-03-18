@@ -78,7 +78,7 @@ jobs:
 
   devnet_build_push:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/ci-improvement' && !startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/dev-upgrade' && !startsWith(github.ref, 'refs/tags/')
     needs: tests
     steps:
       - uses: actions/checkout@v4
@@ -98,7 +98,7 @@ jobs:
 
   devnet_terraform_apply:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/ci-improvement' && !startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/dev-upgrade' && !startsWith(github.ref, 'refs/tags/')
     needs: devnet_build_push
     environment: devnet
     env:
