@@ -259,23 +259,25 @@ contract XDCValidator {
     ) public onlyOwner(_candidate) onlyCandidate(_candidate) {
         validatorsState[_candidate].isCandidate = false;
         candidateCount = candidateCount.sub(1);
-        for (uint256 i = 0; i < candidates.length; i++) {
-            if (candidates[i] == _candidate) {
-                address[] memory cacheArray = ownerToCandidate[msg.sender];
-                uint256 cacheArrayLength = cacheArray.length;
-                for (uint256 j = 0; j < cacheArrayLength; j++) {
-                    if (cacheArray[j] == _candidate) {
-                        delete cacheArray[j];
-                    }
-                }
-                ownerToCandidate[msg.sender] = removeZeroAddresses(cacheArray);
-                if (ownerToCandidate[msg.sender].length == 0) {
-                    ownerCount--;
-                }
-                deleteCandidateFromArrayBySwapWithLastElement(candidates[i]);
 
+        deleteCandidate(_candidate);
+
+        // Cleanup the ownerToCandidate mapping for the resigning candidate's owner
+        address[] storage ownedCandidates = ownerToCandidate[msg.sender];
+        uint256 ownedCandidatesLength = ownedCandidates.length;
+        for (uint256 j = 0; j < ownedCandidatesLength; j++) {
+            if (ownedCandidates[j] == _candidate) {
+                ownedCandidates[j] = ownedCandidates[ownedCandidatesLength - 1];
+                delete ownedCandidates[ownedCandidatesLength - 1];
+                ownedCandidates.length--; // Manually decrease the array length
                 break;
             }
+        }
+
+        // Optionally, consider adjusting ownerCount if needed
+        if (ownedCandidates.length == 0) {
+            // If specific logic is needed to manage the owners array, implement here
+            ownerCount--;
         }
 
         uint256 cap = validatorsState[_candidate].voters[msg.sender];
@@ -334,9 +336,9 @@ contract XDCValidator {
                         voters[candidates[i]]
                     );
                     delete validatorsState[candidates[i]];
-                    deleteCandidateFromArrayBySwapWithLastElement(
-                        candidates[i]
-                    );
+
+                    deleteCandidate(candidates[i]);
+
                     delete KYCString[_invalidMasternode];
                     delete ownerToCandidate[_invalidMasternode];
                     delete invalidKYCCount[_invalidMasternode];
@@ -344,13 +346,7 @@ contract XDCValidator {
                 }
             }
 
-            for (uint k = 0; k < owners.length; k++) {
-                if (owners[k] == _invalidMasternode) {
-                    deleteOwnersFromArrayBySwapWithLastElement(owners[k]);
-                    ownerCount--;
-                    break;
-                }
-            }
+            deleteOwner(_invalidMasternode);
             emit InvalidatedNode(_invalidMasternode, allMasternodes);
         }
     }
@@ -445,23 +441,27 @@ contract XDCValidator {
         owners = newAddresses;
     }
 
-    function deleteCandidateFromArrayBySwapWithLastElement(
-        address addr
-    ) private {
-        for (uint256 i = 0; i < candidates.length; i++) {
-            if (candidates[i] == addr) {
-                candidates[i] = candidates[candidates.length - 1];
-                candidates.length--;
+    // Efficiently remove _candidate from the candidates array
+    function deleteCandidate(address candidate) private {
+        uint256 candidatesLength = candidates.length;
+        for (uint256 i = 0; i < candidatesLength; i++) {
+            if (candidates[i] == candidate) {
+                candidates[i] = candidates[candidatesLength - 1];
+                delete candidates[candidatesLength - 1];
+                candidates.length--; // Manually decrease the array length
                 break;
             }
         }
     }
 
-    function deleteOwnersFromArrayBySwapWithLastElement(address addr) private {
-        for (uint256 i = 0; i < owners.length; i++) {
-            if (owners[i] == addr) {
-                owners[i] = owners[owners.length - 1];
-                owners.length--;
+    // Efficiently remove the invalid owner from the owners array
+    function deleteOwner(address owner) private {
+        uint256 ownersLength = owners.length;
+        for (uint k = 0; k < ownersLength; k++) {
+            if (owners[k] == owner) {
+                owners[k] = owners[ownersLength - 1]; // Swap with the last element
+                delete owners[ownersLength - 1]; // Delete the last element
+                owners.length--; // Decrease the array size
                 break;
             }
         }
