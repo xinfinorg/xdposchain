@@ -47,6 +47,8 @@ contract XDCValidator {
     uint256 public candidateWithdrawDelay;
     uint256 public voterWithdrawDelay;
 
+    mapping(address => bool) public invalidOwner;
+
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
         require(msg.value >= minCandidateCap);
@@ -98,6 +100,7 @@ contract XDCValidator {
     }
 
     modifier onlyValidWithdraw(uint256 _blockNumber, uint _index) {
+        require(!invalidOwner[msg.sender]);
         require(_blockNumber > 0);
         require(block.number >= _blockNumber);
         require(withdrawsState[msg.sender].caps[_blockNumber] > 0);
@@ -301,9 +304,7 @@ contract XDCValidator {
         require(!hasVotedInvalid[candidateOwner][_owner]);
         hasVotedInvalid[candidateOwner][_owner] = true;
         invalidKYCCount[_owner] += 1;
-        if (
-            (invalidKYCCount[_owner] * 100) / getOwnerCount() >= 75
-        ) {
+        if ((invalidKYCCount[_owner] * 100) / getOwnerCount() >= 75) {
             // 75% owners say that the KYC is invalid
             address[] memory allMasternodes = new address[](
                 candidates.length - 1
@@ -311,6 +312,8 @@ contract XDCValidator {
             uint count = 0;
             for (uint i = 0; i < candidates.length; i++) {
                 if (getCandidateOwner(candidates[i]) == _owner) {
+                    //set owner is invalid
+                    invalidOwner[_owner] = true;
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
