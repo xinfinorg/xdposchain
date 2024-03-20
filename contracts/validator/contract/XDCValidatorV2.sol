@@ -310,10 +310,10 @@ contract XDCValidator {
                 candidates.length - 1
             );
             uint count = 0;
+            //set owner is invalid
+            invalidOwner[_owner] = true;
             for (uint i = 0; i < candidates.length; i++) {
                 if (getCandidateOwner(candidates[i]) == _owner) {
-                    //set owner is invalid
-                    invalidOwner[_owner] = true;
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
