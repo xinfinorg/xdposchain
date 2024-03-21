@@ -47,8 +47,6 @@ contract XDCValidator {
     uint256 public candidateWithdrawDelay;
     uint256 public voterWithdrawDelay;
 
-
-
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
         require(msg.value >= minCandidateCap);
@@ -100,7 +98,6 @@ contract XDCValidator {
     }
 
     modifier onlyValidWithdraw(uint256 _blockNumber, uint _index) {
-  
         require(_blockNumber > 0);
         require(block.number >= _blockNumber);
         require(withdrawsState[msg.sender].caps[_blockNumber] > 0);
@@ -310,7 +307,7 @@ contract XDCValidator {
                 candidates.length - 1
             );
             uint count = 0;
-           
+
             for (uint i = 0; i < candidates.length; i++) {
                 if (getCandidateOwner(candidates[i]) == _owner) {
                     // logic to remove cap.
@@ -346,9 +343,8 @@ contract XDCValidator {
 
     // invalidPercent : get votes against an owner in percentage.
     function invalidPercent(
-        address _invalidCandidate
-    ) public view onlyValidCandidate(_invalidCandidate) returns (uint) {
-        address _owner = getCandidateOwner(_invalidCandidate);
+        address _owner
+    ) public view onlyValidCandidate(_owner) returns (uint) {
         return ((invalidKYCCount[_owner] * 100) / getOwnerCount());
     }
 
