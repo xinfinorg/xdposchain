@@ -307,7 +307,8 @@ contract XDCValidator {
                 candidates.length - 1
             );
             uint count = 0;
-
+            uint j = 0;
+            address[] memory newCandidates = new address[](candidates.length);
             for (uint i = 0; i < candidates.length; i++) {
                 if (getCandidateOwner(candidates[i]) == _owner) {
                     // logic to remove cap.
@@ -326,15 +327,16 @@ contract XDCValidator {
                         voters[candidates[i]]
                     );
                     delete validatorsState[candidates[i]];
-
-                    deleteCandidate(candidates[i]);
-
+                 
                     delete KYCString[_owner];
                     delete ownerToCandidate[_owner];
                     delete invalidKYCCount[_owner];
-                    break;
+                } else {
+                    newCandidates[j++] = candidates[i];
                 }
             }
+            candidates = newCandidates;
+            candidates.length = j;
 
             deleteOwner(_owner);
             emit InvalidatedNode(_owner, allMasternodes);
