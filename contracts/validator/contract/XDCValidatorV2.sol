@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.26;
 
 import "./libs/SafeMath.sol";
 
@@ -49,60 +49,81 @@ contract XDCValidator {
 
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
-        require(msg.value >= minCandidateCap);
+        require(msg.value >= minCandidateCap, "Invalid Candidate Cap");
         _;
     }
 
     modifier onlyValidVoterCap() {
-        require(msg.value >= minVoterCap);
+        require(msg.value >= minVoterCap, "Invalid Voter Cap");
         _;
     }
 
     modifier onlyKYCWhitelisted() {
         require(
             KYCString[msg.sender].length != 0 ||
-                ownerToCandidate[msg.sender].length > 0
+                ownerToCandidate[msg.sender].length > 0,
+            "KYC not uploaded"
         );
         _;
     }
 
     modifier onlyOwner(address _candidate) {
-        require(validatorsState[_candidate].owner == msg.sender);
+        require(
+            validatorsState[_candidate].owner == msg.sender,
+            "Only owner can call this function"
+        );
         _;
     }
 
     modifier onlyCandidate(address _candidate) {
-        require(validatorsState[_candidate].isCandidate);
+        require(
+            validatorsState[_candidate].isCandidate,
+            "Only candidate can call this function"
+        );
         _;
     }
 
     modifier onlyValidCandidate(address _candidate) {
-        require(validatorsState[_candidate].isCandidate);
+        require(validatorsState[_candidate].isCandidate, "Invalid Candidate");
         _;
     }
 
     modifier onlyNotCandidate(address _candidate) {
-        require(!validatorsState[_candidate].isCandidate);
+        require(
+            !validatorsState[_candidate].isCandidate,
+            "Already a candidate"
+        );
         _;
     }
 
     modifier onlyValidVote(address _candidate, uint256 _cap) {
-        require(validatorsState[_candidate].voters[msg.sender] >= _cap);
+        require(
+            validatorsState[_candidate].voters[msg.sender] >= _cap,
+            "Invalid Vote"
+        );
         if (validatorsState[_candidate].owner == msg.sender) {
             require(
                 validatorsState[_candidate].voters[msg.sender].sub(_cap) >=
-                    minCandidateCap
+                    minCandidateCap,
+                "Minimum cap should be maintained"
             );
         }
         _;
     }
 
     modifier onlyValidWithdraw(uint256 _blockNumber, uint _index) {
-        require(_blockNumber > 0);
-        require(block.number >= _blockNumber);
-        require(withdrawsState[msg.sender].caps[_blockNumber] > 0);
+        require(_blockNumber > 0, "Invalid block number");
         require(
-            withdrawsState[msg.sender].blockNumbers[_index] == _blockNumber
+            block.number >= _blockNumber,
+            "Block number should be less than current block number"
+        );
+        require(
+            withdrawsState[msg.sender].caps[_blockNumber] > 0,
+            "No cap to withdraw"
+        );
+        require(
+            withdrawsState[msg.sender].blockNumbers[_index] == _blockNumber,
+            "Invalid index"
         );
         _;
     }
@@ -298,7 +319,7 @@ contract XDCValidator {
     ) public onlyValidCandidate(msg.sender) {
         address candidateOwner = getCandidateOwner(msg.sender);
 
-        require(!hasVotedInvalid[candidateOwner][_owner]);
+        require(!hasVotedInvalid[candidateOwner][_owner], "Already voted");
         hasVotedInvalid[candidateOwner][_owner] = true;
         invalidKYCCount[_owner] += 1;
         if ((invalidKYCCount[_owner] * 100) / getOwnerCount() >= 75) {
@@ -327,7 +348,7 @@ contract XDCValidator {
                         voters[candidates[i]]
                     );
                     delete validatorsState[candidates[i]];
-                 
+
                     delete KYCString[_owner];
                     delete ownerToCandidate[_owner];
                     delete invalidKYCCount[_owner];
