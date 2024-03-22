@@ -356,6 +356,7 @@ contract XDCValidator {
                     newCandidates[j++] = candidates[i];
                 }
             }
+            newCandidates = removeZeroAddresses(newCandidates);
             candidates = newCandidates;
             candidates.length = j;
 
