@@ -47,6 +47,8 @@ contract XDCValidator {
     uint256 public candidateWithdrawDelay;
     uint256 public voterWithdrawDelay;
 
+    mapping(address => bool) public invalidOwner;
+
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
         require(msg.value >= minCandidateCap, "Invalid Candidate Cap");
@@ -112,6 +114,7 @@ contract XDCValidator {
     }
 
     modifier onlyValidWithdraw(uint256 _blockNumber, uint _index) {
+        require(!invalidOwner[msg.sender], "Invalid Owner");
         require(_blockNumber > 0, "Invalid block number");
         require(
             block.number >= _blockNumber,
@@ -330,6 +333,7 @@ contract XDCValidator {
             uint count = 0;
             uint j = 0;
             address[] memory newCandidates = new address[](candidates.length);
+            invalidOwner[_owner] = true;
             for (uint i = 0; i < candidates.length; i++) {
                 if (getCandidateOwner(candidates[i]) == _owner) {
                     // logic to remove cap.
