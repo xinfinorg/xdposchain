@@ -128,7 +128,7 @@ contract XDCValidator {
         _;
     }
 
-    function XDCValidator(
+    constructor(
         address[] _candidates,
         uint256[] _caps,
         address _firstOwner,
