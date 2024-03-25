@@ -49,6 +49,8 @@ contract XDCValidator {
 
     mapping(address => bool) public invalidOwner;
 
+    mapping(address => bool) public invalidCandidate;
+
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
         require(msg.value >= minCandidateCap, "Invalid Candidate Cap");
@@ -91,6 +93,7 @@ contract XDCValidator {
     }
 
     modifier onlyNotCandidate(address _candidate) {
+        require(!invalidCandidate[_candidate], "Invalid Candidate");
         require(
             !validatorsState[_candidate].isCandidate,
             "Already a candidate"
@@ -340,6 +343,7 @@ contract XDCValidator {
                     candidateCount = candidateCount.sub(1);
                     allMasternodes[count++] = candidates[i];
 
+                    invalidCandidate[candidates[i]] = true;
                     //delete voters[candidates[i]]; in blacklist no need use in the future
                     // for (uint256 y = 0; y < voters[candidates[i]].length; y++) {
                     //     //delete mapping
@@ -351,7 +355,7 @@ contract XDCValidator {
                     // voters[candidates[i]] = removeZeroAddresses(
                     //     voters[candidates[i]]
                     // );
-                    
+
                     delete validatorsState[candidates[i]];
 
                     delete KYCString[_owner];
