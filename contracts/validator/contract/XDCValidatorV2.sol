@@ -360,6 +360,7 @@ contract XDCValidator {
                     newCandidates[j++] = candidates[i];
                 }
             }
+
             newCandidates = removeZeroAddresses(newCandidates);
             candidates = newCandidates;
             candidates.length = j;
@@ -479,6 +480,7 @@ contract XDCValidator {
                 owners[k] = owners[ownersLength - 1]; // Swap with the last element
                 delete owners[ownersLength - 1]; // Delete the last element
                 owners.length--; // Decrease the array size
+                ownerCount--; // Decrease the owner count
                 break;
             }
         }
