@@ -366,7 +366,10 @@ contract XDCValidator {
                 }
             }
 
-            newCandidates = removeZeroAddresses(newCandidates);
+            // Resize the array.
+            assembly {
+                mstore(newCandidates, j)
+            }
             candidates = newCandidates;
             candidates.length = j;
 
