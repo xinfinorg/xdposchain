@@ -46,3 +46,12 @@ locals {
         r.name => { for i in local.keyNames[r.name]: i => local.predefinedNodesConfig[i] }
     }
 }
+
+locals { //ec2_rpc values
+  aws_ami_id = "ami-097c4e1feeea169e5"
+  route53_zone_id = ""
+  rpc_image = "xinfinorg/xdpos:v2.2.0-beta1"
+  vpc_id = "vpc-20a06846"
+  aws_subnet_id = "subnet-4653ee20"
+  ssh_key_name = "devnetkey"
+}

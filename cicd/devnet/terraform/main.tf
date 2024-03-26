@@ -62,3 +62,85 @@ module "ap-southeast-2" {
     aws = aws.ap-southeast-2
   }
 }
+
+provider "aws" {
+  region  = "ap-southeast-1"
+}
+
+resource "aws_security_group" "rpc_sg" {
+  name_prefix = "rpc-sg"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  ingress {
+    from_port   = 30303
+    to_port     = 30303
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8545
+    to_port     = 8545
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8555
+    to_port     = 8555
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+module "devnet_rpc" {
+  source = "./modules/ec2_rpc"
+  network = "devnet"
+  vpc_id = local.vpc_id
+  aws_subnet_id = local.aws_subnet_id
+  ami_id = local.ami_id
+  instance_type = "t3.large"
+  ssh_key_name = local.ssh_key_name
+  sg_id = aws_security_group.rpc_sg.id
+  xdpos_image_tag = local.xdpos_image_tag 
+  route53_zone_id = local.route53_zone_id
+}
+
+module "testnet_rpc" {
+  source = "./modules/ec2_rpc"
+  network = "testnet"
+  vpc_id = local.vpc_id
+  aws_subnet_id = local.aws_subnet_id
+  ami_id = local.ami_id
+  instance_type = "t3.large"
+  ssh_key_name = local.ssh_key_name
+  sg_id = aws_security_group.rpc_sg.id
+  xdpos_image_tag = local.xdpos_image_tag 
+  route53_zone_id = local.route53_zone_id
+}
+
+module "mainnet_rpc" {
+  source = "./modules/ec2_rpc"
+  network = "mainnet"
+  vpc_id = local.vpc_id
+  aws_subnet_id = local.aws_subnet_id
+  ami_id = local.ami_id
+  instance_type = "t3.large"
+  ssh_key_name = local.ssh_key_name
+  sg_id = aws_security_group.rpc_sg.id
+  xdpos_image_tag = local.xdpos_image_tag 
+  route53_zone_id = local.route53_zone_id
+}

@@ -1,0 +1,14 @@
+---
+- name: Run Bash Script on Host
+  hosts: ec2_rpcs
+  become: true  #sudo/root
+
+  tasks:
+    - name: Update RPC image version
+      shell: |
+        export RPC_IMAGE=${{ rpc_image }}
+        cd {{ deploy_path }}
+        ./docker-down.sh
+        ./docker-up.sh
+      register: output
+    - debug: var=output.stdout_lines
