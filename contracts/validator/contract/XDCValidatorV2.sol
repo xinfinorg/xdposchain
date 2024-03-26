@@ -301,7 +301,7 @@ contract XDCValidator {
         // Optionally, consider adjusting ownerCount if needed
         if (ownedCandidates.length == 0) {
             // If specific logic is needed to manage the owners array, implement here
-            ownerCount--;
+            deleteOwner(msg.sender);
         }
 
         uint256 cap = validatorsState[_candidate].voters[msg.sender];
@@ -371,7 +371,6 @@ contract XDCValidator {
                 mstore(newCandidates, j)
             }
             candidates = newCandidates;
-            candidates.length = j;
 
             deleteOwner(_owner);
             emit InvalidatedNode(_owner, allMasternodes);
