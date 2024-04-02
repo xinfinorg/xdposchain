@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       output1: ${{ steps.out.outputs.image_name }}
-      output2: ${{ steps.out2.outputs.test }}
     steps:
       - uses: actions/checkout@v4
       - name: Login to Docker Hub
@@ -35,14 +34,10 @@ jobs:
           echo $image_name 
           echo "image_name=$image_name" >> "$GITHUB_OUTPUT"
 
-      - id: out2
-        run: echo "test=world" >> "$GITHUB_OUTPUT"
 
       - name: show output
         run: |
           echo ${{ steps.out.outputs.image_name }}
-          echo ${{ steps.out2.outputs.test }}
-          echo asdf 
 
   rpcnode_terraform_apply:
     runs-on: ubuntu-latest
@@ -54,7 +49,6 @@ jobs:
       - name: check image
         run:
           echo ${{ needs.devnet_build_push.outputs.image_name }}
-          echo ${{ needs.devnet_build_push.outputs.output1 }}
           echo asdf
       # - name: Update RPC nodes image
       #   uses: dawidd6/action-ansible-playbook@v2
