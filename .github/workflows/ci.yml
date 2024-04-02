@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       output1: ${{ steps.out.outputs.image_name }}
+      output2: ${{ steps.out2.outputs.test }}
     steps:
       - uses: actions/checkout@v4
       - name: Login to Docker Hub
@@ -28,11 +29,20 @@ jobs:
 
       - name: Output image name
         id: out
-        run:
+        run: |
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
           image_name=xinfinorg/devnet:dev-upgrade-${git_hash}
           echo $image_name 
           echo "image_name=$image_name" >> "$GITHUB_OUTPUT"
+
+      - id: out2
+        run: echo "test=world" >> "$GITHUB_OUTPUT"
+
+      - name: show output
+        run: |
+          echo ${{ steps.out.outputs.image_name }}
+          echo ${{ steps.out2.outputs.test }}
+          echo asdf 
 
   rpcnode_terraform_apply:
     runs-on: ubuntu-latest
