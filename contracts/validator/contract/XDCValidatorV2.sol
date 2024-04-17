@@ -51,6 +51,8 @@ contract XDCValidator {
 
     mapping(address => bool) public invalidCandidate;
 
+    mapping(string => uint256) public validKYCCount;
+
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
         require(msg.value >= minCandidateCap, "Invalid Candidate Cap");
@@ -168,9 +170,20 @@ contract XDCValidator {
     }
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(string kychash) external {
-        KYCString[msg.sender].push(kychash);
-        emit UploadedKYC(msg.sender, kychash);
+    function uploadKYC(address owner, string kychash) private {
+        KYCString[owner].push(kychash);
+        emit UploadedKYC(owner, kychash);
+    }
+
+    // voteValidKYC : any candidate can vote for valid KYC i.e. a particular candidate's owner has uploaded a valid KYC.
+    function voteValidKYC(
+        address owner,
+        string kychash
+    ) public onlyValidCandidate(msg.sender) {
+        validKYCCount[kychash]++;
+        if ((validKYCCount[kychash] * 100) / getOwnerCount() >= 75) {
+            uploadKYC(owner, kychash);
+        }
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
