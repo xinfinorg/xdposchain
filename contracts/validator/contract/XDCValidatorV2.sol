@@ -53,7 +53,8 @@ contract XDCValidator {
 
     mapping(address => mapping(string => uint256)) public validKYCCount;
 
-    mapping(address => mapping(address => bool)) public hasVotedValid;
+    mapping(address => mapping(address => mapping(string => bool)))
+        public hasVotedValid;
 
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
@@ -183,8 +184,11 @@ contract XDCValidator {
         string kychash
     ) public onlyValidCandidate(msg.sender) {
         address candidateOwner = getCandidateOwner(msg.sender);
-        require(!hasVotedValid[candidateOwner][owner], "Already voted");
-        hasVotedValid[candidateOwner][owner] = true;
+        require(
+            !hasVotedValid[candidateOwner][owner][kychash],
+            "Already voted"
+        );
+        hasVotedValid[candidateOwner][owner][kychash] = true;
         validKYCCount[owner][kychash]++;
         if ((validKYCCount[owner][kychash] * 100) / getOwnerCount() >= 75) {
             uploadKYC(owner, kychash);
