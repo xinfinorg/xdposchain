@@ -93,6 +93,7 @@ contract XDCValidator {
     }
 
     modifier onlyValidCandidate(address _candidate) {
+        require(!invalidCandidate[_candidate], "Invalid Candidate");
         require(validatorsState[_candidate].isCandidate, "Invalid Candidate");
         _;
     }
