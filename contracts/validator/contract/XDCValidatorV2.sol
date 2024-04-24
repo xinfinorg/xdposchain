@@ -189,6 +189,7 @@ contract XDCValidator {
             !hasVotedValid[candidateOwner][owner][kychash],
             "Already voted"
         );
+        require(!invalidCandidate[owner], "Invalid owner");
         hasVotedValid[candidateOwner][owner][kychash] = true;
         validKYCCount[owner][kychash]++;
         if ((validKYCCount[owner][kychash] * 100) / getOwnerCount() >= 75) {
