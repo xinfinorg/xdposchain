@@ -92,7 +92,6 @@ contract XDCValidator {
     }
 
     modifier onlyValidCandidate(address _candidate) {
-        require(!invalidOwner[_candidate], "Invalid Owner");
         require(!invalidCandidate[_candidate], "Invalid Candidate");
         require(validatorsState[_candidate].isCandidate, "Invalid Candidate");
         _;
@@ -183,8 +182,11 @@ contract XDCValidator {
     function voteValidKYC(
         address owner,
         string kychash
-    ) public onlyValidCandidate(msg.sender) onlyValidCandidate(owner) {
+    ) public onlyValidCandidate(msg.sender) {
+        require(!invalidOwner[owner], "Invalid Owner");
+        require(!invalidCandidate[owner], "Invalid Candidate");
         address candidateOwner = getCandidateOwner(msg.sender);
+
         require(
             !hasVotedValid[candidateOwner][owner][kychash],
             "Already voted"
