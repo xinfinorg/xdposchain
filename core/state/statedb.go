@@ -18,6 +18,7 @@
 package state
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"sort"
@@ -270,9 +271,12 @@ func (self *StateDB) GetCodeSize(addr common.Address) int {
 	if stateObject.code != nil {
 		return len(stateObject.code)
 	}
+	if bytes.Equal(stateObject.CodeHash(), emptyCode[:]) {
+		return 0
+	}
 	size, err := self.db.ContractCodeSize(stateObject.addrHash, common.BytesToHash(stateObject.CodeHash()))
 	if err != nil {
-		self.setError(err)
+		self.setError(fmt.Errorf("GetCodeSize (%x) error: %v", addr[:], err))
 	}
 	return size
 }
@@ -419,14 +423,18 @@ func (self *StateDB) updateStateObject(stateObject *stateObject) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
-	self.setError(self.trie.TryUpdate(addr[:], data))
+	if err = self.trie.TryUpdate(addr[:], data); err != nil {
+		self.setError(fmt.Errorf("updateStateObject (%x) error: %v", addr[:], err))
+	}
 }
 
 // deleteStateObject removes the given object from the state trie.
 func (self *StateDB) deleteStateObject(stateObject *stateObject) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
-	self.setError(self.trie.TryDelete(addr[:]))
+	if err := self.trie.TryDelete(addr[:]); err != nil {
+		self.setError(fmt.Errorf("deleteStateObject (%x) error: %v", addr[:], err))
+	}
 }
 
 // DeleteAddress removes the address from the state trie.
@@ -678,6 +686,10 @@ func (s *StateDB) clearJournalAndRefund() {
 
 // Commit writes the state to the underlying in-memory trie database.
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) {
+	if s.dbErr != nil {
+		return common.Hash{}, fmt.Errorf("commit aborted due to earlier error: %v", s.dbErr)
+	}
+
 	defer s.clearJournalAndRefund()
 
 	// Commit objects to the trie.
