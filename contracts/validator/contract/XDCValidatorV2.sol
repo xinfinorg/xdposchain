@@ -518,4 +518,14 @@ contract XDCValidator {
             }
         }
     }
+
+    // isOwner : check if the given address is an owner or not.
+    function isOwner(address owner) public view returns (bool) {
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == owner) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
