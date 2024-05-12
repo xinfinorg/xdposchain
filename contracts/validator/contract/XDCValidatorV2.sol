@@ -173,7 +173,7 @@ contract XDCValidator {
     }
 
     // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function uploadKYC(address owner, string kychash) private {
+    function approveKYC(address owner, string kychash) private {
         KYCString[owner].push(kychash);
         emit UploadedKYC(owner, kychash);
     }
@@ -195,7 +195,7 @@ contract XDCValidator {
         hasVotedValid[candidateOwner][owner][kychash] = true;
         validKYCCount[owner][kychash]++;
         if ((validKYCCount[owner][kychash] * 100) / getOwnerCount() >= 75) {
-            uploadKYC(owner, kychash);
+            approveKYC(owner, kychash);
         }
     }
 
