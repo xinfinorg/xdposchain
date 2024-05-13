@@ -526,3 +526,12 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 	}
 	return arg
 }
+
+func (ec *Client) GetBlockReceipts(ctx context.Context, blockNumber *big.Int) ([]*types.Receipt, error){
+	var result []*types.Receipt
+	err := ec.c.CallContext(ctx, &result, "eth_getBlockReceipts", toBlockNumArg(blockNumber))
+	if err == nil && result == nil {
+		return nil, ethereum.NotFound
+	}
+	return result, err
+}
