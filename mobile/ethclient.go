@@ -310,7 +310,3 @@ func (ec *EthereumClient) EstimateGas(ctx *Context, msg *CallMsg) (gas int64, _ 
 func (ec *EthereumClient) SendTransaction(ctx *Context, tx *Transaction) error {
 	return ec.client.SendTransaction(ctx.context, tx.tx)
 }
-
-func (ec *EthereumClient) GetBlockReceipts(ctx *Context, tx *Transaction) (data interface{}, err error){
-	return 0, err
-}
