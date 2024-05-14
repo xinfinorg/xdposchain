@@ -17,6 +17,9 @@
 package tests
 
 import (
+	"context"
+	"github.com/XinFinOrg/XDPoSChain/ethclient"
+	"math/big"
 	"testing"
 )
 
@@ -41,4 +44,20 @@ func TestBlockchain(t *testing.T) {
 			t.Error(err)
 		}
 	})
+}
+
+func TestBlockReceipts(t *testing.T) {
+	t.Parallel()
+	dial, err := ethclient.Dial("https://arbitrum-sepolia.blockpi.network/v1/rpc/public")
+	if err != nil{
+		t.Errorf("connect ethclient err:%v", err)
+	}
+	receipts, err := dial.GetBlockReceipts(context.Background(), big.NewInt(1))
+	if err != nil{
+		t.Errorf("exec getBlockReceipts err:%v", err)
+	}
+	if len(receipts) == 0{
+		t.Errorf("getBlockReceipts data err:%v", err)
+	}
+	t.Logf("getBlockReceipts dial success,\ndata:%+v",receipts)
 }
