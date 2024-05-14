@@ -368,17 +368,6 @@ contract XDCValidator {
                     allMasternodes[count++] = candidates[i];
 
                     invalidCandidate[candidates[i]] = true;
-                    //delete voters[candidates[i]]; in blacklist no need use in the future
-                    // for (uint256 y = 0; y < voters[candidates[i]].length; y++) {
-                    //     //delete mapping
-                    //     validatorsState[candidates[i]].voters[
-                    //         voters[candidates[i]][y]
-                    //     ] = 0;
-                    //     voters[candidates[i]][y] = address(0);
-                    // }
-                    // voters[candidates[i]] = removeZeroAddresses(
-                    //     voters[candidates[i]]
-                    // );
 
                     delete validatorsState[candidates[i]];
 
