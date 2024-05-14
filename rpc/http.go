@@ -50,6 +50,7 @@ type httpConn struct {
 	closeCh   chan interface{}
 	mu        sync.Mutex // protects headers
 	headers   http.Header
+	auth      HTTPAuth
 }
 
 // httpConn is treated specially by Client.
@@ -189,11 +190,19 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}) (io.ReadClos
 		return nil, err
 	}
 	req.ContentLength = int64(len(body))
+	req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 
 	// set headers
 	hc.mu.Lock()
 	req.Header = hc.headers.Clone()
 	hc.mu.Unlock()
+	setHeaders(req.Header, headersFromContext(ctx))
+
+	if hc.auth != nil {
+		if err := hc.auth(req.Header); err != nil {
+			return nil, err
+		}
+	}
 
 	// do request
 	resp, err := hc.client.Do(req)
