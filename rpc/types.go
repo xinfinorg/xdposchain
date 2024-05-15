@@ -75,6 +75,8 @@ const (
 	LatestBlockNumber    = BlockNumber(-1)
 	EarliestBlockNumber  = BlockNumber(0)
 	LatestEpochNumber    = EpochNumber(-1)
+	FinalizedBlockNumber = BlockNumber(-3)
+	SafeBlockNumber      = BlockNumber(-4)
 )
 
 // UnmarshalJSON parses the given JSON fragment into a BlockNumber. It supports:
@@ -146,6 +148,37 @@ type BlockNumberOrHash struct {
 	BlockNumber      *BlockNumber `json:"blockNumber,omitempty"`
 	BlockHash        *common.Hash `json:"blockHash,omitempty"`
 	RequireCanonical bool         `json:"requireCanonical,omitempty"`
+}
+
+
+func (bn BlockNumber) String() string {
+	switch bn {
+	case EarliestBlockNumber:
+		return "earliest"
+	case LatestBlockNumber:
+		return "latest"
+	case PendingBlockNumber:
+		return "pending"
+	case FinalizedBlockNumber:
+		return "finalized"
+	case SafeBlockNumber:
+		return "safe"
+	default:
+		if bn < 0 {
+			return fmt.Sprintf("<invalid %d>", bn)
+		}
+		return hexutil.Uint64(bn).String()
+	}
+}
+
+func (bnh *BlockNumberOrHash) String() string {
+	if bnh.BlockNumber != nil {
+		return bnh.BlockNumber.String()
+	}
+	if bnh.BlockHash != nil {
+		return bnh.BlockHash.String()
+	}
+	return "nil"
 }
 
 func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {

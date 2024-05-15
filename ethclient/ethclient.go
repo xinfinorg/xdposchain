@@ -527,12 +527,12 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 	return arg
 }
 
-func (ec *Client) GetBlockReceipts(ctx context.Context, blockNumber *big.Int) ([]*types.Receipt, error){
-	var result []*types.Receipt
-	err := ec.c.CallContext(ctx, &result, "eth_getBlockReceipts", toBlockNumArg(blockNumber))
-
-	if err == nil && result == nil {
+// BlockReceipts returns the receipts of a given block number or hash.
+func (ec *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*types.Receipt, error) {
+	var r []*types.Receipt
+	err := ec.c.CallContext(ctx, &r, "eth_getBlockReceipts", blockNrOrHash.String())
+	if err == nil && r == nil {
 		return nil, ethereum.NotFound
 	}
-	return result, err
+	return r, err
 }

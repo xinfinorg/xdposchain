@@ -19,7 +19,7 @@ package tests
 import (
 	"context"
 	"github.com/XinFinOrg/XDPoSChain/ethclient"
-	"math/big"
+	"github.com/XinFinOrg/XDPoSChain/rpc"
 	"testing"
 )
 
@@ -52,7 +52,13 @@ func TestBlockReceipts(t *testing.T) {
 	if err != nil{
 		t.Errorf("connect ethclient err:%v", err)
 	}
-	receipts, err := dial.GetBlockReceipts(context.Background(), big.NewInt(1))
+	b := rpc.BlockNumber(1)
+	bi := &rpc.BlockNumberOrHash{
+		&b,
+		nil,
+		false,
+	}
+	receipts, err := dial.BlockReceipts(context.Background(), *bi)
 	if err != nil{
 		t.Errorf("exec getBlockReceipts err:%v", err)
 	}
