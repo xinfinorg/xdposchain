@@ -134,6 +134,14 @@ type txdataMarshaling struct {
 	S            *hexutil.Big
 }
 
+func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
+}
+
+func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
+}
+
 func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)

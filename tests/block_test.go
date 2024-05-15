@@ -59,6 +59,7 @@ func TestBlockReceipts(t *testing.T) {
 		false,
 	}
 	receipts, err := dial.BlockReceipts(context.Background(), *bi)
+
 	if err != nil{
 		t.Errorf("exec getBlockReceipts err:%v", err)
 	}
