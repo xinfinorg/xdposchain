@@ -362,20 +362,21 @@ contract XDCValidator {
             address[] memory newCandidates = new address[](candidates.length);
             invalidOwner[_owner] = true;
             for (uint i = 0; i < candidates.length; i++) {
-                if (getCandidateOwner(candidates[i]) == _owner) {
+                address candidate = candidates[i];
+                if (getCandidateOwner(candidate) == _owner) {
                     // logic to remove cap.
                     candidateCount = candidateCount.sub(1);
-                    allMasternodes[count++] = candidates[i];
+                    allMasternodes[count++] = candidate;
 
-                    invalidCandidate[candidates[i]] = true;
+                    invalidCandidate[candidate] = true;
 
-                    delete validatorsState[candidates[i]];
+                    delete validatorsState[candidate];
 
                     delete KYCString[_owner];
                     delete ownerToCandidate[_owner];
                     delete invalidKYCCount[_owner];
                 } else {
-                    newCandidates[j++] = candidates[i];
+                    newCandidates[j++] = candidate;
                 }
             }
 
