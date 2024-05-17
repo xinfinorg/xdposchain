@@ -46,13 +46,13 @@ contract XDCValidator {
     uint256 public maxValidatorNumber;
     uint256 public candidateWithdrawDelay;
     uint256 public voterWithdrawDelay;
-
+    // owner => invalid
     mapping(address => bool) public invalidOwner;
-
+    // candaite => invalid
     mapping(address => bool) public invalidCandidate;
-
+    // candidate => kyc => voted count
     mapping(address => mapping(string => uint256)) validKYCCount;
-
+    // voter owner => kyc owner => kyc => voted
     mapping(address => mapping(address => mapping(string => bool))) hasVotedValid;
 
     modifier onlyValidCandidateCap() {
