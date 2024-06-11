@@ -184,7 +184,10 @@ contract XDCValidator {
         string memory kychash = pendingKYC[msg.sender].kycHash;
         uint256 blockNumber = pendingKYC[msg.sender].blockNumber;
         require(bytes(kychash).length > 0, "No KYC uploaded");
-        require(block.number > blockNumber + 10 * 43200, "No KYC uploaded");
+        require(
+            block.number > blockNumber + 10 * 43200,
+            "KYC not verified yet"
+        );
 
         pendingKYC[msg.sender].blockNumber = 0;
         pendingKYC[msg.sender].kycHash = "";
