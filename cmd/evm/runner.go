@@ -80,7 +80,7 @@ func runCmd(ctx *cli.Context) error {
 	}
 
 	var (
-		tracer      vm.Tracer
+		tracer      vm.EVMLogger
 		debugLogger *vm.StructLogger
 		statedb     *state.StateDB
 		chainConfig *params.ChainConfig

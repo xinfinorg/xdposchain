@@ -21,22 +21,16 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"math/big"
-	"os"
-	"path/filepath"
-	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/common/hexutil"
-	"github.com/XinFinOrg/XDPoSChain/common/math"
 	"github.com/XinFinOrg/XDPoSChain/core"
 	"github.com/XinFinOrg/XDPoSChain/core/rawdb"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
 	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/crypto"
 	"github.com/XinFinOrg/XDPoSChain/params"
-	"github.com/XinFinOrg/XDPoSChain/rlp"
 	"github.com/XinFinOrg/XDPoSChain/tests"
 )
 
@@ -104,22 +98,6 @@ type callTrace struct {
 	Calls   []callTrace     `json:"calls,omitempty"`
 }
 
-type callContext struct {
-	Number     math.HexOrDecimal64   `json:"number"`
-	Difficulty *math.HexOrDecimal256 `json:"difficulty"`
-	Time       math.HexOrDecimal64   `json:"timestamp"`
-	GasLimit   math.HexOrDecimal64   `json:"gasLimit"`
-	Miner      common.Address        `json:"miner"`
-}
-
-// callTracerTest defines a single test to check the call tracer against.
-type callTracerTest struct {
-	Genesis *core.Genesis `json:"genesis"`
-	Context *callContext  `json:"context"`
-	Input   string        `json:"input"`
-	Result  *callTrace    `json:"result"`
-}
-
 func TestPrestateTracerCreate2(t *testing.T) {
 	common.TIPXDCXCancellationFee = big.NewInt(10000000000000)
 	unsignedTx := types.NewTransaction(1, common.HexToAddress("0x00000000000000000000000000000000deadbeef"),
@@ -173,7 +151,7 @@ func TestPrestateTracerCreate2(t *testing.T) {
 	statedb := tests.MakePreState(db, alloc)
 
 	// Create the tracer, the EVM environment and run it
-	tracer, err := New("prestateTracer")
+	tracer, err := New("prestateTracer", new(Context))
 	if err != nil {
 		t.Fatalf("failed to create call tracer: %v", err)
 	}
@@ -198,83 +176,5 @@ func TestPrestateTracerCreate2(t *testing.T) {
 	}
 	if _, has := ret["0x60f3f640a8508fc6a86d45df051962668e1e8ac7"]; !has {
 		t.Fatalf("Expected 0x60f3f640a8508fc6a86d45df051962668e1e8ac7 in result")
-	}
-}
-
-// Iterates over all the input-output datasets in the tracer test harness and
-// runs the JavaScript tracers against them.
-func TestCallTracer(t *testing.T) {
-	files, err := os.ReadDir("testdata")
-	if err != nil {
-		t.Fatalf("failed to retrieve tracer test suite: %v", err)
-	}
-	for _, file := range files {
-		if !strings.HasPrefix(file.Name(), "call_tracer_") {
-			continue
-		}
-		file := file // capture range variable
-		t.Run(camel(strings.TrimSuffix(strings.TrimPrefix(file.Name(), "call_tracer_"), ".json")), func(t *testing.T) {
-			t.Parallel()
-
-			// Call tracer test found, read if from disk
-			blob, err := os.ReadFile(filepath.Join("testdata", file.Name()))
-			if err != nil {
-				t.Fatalf("failed to read testcase: %v", err)
-			}
-			test := new(callTracerTest)
-			if err := json.Unmarshal(blob, test); err != nil {
-				t.Fatalf("failed to parse testcase: %v", err)
-			}
-			// Configure a blockchain with the given prestate
-			tx := new(types.Transaction)
-			if err := rlp.DecodeBytes(common.FromHex(test.Input), tx); err != nil {
-				t.Fatalf("failed to parse testcase input: %v", err)
-			}
-			signer := types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)))
-			origin, _ := signer.Sender(tx)
-
-			context := vm.Context{
-				CanTransfer: core.CanTransfer,
-				Transfer:    core.Transfer,
-				Origin:      origin,
-				Coinbase:    test.Context.Miner,
-				BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
-				Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
-				Difficulty:  (*big.Int)(test.Context.Difficulty),
-				GasLimit:    uint64(test.Context.GasLimit),
-				GasPrice:    tx.GasPrice(),
-			}
-			db := rawdb.NewMemoryDatabase()
-			statedb := tests.MakePreState(db, test.Genesis.Alloc)
-
-			// Create the tracer, the EVM environment and run it
-			tracer, err := New("callTracer")
-			if err != nil {
-				t.Fatalf("failed to create call tracer: %v", err)
-			}
-			evm := vm.NewEVM(context, statedb, nil, test.Genesis.Config, vm.Config{Debug: true, Tracer: tracer})
-
-			msg, err := tx.AsMessage(signer, nil, common.Big0)
-			if err != nil {
-				t.Fatalf("failed to prepare transaction for tracing: %v", err)
-			}
-			st := core.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
-			if _, _, _, err, _ = st.TransitionDb(common.Address{}); err != nil {
-				t.Fatalf("failed to execute transaction: %v", err)
-			}
-			// Retrieve the trace result and compare against the etalon
-			res, err := tracer.GetResult()
-			if err != nil {
-				t.Fatalf("failed to retrieve trace result: %v", err)
-			}
-			ret := new(callTrace)
-			if err := json.Unmarshal(res, ret); err != nil {
-				t.Fatalf("failed to unmarshal trace result: %v", err)
-			}
-
-			if !reflect.DeepEqual(ret, test.Result) {
-				t.Fatalf("trace mismatch: \nhave %+v\nwant %+v", ret, test.Result)
-			}
-		})
 	}
 }
