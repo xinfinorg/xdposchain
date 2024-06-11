@@ -50,10 +50,13 @@ contract XDCValidator {
     mapping(address => bool) public invalidOwner;
     // candaite => invalid
     mapping(address => bool) public invalidCandidate;
-    // candidate => kyc => voted count
-    mapping(address => mapping(string => uint256)) validKYCCount;
-    // voter owner => kyc owner => kyc => voted
-    mapping(address => mapping(address => mapping(string => bool))) hasVotedValid;
+
+    struct PendingKYCState {
+        uint256 blockNumber;
+        string kycHash;
+    }
+
+    mapping(address => PendingKYCState) public pendingKYC;
 
     modifier onlyValidCandidateCap() {
         // anyone can deposit X XDC to become a candidate
@@ -170,31 +173,23 @@ contract XDCValidator {
         }
     }
 
-    // uploadKYC : anyone can upload a KYC; its not equivalent to becoming an owner.
-    function approveKYC(address owner, string kychash) private {
-        KYCString[owner].push(kychash);
-        emit UploadedKYC(owner, kychash);
+    function uplodaKYC(string kychash) external {
+        pendingKYC[msg.sender] = PendingKYCState({
+            blockNumber: block.number,
+            kycHash: kychash
+        });
     }
 
-    // voteValidKYC : any candidate can vote for valid KYC i.e. a particular candidate's owner has uploaded a valid KYC.
-    function voteValidKYC(
-        address owner,
-        string kychash
-    ) public onlyValidCandidate(msg.sender) {
-        require(!invalidOwner[owner], "Invalid Owner");
-        require(!invalidCandidate[owner], "Invalid Candidate");
-        address candidateOwner = getCandidateOwner(msg.sender);
+    function claimKYC() external {
+        string memory kychash = pendingKYC[msg.sender].kycHash;
+        uint256 blockNumber = pendingKYC[msg.sender].blockNumber;
+        require(bytes(kychash).length > 0, "No KYC uploaded");
+        require(block.number > blockNumber + 10 * 43200, "No KYC uploaded");
 
-        require(
-            !hasVotedValid[candidateOwner][owner][kychash],
-            "Already voted"
-        );
+        pendingKYC[msg.sender].blockNumber = 0;
+        pendingKYC[msg.sender].kycHash = "";
 
-        hasVotedValid[candidateOwner][owner][kychash] = true;
-        validKYCCount[owner][kychash]++;
-        if ((validKYCCount[owner][kychash] * 100) / getOwnerCount() >= 75) {
-            approveKYC(owner, kychash);
-        }
+        emit UploadedKYC(msg.sender, kychash);
     }
 
     // propose : any non-candidate who has uploaded its KYC can become an owner by proposing a candidate.
