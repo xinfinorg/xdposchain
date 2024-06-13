@@ -50,13 +50,21 @@ type dummyStatedb struct {
 func (*dummyStatedb) GetRefund() uint64                       { return 1337 }
 func (*dummyStatedb) GetBalance(addr common.Address) *big.Int { return new(big.Int) }
 
-func runTrace(tracer Tracer) (json.RawMessage, error) {
-	env := vm.NewEVM(vm.Context{BlockNumber: big.NewInt(1)}, &dummyStatedb{}, nil, params.TestChainConfig, vm.Config{Debug: true, Tracer: tracer})
+type vmContext struct {
+	ctx vm.Context // future pr should distinguish blockContext and txContext
+}
+
+func testCtx() *vmContext {
+	return &vmContext{ctx: vm.Context{BlockNumber: big.NewInt(1), GasPrice: big.NewInt(100000)}}
+}
+
+func runTrace(tracer Tracer, vmctx *vmContext, chaincfg *params.ChainConfig) (json.RawMessage, error) {
+	env := vm.NewEVM(vmctx.ctx, &dummyStatedb{}, nil, chaincfg, vm.Config{Debug: true, Tracer: tracer})
 	var (
 		startGas uint64 = 10000
 		value           = big.NewInt(0)
 	)
-	contract := vm.NewContract(account{}, account{}, big.NewInt(0), 10000)
+	contract := vm.NewContract(account{}, account{}, value, startGas)
 	contract.Code = []byte{byte(vm.PUSH1), 0x1, byte(vm.PUSH1), 0x1, 0x0}
 
 	tracer.CaptureStart(env, contract.Caller(), contract.Address(), false, []byte{}, startGas, value)
@@ -69,21 +77,22 @@ func runTrace(tracer Tracer) (json.RawMessage, error) {
 }
 
 func TestTracer(t *testing.T) {
-	execTracer := func(code string) []byte {
+	execTracer := func(code string) ([]byte, string) {
 		t.Helper()
 		tracer, err := New(code, new(Context))
 		if err != nil {
 			t.Fatal(err)
 		}
-		ret, err := runTrace(tracer)
+		ret, err := runTrace(tracer, testCtx(), params.TestChainConfig)
 		if err != nil {
-			t.Fatal(err)
+			return nil, err.Error() // Stringify to allow comparison without nil checks
 		}
-		return ret
+		return ret, ""
 	}
 	for i, tt := range []struct {
 		code string
 		want string
+		fail string
 	}{
 		{ // tests that we don't panic on bad arguments to memory access
 			code: "{depths: [], step: function(log) { this.depths.push(log.memory.slice(-1,-2)); }, fault: function() {}, result: function() { return this.depths; }}",
@@ -104,12 +113,15 @@ func TestTracer(t *testing.T) {
 			code: "{opcodes: [], step: function(log) { this.opcodes.push(log.op.toString()); }, fault: function() {}, result: function() { return this.opcodes; }}",
 			want: `["PUSH1","PUSH1","STOP"]`,
 		}, { // tests intrinsic gas
-			code: "{depths: [], step: function() {}, fault: function() {}, result: function(ctx) { return ctx.gasUsed+'.'+ctx.intrinsicGas; }}",
-			want: `"6.21000"`,
+			code: "{depths: [], step: function() {}, fault: function() {}, result: function(ctx) { return ctx.gasPrice+'.'+ctx.gasUsed+'.'+ctx.intrinsicGas; }}",
+			want: `"100000.6.21000"`,
+		}, { // tests too deep object / serialization crash
+			code: "{step: function() {}, fault: function() {}, result: function() { var o={}; var x=o; for (var i=0; i<1000; i++){	o.foo={}; o=o.foo; } return x; }}",
+			fail: "RangeError: json encode recursion limit    in server-side tracer function 'result'",
 		},
 	} {
-		if have := execTracer(tt.code); tt.want != string(have) {
-			t.Errorf("testcase %d: expected return value to be %s got %s\n\tcode: %v", i, tt.want, string(have), tt.code)
+		if have, err := execTracer(tt.code); tt.want != string(have) || tt.fail != err {
+			t.Errorf("testcase %d: expected return value to be '%s' got '%s', error to be '%s' got '%s'\n\tcode: %v", i, tt.want, string(have), tt.fail, err, tt.code)
 		}
 	}
 }
@@ -122,13 +134,11 @@ func TestHalt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	go func() {
 		time.Sleep(1 * time.Second)
 		tracer.Stop(timeout)
 	}()
-
-	if _, err = runTrace(tracer); err.Error() != "stahp    in server-side tracer function 'step'" {
+	if _, err = runTrace(tracer, testCtx(), params.TestChainConfig); err.Error() != "stahp    in server-side tracer function 'step'" {
 		t.Errorf("Expected timeout error, got %v", err)
 	}
 }
@@ -142,7 +152,6 @@ func TestHaltBetweenSteps(t *testing.T) {
 	scope := &vm.ScopeContext{
 		Contract: vm.NewContract(&account{}, &account{}, big.NewInt(0), 0),
 	}
-
 	tracer.CaptureState(env, 0, 0, 0, 0, scope, nil, 0, nil)
 	timeout := errors.New("stahp")
 	tracer.Stop(timeout)
@@ -156,8 +165,8 @@ func TestHaltBetweenSteps(t *testing.T) {
 // TestNoStepExec tests a regular value transfer (no exec), and accessing the statedb
 // in 'result'
 func TestNoStepExec(t *testing.T) {
-	runEmptyTrace := func(tracer Tracer) (json.RawMessage, error) {
-		env := vm.NewEVM(vm.Context{BlockNumber: big.NewInt(1)}, &dummyStatedb{}, nil, params.TestChainConfig, vm.Config{Debug: true, Tracer: tracer})
+	runEmptyTrace := func(tracer Tracer, vmctx *vmContext) (json.RawMessage, error) {
+		env := vm.NewEVM(vmctx.ctx, &dummyStatedb{}, nil, params.TestChainConfig, vm.Config{Debug: true, Tracer: tracer})
 		startGas := uint64(10000)
 		contract := vm.NewContract(account{}, account{}, big.NewInt(0), startGas)
 		tracer.CaptureStart(env, contract.Caller(), contract.Address(), false, []byte{}, startGas, big.NewInt(0))
@@ -170,7 +179,7 @@ func TestNoStepExec(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ret, err := runEmptyTrace(tracer)
+		ret, err := runEmptyTrace(tracer, testCtx())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,13 +200,74 @@ func TestNoStepExec(t *testing.T) {
 	}
 }
 
+func TestIsPrecompile(t *testing.T) {
+	chaincfg := &params.ChainConfig{ChainId: big.NewInt(1), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: big.NewInt(0), ByzantiumBlock: big.NewInt(100), ConstantinopleBlock: big.NewInt(0), PetersburgBlock: big.NewInt(0), IstanbulBlock: big.NewInt(200), BerlinBlock: big.NewInt(300), LondonBlock: big.NewInt(0), Ethash: new(params.EthashConfig), Clique: nil}
+	chaincfg.ByzantiumBlock = big.NewInt(100)
+	chaincfg.IstanbulBlock = big.NewInt(200)
+	chaincfg.BerlinBlock = big.NewInt(300)
+	ctx := vm.Context{BlockNumber: big.NewInt(150), GasPrice: big.NewInt(100000)}
+	tracer, err := New("{addr: toAddress('0000000000000000000000000000000000000009'), res: null, step: function() { this.res = isPrecompiled(this.addr); }, fault: function() {}, result: function() { return this.res; }}", new(Context))
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := runTrace(tracer, &vmContext{ctx}, chaincfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(res) != "false" {
+		t.Errorf("Tracer should not consider blake2f as precompile in byzantium")
+	}
+
+	tracer, _ = New("{addr: toAddress('0000000000000000000000000000000000000009'), res: null, step: function() { this.res = isPrecompiled(this.addr); }, fault: function() {}, result: function() { return this.res; }}", new(Context))
+	ctx = vm.Context{BlockNumber: big.NewInt(250), GasPrice: big.NewInt(100000)}
+	res, err = runTrace(tracer, &vmContext{ctx}, chaincfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(res) != "true" {
+		t.Errorf("Tracer should consider blake2f as precompile in istanbul")
+	}
+}
+
+func TestEnterExit(t *testing.T) {
+	// test that either both or none of enter() and exit() are defined
+	if _, err := New("{step: function() {}, fault: function() {}, result: function() { return null; }, enter: function() {}}", new(Context)); err == nil {
+		t.Fatal("tracer creation should've failed without exit() definition")
+	}
+	if _, err := New("{step: function() {}, fault: function() {}, result: function() { return null; }, enter: function() {}, exit: function() {}}", new(Context)); err != nil {
+		t.Fatal(err)
+	}
+
+	// test that the enter and exit method are correctly invoked and the values passed
+	tracer, err := New("{enters: 0, exits: 0, enterGas: 0, gasUsed: 0, step: function() {}, fault: function() {}, result: function() { return {enters: this.enters, exits: this.exits, enterGas: this.enterGas, gasUsed: this.gasUsed} }, enter: function(frame) { this.enters++; this.enterGas = frame.getGas(); }, exit: function(res) { this.exits++; this.gasUsed = res.getGasUsed(); }}", new(Context))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	scope := &vm.ScopeContext{
+		Contract: vm.NewContract(&account{}, &account{}, big.NewInt(0), 0),
+	}
+
+	tracer.CaptureEnter(vm.CALL, scope.Contract.Caller(), scope.Contract.Address(), []byte{}, 1000, new(big.Int))
+	tracer.CaptureExit([]byte{}, 400, nil)
+
+	have, err := tracer.GetResult()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"enters":1,"exits":1,"enterGas":1000,"gasUsed":400}`
+	if string(have) != want {
+		t.Errorf("Number of invocations of enter() and exit() is wrong. Have %s, want %s\n", have, want)
+	}
+}
+
 // TestRegressionPanicSlice tests that we don't panic on bad arguments to memory access
 func TestRegressionPanicSlice(t *testing.T) {
 	tracer, err := New("{depths: [], step: function(log) { this.depths.push(log.memory.slice(-1,-2)); }, fault: function() {}, result: function() { return this.depths; }}", new(Context))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = runTrace(tracer); err != nil {
+	if _, err = runTrace(tracer, testCtx(), params.TestChainConfig); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -208,7 +278,7 @@ func TestRegressionPanicPeek(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = runTrace(tracer); err != nil {
+	if _, err = runTrace(tracer, testCtx(), params.TestChainConfig); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -219,7 +289,7 @@ func TestRegressionPanicGetUint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = runTrace(tracer); err != nil {
+	if _, err = runTrace(tracer, testCtx(), params.TestChainConfig); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -230,7 +300,7 @@ func TestTracing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ret, err := runTrace(tracer)
+	ret, err := runTrace(tracer, testCtx(), params.TestChainConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +315,7 @@ func TestStack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ret, err := runTrace(tracer)
+	ret, err := runTrace(tracer, testCtx(), params.TestChainConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +330,7 @@ func TestOpcodes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ret, err := runTrace(tracer)
+	ret, err := runTrace(tracer, testCtx(), params.TestChainConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
