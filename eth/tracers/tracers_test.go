@@ -20,7 +20,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"math/big"
+	"reflect"
 	"testing"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
@@ -96,6 +98,85 @@ type callTrace struct {
 	Value   *hexutil.Big    `json:"value,omitempty"`
 	Error   string          `json:"error,omitempty"`
 	Calls   []callTrace     `json:"calls,omitempty"`
+}
+
+// TestZeroValueToNotExitCall tests the calltracer(s) on the following:
+// Tx to A, A calls B with zero value. B does not already exist.
+// Expected: that enter/exit is invoked and the inner call is shown in the result
+func TestZeroValueToNotExitCall(t *testing.T) {
+	var to = common.HexToAddress("0x00000000000000000000000000000000deadbeef")
+	privkey, err := crypto.HexToECDSA("0000000000000000deadbeef00000000000000000000000000000000deadbeef")
+	if err != nil {
+		t.Fatalf("err %v", err)
+	}
+	signer := types.NewEIP155Signer(big.NewInt(1))
+	tx, err := types.SignNewTx(privkey, signer, &types.LegacyTx{
+		GasPrice: big.NewInt(0),
+		Gas:      50000,
+		To:       &to,
+	})
+	if err != nil {
+		t.Fatalf("err %v", err)
+	}
+	origin, _ := signer.Sender(tx)
+	context := vm.Context{
+		CanTransfer: core.CanTransfer,
+		Transfer:    core.Transfer,
+		Coinbase:    common.Address{},
+		BlockNumber: new(big.Int).SetUint64(8000000),
+		Time:        new(big.Int).SetUint64(5),
+		Difficulty:  big.NewInt(0x30000),
+		GasLimit:    uint64(6000000),
+		Origin:      origin,
+		GasPrice:    big.NewInt(1),
+	}
+	var code = []byte{
+		byte(vm.PUSH1), 0x0, byte(vm.DUP1), byte(vm.DUP1), byte(vm.DUP1), // in and outs zero
+		byte(vm.DUP1), byte(vm.PUSH1), 0xff, byte(vm.GAS), // value=0,address=0xff, gas=GAS
+		byte(vm.CALL),
+	}
+	var alloc = core.GenesisAlloc{
+		to: core.GenesisAccount{
+			Nonce: 1,
+			Code:  code,
+		},
+		origin: core.GenesisAccount{
+			Nonce:   0,
+			Balance: big.NewInt(500000000000000),
+		},
+	}
+	statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), alloc)
+	// Create the tracer, the EVM environment and run it
+	tracer, err := New("callTracer", new(Context))
+	if err != nil {
+		t.Fatalf("failed to create call tracer: %v", err)
+	}
+	evm := vm.NewEVM(context, statedb, nil, params.MainnetChainConfig, vm.Config{Debug: true, Tracer: tracer})
+	msg, err := tx.AsMessage(signer, nil, nil)
+	if err != nil {
+		t.Fatalf("failed to prepare transaction for tracing: %v", err)
+	}
+	st := core.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
+	if _, _, _, err, _ = st.TransitionDb(common.Address{}); err != nil {
+		t.Fatalf("failed to execute transaction: %v", err)
+	}
+	// Retrieve the trace result and compare against the etalon
+	res, err := tracer.GetResult()
+	if err != nil {
+		t.Fatalf("failed to retrieve trace result: %v", err)
+	}
+	have := new(callTrace)
+	if err := json.Unmarshal(res, have); err != nil {
+		t.Fatalf("failed to unmarshal trace result: %v", err)
+	}
+	wantStr := `{"type":"CALL","from":"0x682a80a6f560eec50d54e63cbeda1c324c5f8d1b","to":"0x00000000000000000000000000000000deadbeef","value":"0x0","gas":"0x7148","gasUsed":"0x2d0","input":"0x","output":"0x","calls":[{"type":"CALL","from":"0x00000000000000000000000000000000deadbeef","to":"0x00000000000000000000000000000000000000ff","value":"0x0","gas":"0x6cbf","gasUsed":"0x0","input":"0x","output":"0x"}]}`
+	want := new(callTrace)
+	json.Unmarshal([]byte(wantStr), want)
+	if !jsonEqual(have, want) {
+		x, _ := json.Marshal(have)
+		fmt.Println(string(x))
+		t.Error("have != want")
+	}
 }
 
 func TestPrestateTracerCreate2(t *testing.T) {
@@ -177,6 +258,24 @@ func TestPrestateTracerCreate2(t *testing.T) {
 	if _, has := ret["0x60f3f640a8508fc6a86d45df051962668e1e8ac7"]; !has {
 		t.Fatalf("Expected 0x60f3f640a8508fc6a86d45df051962668e1e8ac7 in result")
 	}
+}
+
+// jsonEqual is similar to reflect.DeepEqual, but does a 'bounce' via json prior to
+// comparison
+func jsonEqual(x, y interface{}) bool {
+	xTrace := new(callTrace)
+	yTrace := new(callTrace)
+	if xj, err := json.Marshal(x); err == nil {
+		json.Unmarshal(xj, xTrace)
+	} else {
+		return false
+	}
+	if yj, err := json.Marshal(y); err == nil {
+		json.Unmarshal(yj, yTrace)
+	} else {
+		return false
+	}
+	return reflect.DeepEqual(xTrace, yTrace)
 }
 
 func BenchmarkTransactionTrace(b *testing.B) {
