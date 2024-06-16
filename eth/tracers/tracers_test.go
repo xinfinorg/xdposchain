@@ -20,7 +20,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -173,8 +172,6 @@ func TestZeroValueToNotExitCall(t *testing.T) {
 	want := new(callTrace)
 	json.Unmarshal([]byte(wantStr), want)
 	if !jsonEqual(have, want) {
-		x, _ := json.Marshal(have)
-		fmt.Println(string(x))
 		t.Error("have != want")
 	}
 }
