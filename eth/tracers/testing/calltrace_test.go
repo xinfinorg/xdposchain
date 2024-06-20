@@ -65,10 +65,6 @@ func TestCallTracer(t *testing.T) {
 	testCallTracer("callTracer", "call_tracer", t)
 }
 
-func TestCallTracerNative(t *testing.T) {
-	testCallTracer("callTracerNative", "call_tracer", t)
-}
-
 func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 	files, err := ioutil.ReadDir(filepath.Join("..", "testdata", dirPath))
 	if err != nil {

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	tracers.RegisterNativeTracer("noopTracerNative", NewNoopTracer)
+	tracers.RegisterNativeTracer("noopTracer", NewNoopTracer)
 }
 
 type noopTracer struct{}
