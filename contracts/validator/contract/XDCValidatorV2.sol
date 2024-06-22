@@ -359,6 +359,9 @@ contract XDCValidator {
             uint j = 0;
             address[] memory newCandidates = new address[](candidates.length);
             invalidOwner[_owner] = true;
+            pendingKYC[_owner].blockNumber = 0;
+            pendingKYC[_owner].kycHash = "";
+            
             for (uint i = 0; i < candidates.length; i++) {
                 address candidate = candidates[i];
                 if (getCandidateOwner(candidate) == _owner) {
