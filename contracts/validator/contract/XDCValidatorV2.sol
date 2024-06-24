@@ -174,6 +174,7 @@ contract XDCValidator {
     }
 
     function uplodaKYC(string kychash) external {
+        require(!invalidOwner[msg.sender], "Invalid Owner");
         pendingKYC[msg.sender] = PendingKYCState({
             blockNumber: block.number,
             kycHash: kychash
@@ -361,7 +362,7 @@ contract XDCValidator {
             invalidOwner[_owner] = true;
             pendingKYC[_owner].blockNumber = 0;
             pendingKYC[_owner].kycHash = "";
-            
+
             for (uint i = 0; i < candidates.length; i++) {
                 address candidate = candidates[i];
                 if (getCandidateOwner(candidate) == _owner) {
