@@ -173,7 +173,7 @@ contract XDCValidator {
         }
     }
 
-    function uplodaKYC(string kychash) external {
+    function uploadKYC(string kychash) external {
         require(!invalidOwner[msg.sender], "Invalid Owner");
         pendingKYC[msg.sender] = PendingKYCState({
             blockNumber: block.number,
