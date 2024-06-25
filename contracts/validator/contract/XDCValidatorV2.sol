@@ -192,6 +192,7 @@ contract XDCValidator {
 
         pendingKYC[msg.sender].blockNumber = 0;
         pendingKYC[msg.sender].kycHash = "";
+        KYCString[msg.sender].push(kychash);
 
         emit UploadedKYC(msg.sender, kychash);
     }
