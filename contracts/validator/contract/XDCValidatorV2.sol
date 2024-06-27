@@ -182,6 +182,7 @@ contract XDCValidator {
     }
 
     function claimKYC() external {
+        require(!invalidOwner[msg.sender], "Invalid Owner");
         string memory kychash = pendingKYC[msg.sender].kycHash;
         uint256 blockNumber = pendingKYC[msg.sender].blockNumber;
         require(bytes(kychash).length > 0, "No KYC uploaded");
