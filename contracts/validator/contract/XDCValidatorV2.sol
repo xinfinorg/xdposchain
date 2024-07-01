@@ -355,43 +355,43 @@ contract XDCValidator {
         invalidKYCCount[_owner] += 1;
         if ((invalidKYCCount[_owner] * 100) / getOwnerCount() >= 75) {
             // 75% owners say that the KYC is invalid
-            address[] memory allMasternodes = new address[](
-                candidates.length - 1
-            );
-            uint count = 0;
-            uint j = 0;
-            address[] memory newCandidates = new address[](candidates.length);
             invalidOwner[_owner] = true;
             pendingKYC[_owner].blockNumber = 0;
             pendingKYC[_owner].kycHash = "";
 
-            for (uint i = 0; i < candidates.length; i++) {
-                address candidate = candidates[i];
-                if (getCandidateOwner(candidate) == _owner) {
-                    // logic to remove cap.
-                    candidateCount = candidateCount.sub(1);
-                    allMasternodes[count++] = candidate;
+            isOwnerNow, ownerIndex = isOwner(_owner);
+            if (isOwnerNow) {
+                uint j = 0;
+                uint count = 0;
+                address[] memory allMasternodes = new address[](candidates.length);
+                address[] memory newCandidates = new address[](candidates.length);
 
-                    invalidCandidate[candidate] = true;
-
-                    delete validatorsState[candidate];
-
-                    delete KYCString[_owner];
-                    delete ownerToCandidate[_owner];
-                    delete invalidKYCCount[_owner];
-                } else {
-                    newCandidates[j++] = candidate;
+                for (uint i = 0; i < candidates.length; i++) {
+                    address candidate = candidates[i];
+                    if (getCandidateOwner(candidate) == _owner) {
+                        // logic to remove cap.
+                        candidateCount = candidateCount.sub(1);
+                        allMasternodes[count++] = candidate;
+                        invalidCandidate[candidate] = true;
+                        delete validatorsState[candidate];
+                        delete KYCString[_owner];
+                        delete ownerToCandidate[_owner];
+                        delete invalidKYCCount[_owner];
+                    } else {
+                        newCandidates[j++] = candidate;
+                    }
                 }
-            }
 
-            // Resize the array.
-            assembly {
-                mstore(newCandidates, j)
-            }
-            candidates = newCandidates;
+                // Resize the array.
+                assembly {
+                    mstore(newCandidates, j)
+                    mstore(allMasternodes, count)
+                }
+                candidates = newCandidates;
 
-            deleteOwner(_owner);
-            emit InvalidatedNode(_owner, allMasternodes);
+                removeOwnerByIndex(ownerIndex);
+                emit InvalidatedNode(_owner, allMasternodes);
+            }
         }
     }
 
@@ -512,12 +512,21 @@ contract XDCValidator {
     }
 
     // isOwner : check if the given address is an owner or not.
-    function isOwner(address owner) public view returns (bool) {
+    function isOwner(address owner) public view returns (bool, uint256) {
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == owner) {
-                return true;
+                return (true, i);
             }
         }
-        return false;
+        return (false, 0);
+    }
+
+    function removeOwnerByIndex(uint256 index) private {
+        // no need to check: index <= lastIndex
+        uint256 lastIndex = owners.length - 1;
+        owners[index] = owners[lastIndex];
+        delete owners[lastIndex];
+        owners.length--;
+        ownerCount--;
     }
 }
