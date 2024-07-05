@@ -1,6 +1,6 @@
 pragma solidity ^0.4.26;
 
-import "./libs/SafeMath.sol";
+import "./libraries/SafeMath.sol";
 
 contract XDCValidator {
     using SafeMath for uint256;
