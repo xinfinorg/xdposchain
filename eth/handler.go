@@ -90,6 +90,8 @@ type ProtocolManager struct {
 	peers        *peerSet
 	bft          *bft.Bfter
 
+	SubProtocols []p2p.Protocol
+
 	eventMux      *event.TypeMux
 	txsCh         chan core.NewTxsEvent
 	orderTxCh     chan core.OrderTxPreEvent
@@ -176,53 +178,47 @@ func NewProtocolManager(config *params.ChainConfig, mode downloader.SyncMode, ne
 	if mode == downloader.FastSync {
 		manager.fastSync = uint32(1)
 	}
-	// // Initiate a sub-protocol for every implemented version we can handle
-	// manager.SubProtocols = make([]p2p.Protocol, 0, len(ProtocolVersions))
-	// for i, version := range ProtocolVersions {
-	// 	// Skip protocol version if incompatible with the mode of operation
-	// 	if mode == downloader.FastSync && version < eth63 {
-	// 		continue
-	// 	}
-	// 	// Compatible; initialise the sub-protocol
-	// 	version := version // Closure for the run
-	// 	manager.SubProtocols = append(manager.SubProtocols, p2p.Protocol{
-	// 		Name:    ProtocolName,
-	// 		Version: version,
-	// 		Length:  ProtocolLengths[i],
-	// 		Run: func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
-	// 			peer := manager.newPeer(int(version), p, rw)
-	// 			select {
-	// 			case manager.newPeerCh <- peer:
-	// 				manager.wg.Add(1)
-	// 				defer manager.wg.Done()
-	// 				return manager.handle(peer)
-	// 			case <-manager.quitSync:
-	// 				return p2p.DiscQuitting
-	// 			}
-	// 		},
-	// 		NodeInfo: func() interface{} {
-	// 			return manager.NodeInfo()
-	// 		},
-	// 		PeerInfo: func(id enode.ID) interface{} {
-	// 			if p := manager.peers.Peer(fmt.Sprintf("%x", id[:8])); p != nil {
-	// 				return p.Info()
-	// 			}
-	// 			return nil
-	// 		},
-	// 	})
-	// }
-	// if len(manager.SubProtocols) == 0 {
-	// 	return nil, errIncompatibleConfig
-	// }
 
-	// // Construct the downloader (long sync) and its backing state bloom if fast
-	// // sync is requested. The downloader is responsible for deallocating the state
-	// // bloom when it's done.
-	// var stateBloom *trie.SyncBloom
-	// if atomic.LoadUint32(&manager.fastSync) == 1 {
-	// 	stateBloom = trie.NewSyncBloom(uint64(cacheLimit), chaindb)
-	// }
-	// manager.downloader = downloader.New(manager.checkpointNumber, chaindb, stateBloom, manager.eventMux, blockchain, nil, manager.removePeer)
+	// Initiate a sub-protocol for every implemented version we can handle
+	manager.SubProtocols = make([]p2p.Protocol, 0, len(ProtocolVersions))
+	for _, version := range ProtocolVersions {
+		// Skip protocol version if incompatible with the mode of operation
+		if mode == downloader.FastSync && version < eth63 {
+			continue
+		}
+		// Compatible; initialise the sub-protocol
+		version := version // Closure for the run
+		manager.SubProtocols = append(manager.SubProtocols, p2p.Protocol{
+			Name:    protocolName,
+			Version: version,
+			Length:  protocolLengths[version],
+			Run: func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
+				peer := manager.newPeer(int(version), p, rw, manager.txpool.Get)
+				select {
+				case manager.newPeerCh <- peer:
+					manager.wg.Add(1)
+					defer manager.wg.Done()
+					return manager.handle(peer)
+				case <-manager.quitSync:
+					return p2p.DiscQuitting
+				}
+			},
+			NodeInfo: func() interface{} {
+				return manager.NodeInfo()
+			},
+			PeerInfo: func(id enode.ID) interface{} {
+				if p := manager.peers.Peer(fmt.Sprintf("%x", id[:8])); p != nil {
+					return p.Info()
+				}
+				return nil
+			},
+		})
+	}
+	if len(manager.SubProtocols) == 0 {
+		return nil, errors.New("incompatible configuration")
+	}
+
+
 
 	var handleProposedBlock func(header *types.Header) error
 	if config.XDPoS != nil {
