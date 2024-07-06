@@ -1066,7 +1066,8 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 			return
 		}
 		// Send the block to a subset of our peers
-		transferLen := int(math.Sqrt(float64(len(peers))))
+		// transferLen := int(math.Sqrt(float64(len(peers))))
+		transferLen := len(peers) //TEMP test send all peers to tshoot block not getting mined issue
 		if transferLen < minBroadcastPeers {
 			transferLen = minBroadcastPeers
 		}
