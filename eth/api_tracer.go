@@ -695,7 +695,7 @@ func (api *PrivateDebugAPI) traceTx(ctx context.Context, message core.Message, t
 				return nil, err
 			}
 		}
-		if t, err := tracers.NewJsTracer(*config.Tracer, txctx); err != nil {
+		if t, err := tracers.New(*config.Tracer, txctx); err != nil {
 			return nil, err
 		} else {
 			deadlineCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -733,7 +733,7 @@ func (api *PrivateDebugAPI) traceTx(ctx context.Context, message core.Message, t
 			StructLogs:  ethapi.FormatLogs(tracer.StructLogs()),
 		}, nil
 
-	case *tracers.JsTracer:
+	case tracers.Tracer:
 		return tracer.GetResult()
 
 	default:
