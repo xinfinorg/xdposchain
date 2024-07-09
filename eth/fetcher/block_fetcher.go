@@ -680,6 +680,7 @@ func (f *BlockFetcher) enqueue(peer string, block *types.Block) {
 	}
 	// Ensure the peer isn't DOSing us
 	count := f.queues[peer] + 1
+	log.Info("[2464] [enqueue]", "peer", peer, "number", block.Number(), "hash", hash, "count", count)
 	if count > blockLimit {
 		log.Debug("Discarded propagated block, exceeded allowance", "peer", peer, "number", block.Number(), "hash", hash, "limit", blockLimit)
 		blockBroadcastDOSMeter.Mark(1)
@@ -852,6 +853,7 @@ func (f *BlockFetcher) forgetHash(hash common.Hash) {
 func (f *BlockFetcher) forgetBlock(hash common.Hash) {
 	if insert := f.queued[hash]; insert != nil {
 		f.queues[insert.origin]--
+		log.Info("[2464] [forgetBlock]", "peer", insert.origin, "count", f.queues[insert.origin])
 		if f.queues[insert.origin] == 0 {
 			delete(f.queues, insert.origin)
 		}
