@@ -21,7 +21,6 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -166,5 +165,6 @@ func uintToHex(n uint64) string {
 }
 
 func addrToHex(a common.Address) string {
-	return strings.ToLower(a.Hex())
+	s, _ := a.MarshalText()
+	return string(s)
 }
