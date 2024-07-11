@@ -40,8 +40,10 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/crypto"
 	"github.com/XinFinOrg/XDPoSChain/eth/downloader"
 	"github.com/XinFinOrg/XDPoSChain/eth/ethconfig"
+	"github.com/XinFinOrg/XDPoSChain/eth/filters"
 	"github.com/XinFinOrg/XDPoSChain/eth/gasprice"
 	"github.com/XinFinOrg/XDPoSChain/ethdb"
+	"github.com/XinFinOrg/XDPoSChain/internal/ethapi"
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/XinFinOrg/XDPoSChain/metrics"
 	"github.com/XinFinOrg/XDPoSChain/metrics/exp"
@@ -52,6 +54,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/p2p/nat"
 	"github.com/XinFinOrg/XDPoSChain/p2p/netutil"
 	"github.com/XinFinOrg/XDPoSChain/params"
+	"github.com/XinFinOrg/XDPoSChain/rpc"
 	whisper "github.com/XinFinOrg/XDPoSChain/whisper/whisperv6"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -312,6 +315,11 @@ var (
 		Name:  "cache.gc",
 		Usage: "Percentage of cache memory allowance to use for trie pruning",
 		Value: 25,
+	}
+	CacheLogSizeFlag = &cli.IntFlag{
+		Name:  "cache.blocklogs",
+		Usage: "Size (in number of blocks) of the log cache for filtering",
+		Value: ethconfig.Defaults.FilterLogCacheSize,
 	}
 	// Miner settings
 	StakingEnabledFlag = cli.BoolFlag{
@@ -1208,6 +1216,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.GlobalIsSet(GasPriceFlag.Name) {
 		cfg.GasPrice = GlobalBig(ctx, GasPriceFlag.Name)
 	}
+	if ctx.IsSet(CacheLogSizeFlag.Name) {
+		cfg.FilterLogCacheSize = ctx.Int(CacheLogSizeFlag.Name)
+	}
 	if ctx.GlobalIsSet(VMEnableDebugFlag.Name) {
 		// TODO(fjl): force-enable this in --dev mode
 		cfg.EnablePreimageRecording = ctx.GlobalBool(VMEnableDebugFlag.Name)
@@ -1405,6 +1416,19 @@ func WalkMatch(root, pattern string) ([]string, error) {
 		return nil, err
 	}
 	return matches, nil
+}
+
+// RegisterFilterAPI adds the eth log filtering RPC API to the node.
+func RegisterFilterAPI(stack *node.Node, backend ethapi.Backend, ethcfg *ethconfig.Config) *filters.FilterSystem {
+	isLightClient := ethcfg.SyncMode == downloader.LightSync
+	filterSystem := filters.NewFilterSystem(backend, filters.Config{
+		LogCacheSize: ethcfg.FilterLogCacheSize,
+	})
+	stack.RegisterAPIs([]rpc.API{{
+		Namespace: "eth",
+		Service:   filters.NewFilterAPI(filterSystem, isLightClient),
+	}})
+	return filterSystem
 }
 
 func SetupMetrics(ctx *cli.Context) {

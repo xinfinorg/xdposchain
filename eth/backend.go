@@ -24,7 +24,6 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/XinFinOrg/XDPoSChain/XDCx"
 	"github.com/XinFinOrg/XDPoSChain/XDCxlending"
@@ -401,7 +400,7 @@ func (s *Ethereum) APIs() []rpc.API {
 		}, {
 			Namespace: "eth",
 			Version:   "1.0",
-			Service:   filters.NewFilterAPI(s.ApiBackend, true, 5*time.Minute),
+			Service:   filters.NewFilterAPI(filters.NewFilterSystem(s.ApiBackend, filters.Config{LogCacheSize: s.config.FilterLogCacheSize}), true),
 			Public:    true,
 		}, {
 			Namespace: "admin",
