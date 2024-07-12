@@ -718,9 +718,9 @@ func (f *BlockFetcher) insert(peer string, block *types.Block) {
 	hash := block.Hash()
 
 	// Run the import on a new thread
-	log.Debug("Importing propagated block", "peer", peer, "number", block.Number(), "hash", hash)
+	log.Debug("Importing propagated block", "peer", peer, "number", block.Number(), "hash", hash) // for sure passed here
 	go func() {
-		defer func() { f.done <- hash }()
+		defer func() { f.done <- hash }() //this doesn't trigger!
 
 		// If the parent's unknown, abort insertion
 		parent := f.getBlock(block.ParentHash())
@@ -851,9 +851,11 @@ func (f *BlockFetcher) forgetHash(hash common.Hash) {
 // forgetBlock removes all traces of a queued block from the fetcher's internal
 // state.
 func (f *BlockFetcher) forgetBlock(hash common.Hash) {
-	if insert := f.queued[hash]; insert != nil {
+	insert := f.queued[hash]
+	log.Info("[2464] [forgetBlock]", "insert", insert)
+	if insert != nil {
 		f.queues[insert.origin]--
-		log.Info("[2464] [forgetBlock]", "peer", insert.origin, "count", f.queues[insert.origin])
+		log.Info("[2464] [forgetBlock]", "hash", hash, "peer", insert.origin, "count", f.queues[insert.origin])
 		if f.queues[insert.origin] == 0 {
 			delete(f.queues, insert.origin)
 		}
