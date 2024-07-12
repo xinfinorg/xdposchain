@@ -4,7 +4,6 @@ const deploy = {
   candidates: [
     "0xf0AbABbb043792D8cDAf1961c96758932189965D",
     "0xf43988206b1F23cBECe8EA835F31FA97EB1a73fd",
-    "0xF5D476D1566e102d4591Fc11D93E2F0B1FB82C70",
   ],
   caps: ["10000000000000000000000000", "10000000000000000000000000", "100"],
   minCandidateCap: "10000000000000000000000000",
@@ -28,7 +27,7 @@ describe("XDCValidator", () => {
     const factory = await ethers.getContractFactory("XDCValidator");
     const signer = await ethers.getSigner();
     const master = signer.address;
-
+    deploy["candidates"].push(master);
     const xdcValidator = await factory.deploy(
       deploy["candidates"],
       deploy["caps"].map((item) => {
@@ -223,12 +222,12 @@ describe("XDCValidator", () => {
     it("directly resign one candidate", async () => {
       const oldCandidates = await xdcValidator.getCandidates();
 
-      await xdcValidator.resign("0xF5D476D1566e102d4591Fc11D93E2F0B1FB82C70");
+      await xdcValidator.resign("0xf43988206b1F23cBECe8EA835F31FA97EB1a73fd");
       const newCandidates = await xdcValidator.getCandidates();
       expect(oldCandidates).to.deep.eq(deploy["candidates"]);
       expect(newCandidates).to.deep.eq([
         "0xf0AbABbb043792D8cDAf1961c96758932189965D",
-        "0xf43988206b1F23cBECe8EA835F31FA97EB1a73fd",
+        master,
       ]);
     });
     it("kyc upload and claim", async () => {
@@ -242,15 +241,14 @@ describe("XDCValidator", () => {
       expect(kycString).to.eq(kyc);
     });
 
-    it("kyc invalide vote", async () => {
+    it("kyc invalid vote", async () => {
       const kyc = "0x01";
       await xdcValidator.uploadKYC(kyc);
       const pendingKYC = await xdcValidator.pendingKYC(master);
       expect(pendingKYC?.kycHash).to.eq(kyc);
-      await mine(10 * 43200);
-      await xdcValidator.claimKYC();
-      const kycString = await xdcValidator.KYCString(master, 0);
-      expect(kycString).to.eq(kyc);
+      await xdcValidator.voteInvalidKYC(master);
+      const pendingKYCAfter = await xdcValidator.pendingKYC(master);
+      expect(pendingKYCAfter?.kycHash).to.eq("");
     });
   });
 });
