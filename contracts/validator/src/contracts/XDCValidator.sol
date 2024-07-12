@@ -27,8 +27,8 @@ contract XDCValidator {
 
     mapping(address => WithdrawState) withdrawsState;
 
-    mapping(address => ValidatorState) validatorsState;
-    mapping(address => address[]) voters;
+    mapping(address => ValidatorState) public validatorsState;
+    mapping(address => address[]) public voters;
 
     // Mapping structures added for KYC feature.
     mapping(address => string[]) public KYCString;
@@ -532,5 +532,11 @@ contract XDCValidator {
         delete owners[lastIndex];
         owners.length--;
         ownerCount--;
+    }
+
+    function getOwnerToCandidateLength(
+        address _address
+    ) external view returns (uint256) {
+        return ownerToCandidate[_address].length;
     }
 }

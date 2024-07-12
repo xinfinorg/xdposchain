@@ -110,7 +110,7 @@ describe("XDCValidator", () => {
       expect(candidatesBefore).to.deep.eq(before);
       expect(candidates).to.deep.eq(deploy["candidates"]);
       expect(voters).to.include(master);
-      expect(ownerToCandidates).to.include(candidate);
+      expect(ownerToCandidates).to.not.include(candidate);
       expect(validatorsState["owner"]).to.eq(master);
       expect(validatorsState["isCandidate"]).to.eq(false);
       expect(validatorsState["cap"]).to.eq(0);
@@ -230,6 +230,27 @@ describe("XDCValidator", () => {
         "0xf0AbABbb043792D8cDAf1961c96758932189965D",
         "0xf43988206b1F23cBECe8EA835F31FA97EB1a73fd",
       ]);
+    });
+    it("kyc upload and claim", async () => {
+      const kyc = "0x01";
+      await xdcValidator.uploadKYC(kyc);
+      const pendingKYC = await xdcValidator.pendingKYC(master);
+      expect(pendingKYC?.kycHash).to.eq(kyc);
+      await mine(10 * 43200);
+      await xdcValidator.claimKYC();
+      const kycString = await xdcValidator.KYCString(master, 0);
+      expect(kycString).to.eq(kyc);
+    });
+
+    it("kyc invalide vote", async () => {
+      const kyc = "0x01";
+      await xdcValidator.uploadKYC(kyc);
+      const pendingKYC = await xdcValidator.pendingKYC(master);
+      expect(pendingKYC?.kycHash).to.eq(kyc);
+      await mine(10 * 43200);
+      await xdcValidator.claimKYC();
+      const kycString = await xdcValidator.KYCString(master, 0);
+      expect(kycString).to.eq(kyc);
     });
   });
 });
