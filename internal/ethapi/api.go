@@ -1305,6 +1305,9 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 	if statedb == nil || err != nil {
 		return nil, 0, false, err, nil
 	}
+	if header == nil {
+		return nil, 0, false, errors.New("nil header in DoCall"), nil
+	}
 	if err := overrides.Apply(statedb); err != nil {
 		return nil, 0, false, err, nil
 	}
@@ -1326,6 +1329,9 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 	block, err := b.BlockByHash(ctx, header.Hash())
 	if err != nil {
 		return nil, 0, false, err, nil
+	}
+	if block == nil {
+		return nil, 0, false, fmt.Errorf("nil block in DoCall: number=%d, hash=%s", header.Number.Uint64(), header.Hash().Hex()), nil
 	}
 	author, err := b.GetEngine().Author(block.Header())
 	if err != nil {
