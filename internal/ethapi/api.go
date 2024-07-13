@@ -1958,6 +1958,9 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if err != nil {
 		return nil, 0, nil, err
 	}
+	if block == nil {
+		return nil, 0, nil, fmt.Errorf("nil block in AccessList: number=%d, hash=%s", header.Number.Uint64(), header.Hash().Hex())
+	}
 	author, err := b.GetEngine().Author(block.Header())
 	if err != nil {
 		return nil, 0, nil, err
@@ -3627,9 +3630,15 @@ func GetSignersFromBlocks(b Backend, blockNumber uint64, blockHash common.Hash, 
 			if err != nil {
 				return addrs, err
 			}
+			if header == nil {
+				return addrs, errors.New("nil header in GetSignersFromBlocks")
+			}
 			blockData, err := b.BlockByNumber(nil, rpc.BlockNumber(i))
 			if err != nil {
 				return addrs, err
+			}
+			if blockData == nil {
+				return addrs, errors.New("nil blockData in GetSignersFromBlocks")
 			}
 			signTxs := engine.CacheSigningTxs(header.Hash(), blockData.Transactions())
 			for _, signtx := range signTxs {
