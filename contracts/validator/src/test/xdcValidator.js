@@ -79,6 +79,7 @@ describe("XDCValidator", () => {
       expect(validatorsState["cap"]).to.eq(minCandidateCap);
       expect(voterCap).to.eq(minCandidateCap);
     });
+
     it("resign", async () => {
       await setBalance(master, 1e30);
       const candidate = await ethers.Wallet.createRandom().getAddress();
@@ -115,6 +116,7 @@ describe("XDCValidator", () => {
       expect(validatorsState["cap"]).to.eq(0);
       expect(voterCap).to.eq(0);
     });
+
     it("vote", async () => {
       await setBalance(master, 1e30);
       const candidate = await ethers.Wallet.createRandom().getAddress();
@@ -148,6 +150,7 @@ describe("XDCValidator", () => {
       expect(validatorsState["cap"]).to.eq(minCandidateCap.add(minVoterCap));
       expect(voterCap).to.eq(minCandidateCap.add(minVoterCap));
     });
+
     it("unvote", async () => {
       await setBalance(master, 1e30);
       const candidate = await ethers.Wallet.createRandom().getAddress();
@@ -188,6 +191,7 @@ describe("XDCValidator", () => {
       expect(voterCap).to.eq(minCandidateCap);
       expect(withdrawCap).to.eq(minVoterCap);
     });
+
     it("withdraw", async () => {
       await setBalance(master, 1e30);
       const candidate = await ethers.Wallet.createRandom().getAddress();
@@ -219,6 +223,7 @@ describe("XDCValidator", () => {
       );
       expect(afterBalance).to.eq(beforeBalance.sub(withdrawCap));
     });
+
     it("directly resign one candidate", async () => {
       const oldCandidates = await xdcValidator.getCandidates();
 
@@ -230,6 +235,7 @@ describe("XDCValidator", () => {
         master,
       ]);
     });
+    
     it("kyc upload and claim", async () => {
       const kyc = "0x01";
       await xdcValidator.uploadKYC(kyc);
