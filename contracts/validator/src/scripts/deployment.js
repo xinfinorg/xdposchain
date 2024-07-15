@@ -17,8 +17,6 @@ async function main() {
     deploy["maxValidatorNumber"],
     deploy["candidateWithdrawDelay"],
     deploy["voterWithdrawDelay"],
-    deploy["grandMasters"],
-    deploy["minCandidateNum"]
   );
 
   await xdcValidator.deployed();

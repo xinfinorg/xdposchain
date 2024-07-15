@@ -58,8 +58,6 @@ This step is recommended to complete in python virtual environment because it is
    - `maxValidatorNumber`: Never used, I don't know why XDC people write this...
    - `candidateWithdrawDelay`: When you call resign() at block number x, you can only withdraw the cap at block x+candidateWithdrawDelay
    - `voterWithdrawDelay`: When you call unvote() at block number x, you can only withdraw the cap at block x+voterWithdrawDelay
-   - `grandMasters`: List of grand masters
-   - `minCandidateNum`: min candidate num
    - `xdcdevnet`: Targeted XDC public chain devnet, testnet or mainnet node RPC link
    - `xdcsubnet`: Targeted XDC private subnet chain devnet, testnet or mainnet node RPC link
 
