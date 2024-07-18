@@ -135,6 +135,13 @@ func ReadBody(db ethdb.Reader, hash common.Hash, number uint64) *types.Body {
 	return body
 }
 
+// DeleteBody removes all block body data associated with a hash.
+func DeleteBody(db ethdb.KeyValueWriter, hash common.Hash, number uint64) {
+	if err := db.Delete(blockBodyKey(number, hash)); err != nil {
+		log.Crit("Failed to delete block body", "err", err)
+	}
+}
+
 // WriteBody stores a block body into the database.
 func WriteBody(db ethdb.KeyValueWriter, hash common.Hash, number uint64, body *types.Body) {
 	data, err := rlp.EncodeToBytes(body)

@@ -21,6 +21,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/core/types"
 	"github.com/XinFinOrg/XDPoSChain/ethdb"
 	"github.com/XinFinOrg/XDPoSChain/log"
+	"github.com/XinFinOrg/XDPoSChain/params"
 	"github.com/XinFinOrg/XDPoSChain/rlp"
 )
 
@@ -80,5 +81,28 @@ func ReadTransaction(db ethdb.Reader, hash common.Hash) (*types.Transaction, com
 		}
 	}
 	log.Error("Transaction not found", "number", blockNumber, "hash", blockHash, "txhash", hash)
+	return nil, common.Hash{}, 0, 0
+}
+
+// ReadReceipt retrieves a specific transaction receipt from the database, along with
+// its added positional metadata.
+func ReadReceipt(db ethdb.Reader, hash common.Hash, config *params.ChainConfig) (*types.Receipt, common.Hash, uint64, uint64) {
+	// Retrieve the context of the receipt based on the transaction hash
+	blockHash := ReadTxLookupEntry(db, hash)
+	if blockHash == (common.Hash{}) {
+		return nil, common.Hash{}, 0, 0
+	}
+	blockNumber := ReadHeaderNumber(db, blockHash)
+	if blockNumber == nil {
+		return nil, common.Hash{}, 0, 0
+	}
+	// Read all the receipts from the block and return the one with the matching hash
+	receipts := ReadReceipts(db, blockHash, *blockNumber, config)
+	for receiptIndex, receipt := range receipts {
+		if receipt.TxHash == hash {
+			return receipt, blockHash, *blockNumber, uint64(receiptIndex)
+		}
+	}
+	log.Error("Receipt not found", "number", blockNumber, "hash", blockHash, "txhash", hash)
 	return nil, common.Hash{}, 0, 0
 }
