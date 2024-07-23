@@ -266,7 +266,7 @@ func (st *StateTransition) TransitionDb(owner common.Address) (ret []byte, usedG
 		// sufficient balance to make the transfer happen. The first
 		// balance transfer may never fail.
 		if vmerr == vm.ErrInsufficientBalance {
-			return nil, 0, false, nil, vmerr
+			return nil, 0, false, vmerr, nil
 		}
 	}
 	st.refundGas()
