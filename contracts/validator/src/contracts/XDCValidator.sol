@@ -1,6 +1,7 @@
-pragma solidity ^0.4.26;
+// SPDX-License-Identifier: MIT
+pragma solidity =0.4.26;
 
-import "./libraries/SafeMath.sol";
+import {SafeMath} from "./libraries/SafeMath.sol";
 
 contract XDCValidator {
     using SafeMath for uint256;
