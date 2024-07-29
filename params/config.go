@@ -97,7 +97,7 @@ var (
 		13625858: { // 2024.07.29 RPC call and reorg sync issue
 			MaxMasternodes:       108,
 			SwitchRound:          13625858,
-			CertThreshold:        0.5,
+			CertThreshold:        0.4,
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        30,
 			MinePeriod:           2,
