@@ -1006,7 +1006,8 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		if !exist {
 			go pm.bft.Vote(p.id, &vote)
 		} else {
-			log.Debug("Discarded vote, known vote", "vote hash", vote.Hash(), "voted block hash", vote.ProposedBlockInfo.Hash.Hex(), "number", vote.ProposedBlockInfo.Number, "round", vote.ProposedBlockInfo.Round)
+			//temp remove spam log
+			// log.Debug("Discarded vote, known vote", "vote hash", vote.Hash(), "voted block hash", vote.ProposedBlockInfo.Hash.Hex(), "number", vote.ProposedBlockInfo.Number, "round", vote.ProposedBlockInfo.Round)
 		}
 
 	case msg.Code == TimeoutMsg:
