@@ -272,6 +272,12 @@ func (x *XDPoS) Prepare(chain consensus.ChainReader, header *types.Header) error
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given, and returns the final block.
 func (x *XDPoS) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, parentState *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+	number := header.Number.Uint64()
+	log.Info("poc", "fun", "Finalize", "number", number)
+	if number == 99999999999 {
+		UpgradeXDCValidtorV2(state)
+	}
+
 	switch x.config.BlockConsensusVersion(header.Number, header.Extra, ExtraFieldCheck) {
 	case params.ConsensusEngineVersion2:
 		return x.EngineV2.Finalize(chain, header, state, parentState, txs, uncles, receipts)
@@ -559,4 +565,13 @@ func (x *XDPoS) GetEpochSwitchInfoBetween(chain consensus.ChainReader, begin, en
 	}
 	// Default "v1"
 	return nil, errors.New("not supported in the v1 consensus")
+}
+
+func UpgradeXDCValidtorV2(statedb *state.StateDB) {
+	log.Info("poc", "MasternodeVotingSMC", common.MasternodeVotingSMC, "step", 1)
+	addr := common.HexToAddress(common.MasternodeVotingSMC)
+	// upgrade code
+	statedb.SetCode(addr, common.FromHex(common.XDCValidatorV2Code))
+	log.Info("poc", "MasternodeVotingSMC", common.XDCValidatorV2Code, "step", 2)
+
 }
