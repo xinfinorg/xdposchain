@@ -35,12 +35,12 @@ node scripts/deployToGenesis.js
 2. run
 
 ```shell
-./abigen --abi abi --bin bytecode --pkg contract --type XDCValidator --out ../contract/validator.go
+./abigen --abi abi --bin bytecode --pkg contract --type XDCValidator --out ../validator.go
 ```
 
 If you don't have `abigen`, compile it. It's in `cmd/abigen/main.go` in XDC main repo (or Geth repo).
 
-3. Go `../contract/validator.go` change `github.com/ethereum/go-ethereum` to `ethereum "github.com/XinFinOrg/XDC-Subnet"`
+3. Go `../validator.go` change `github.com/ethereum/go-ethereum` to `ethereum "github.com/XinFinOrg/XDPoSChain"`
 
 ## Deploy contract to node any block
 
