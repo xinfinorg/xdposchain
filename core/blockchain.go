@@ -689,7 +689,6 @@ func (bc *BlockChain) insert(block *types.Block, writeBlock bool) {
 	if writeBlock {
 		rawdb.WriteBlock(bc.db, block)
 	}
-
 	bc.currentBlock.Store(block)
 
 	// save cache BlockSigners
