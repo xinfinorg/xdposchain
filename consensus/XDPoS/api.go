@@ -331,6 +331,9 @@ func (api *API) GetEpochNumbersBetween(begin, end *rpc.BlockNumber) ([]uint64, e
 	if endHeader == nil {
 		return nil, errors.New("illegal end block number")
 	}
+	if beginHeader.Number.Cmp(endHeader.Number) > 0 {
+		return nil, errors.New("illegal begin and end block number, begin > end")
+	}
 	epochSwitchInfos, err := api.XDPoS.GetEpochSwitchInfoBetween(api.chain, beginHeader, endHeader)
 	if err != nil {
 		return nil, err

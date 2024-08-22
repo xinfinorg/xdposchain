@@ -552,15 +552,11 @@ func (x *XDPoS) GetCachedSigningTxs(hash common.Hash) (interface{}, bool) {
 }
 
 func (x *XDPoS) GetEpochSwitchInfoBetween(chain consensus.ChainReader, begin, end *types.Header) ([]*types.EpochSwitchInfo, error) {
-	switch x.config.BlockConsensusVersion(begin.Number, begin.Extra, ExtraFieldCheck) {
-	case params.ConsensusEngineVersion2:
-		switch x.config.BlockConsensusVersion(end.Number, end.Extra, ExtraFieldCheck) {
-		case params.ConsensusEngineVersion2:
-			return x.EngineV2.GetEpochSwitchInfoBetween(chain, begin, end)
-		default: // Default "v1"
-			return nil, errors.New("not supported in the v1 consensus")
-		}
-	default: // Default "v1"
-		return nil, errors.New("not supported in the v1 consensus")
+	beginBlockVersion := x.config.BlockConsensusVersion(begin.Number, begin.Extra, ExtraFieldCheck)
+	endBlockVersion := x.config.BlockConsensusVersion(end.Number, end.Extra, ExtraFieldCheck)
+	if beginBlockVersion == params.ConsensusEngineVersion2 && endBlockVersion == params.ConsensusEngineVersion2 {
+		return x.EngineV2.GetEpochSwitchInfoBetween(chain, begin, end)
 	}
+	// Default "v1"
+	return nil, errors.New("not supported in the v1 consensus")
 }

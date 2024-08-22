@@ -162,27 +162,25 @@ func (x *XDPoS_v2) IsEpochSwitch(header *types.Header) (bool, uint64, error) {
 // Search backwardly from end number to begin number
 func (x *XDPoS_v2) GetEpochSwitchInfoBetween(chain consensus.ChainReader, begin, end *types.Header) ([]*types.EpochSwitchInfo, error) {
 	infos := make([]*types.EpochSwitchInfo, 0)
-	if begin.Number.Cmp(end.Number) > 0 {
-		return infos, nil
-	}
-	epochSwitchInfo, err := x.getEpochSwitchInfo(chain, end, end.Hash())
-	if err != nil {
-		log.Error("[GetEpochSwitchInfoBetween] Adaptor v2 getEpochSwitchInfo has error, potentially bug", "err", err)
-		return nil, err
-	}
-	if epochSwitchInfo.EpochSwitchBlockInfo.Number.Cmp(begin.Number) >= 0 {
-		infos = append(infos, epochSwitchInfo)
-	}
-	// when epoch switch is strictly > begin number, do the search
-	for epochSwitchInfo.EpochSwitchBlockInfo.Number.Cmp(begin.Number) > 0 {
-		epochSwitchInfo, err = x.getEpochSwitchInfo(chain, nil, epochSwitchInfo.EpochSwitchParentBlockInfo.Hash)
+	// after the first iteration, it becomes nil since epoch switch info does not have header info
+	iteratorHeader := end
+	// after the first iteration, it becomes the parent hash of the epoch switch block
+	iteratorHash := end.Hash()
+	iteratorNum := end.Number
+	// when iterator is strictly > begin number, do the search
+	for iteratorNum.Cmp(begin.Number) > 0 {
+		epochSwitchInfo, err := x.getEpochSwitchInfo(chain, iteratorHeader, iteratorHash)
 		if err != nil {
 			log.Error("[GetEpochSwitchInfoBetween] Adaptor v2 getEpochSwitchInfo has error, potentially bug", "err", err)
 			return nil, err
 		}
-		if epochSwitchInfo.EpochSwitchBlockInfo.Number.Cmp(begin.Number) >= 0 {
+		iteratorHeader = nil
+		iteratorHash = epochSwitchInfo.EpochSwitchParentBlockInfo.Hash
+		iteratorNum = epochSwitchInfo.EpochSwitchBlockInfo.Number
+		if iteratorNum.Cmp(begin.Number) >= 0 {
 			infos = append(infos, epochSwitchInfo)
 		}
+
 	}
 	// reverse the array
 	for i := 0; i < len(infos)/2; i++ {
