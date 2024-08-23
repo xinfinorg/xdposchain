@@ -35,24 +35,11 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// Keys in the node database.
-const (
-	dbVersionKey = "version" // Version of the database to flush if changes
-	dbItemPrefix = "n:"      // Identifier to prefix node entries with
-
-	dbDiscoverRoot      = ":discover"
-	dbDiscoverSeq       = dbDiscoverRoot + ":seq"
-	dbDiscoverPing      = dbDiscoverRoot + ":lastping"
-	dbDiscoverPong      = dbDiscoverRoot + ":lastpong"
-	dbDiscoverFindFails = dbDiscoverRoot + ":findfail"
-	dbLocalRoot         = ":local"
-	dbLocalSeq          = dbLocalRoot + ":seq"
-)
-
 var (
-	dbNodeExpiration = 24 * time.Hour // Time after which an unseen node should be dropped.
-	dbCleanupCycle   = time.Hour      // Time period for running the expiration task.
-	dbVersion        = 7
+	nodeDBNilID          = ID{}           // Special node ID to use as a nil element.
+	nodeDBNodeExpiration = 24 * time.Hour // Time after which an unseen node should be dropped.
+	nodeDBCleanupCycle   = time.Hour      // Time period for running the expiration task.
+	nodeDBVersion        = 6
 )
 
 // DB is the node database, storing previously seen nodes and any collected metadata about
@@ -62,6 +49,17 @@ type DB struct {
 	runner sync.Once     // Ensures we can start at most one expirer
 	quit   chan struct{} // Channel to signal the expiring thread to stop
 }
+
+// Schema layout for the node database
+var (
+	nodeDBVersionKey = []byte("version") // Version of the database to flush if changes
+	nodeDBItemPrefix = []byte("n:")      // Identifier to prefix node entries with
+
+	nodeDBDiscoverRoot      = ":discover"
+	nodeDBDiscoverPing      = nodeDBDiscoverRoot + ":lastping"
+	nodeDBDiscoverPong      = nodeDBDiscoverRoot + ":lastpong"
+	nodeDBDiscoverFindFails = nodeDBDiscoverRoot + ":findfail"
+)
 
 // OpenDB opens a node database for storing and retrieving infos about known peers in the
 // network. If no path is given an in-memory, temporary database is constructed.
@@ -95,13 +93,13 @@ func newPersistentDB(path string) (*DB, error) {
 	// The nodes contained in the cache correspond to a certain protocol version.
 	// Flush all nodes if the version doesn't match.
 	currentVer := make([]byte, binary.MaxVarintLen64)
-	currentVer = currentVer[:binary.PutVarint(currentVer, int64(dbVersion))]
+	currentVer = currentVer[:binary.PutVarint(currentVer, int64(nodeDBVersion))]
 
-	blob, err := db.Get([]byte(dbVersionKey), nil)
+	blob, err := db.Get(nodeDBVersionKey, nil)
 	switch err {
 	case leveldb.ErrNotFound:
 		// Version not found (i.e. empty cache), insert it
-		if err := db.Put([]byte(dbVersionKey), currentVer, nil); err != nil {
+		if err := db.Put(nodeDBVersionKey, currentVer, nil); err != nil {
 			db.Close()
 			return nil, err
 		}
@@ -122,27 +120,28 @@ func newPersistentDB(path string) (*DB, error) {
 // makeKey generates the leveldb key-blob from a node id and its particular
 // field of interest.
 func makeKey(id ID, field string) []byte {
-	if (id == ID{}) {
+	if bytes.Equal(id[:], nodeDBNilID[:]) {
 		return []byte(field)
 	}
-	return append([]byte(dbItemPrefix), append(id[:], field...)...)
+	return append(nodeDBItemPrefix, append(id[:], field...)...)
 }
 
 // splitKey tries to split a database key into a node id and a field part.
 func splitKey(key []byte) (id ID, field string) {
 	// If the key is not of a node, return it plainly
-	if !bytes.HasPrefix(key, []byte(dbItemPrefix)) {
+	if !bytes.HasPrefix(key, nodeDBItemPrefix) {
 		return ID{}, string(key)
 	}
 	// Otherwise split the id and field
-	item := key[len(dbItemPrefix):]
+	item := key[len(nodeDBItemPrefix):]
 	copy(id[:], item[:len(id)])
 	field = string(item[len(id):])
 
 	return id, field
 }
 
-// fetchInt64 retrieves an integer associated with a particular key.
+// fetchInt64 retrieves an integer instance associated with a particular
+// database key.
 func (db *DB) fetchInt64(key []byte) int64 {
 	blob, err := db.lvl.Get(key, nil)
 	if err != nil {
@@ -155,33 +154,18 @@ func (db *DB) fetchInt64(key []byte) int64 {
 	return val
 }
 
-// storeInt64 stores an integer in the given key.
+// storeInt64 update a specific database entry to the current time instance as a
+// unix timestamp.
 func (db *DB) storeInt64(key []byte, n int64) error {
 	blob := make([]byte, binary.MaxVarintLen64)
 	blob = blob[:binary.PutVarint(blob, n)]
-	return db.lvl.Put(key, blob, nil)
-}
 
-// fetchUint64 retrieves an integer associated with a particular key.
-func (db *DB) fetchUint64(key []byte) uint64 {
-	blob, err := db.lvl.Get(key, nil)
-	if err != nil {
-		return 0
-	}
-	val, _ := binary.Uvarint(blob)
-	return val
-}
-
-// storeUint64 stores an integer in the given key.
-func (db *DB) storeUint64(key []byte, n uint64) error {
-	blob := make([]byte, binary.MaxVarintLen64)
-	blob = blob[:binary.PutUvarint(blob, n)]
 	return db.lvl.Put(key, blob, nil)
 }
 
 // Node retrieves a node with a given id from the database.
 func (db *DB) Node(id ID) *Node {
-	blob, err := db.lvl.Get(makeKey(id, dbDiscoverRoot), nil)
+	blob, err := db.lvl.Get(makeKey(id, nodeDBDiscoverRoot), nil)
 	if err != nil {
 		return nil
 	}
@@ -200,31 +184,11 @@ func mustDecodeNode(id, data []byte) *Node {
 
 // UpdateNode inserts - potentially overwriting - a node into the peer database.
 func (db *DB) UpdateNode(node *Node) error {
-	if node.Seq() < db.NodeSeq(node.ID()) {
-		return nil
-	}
 	blob, err := rlp.EncodeToBytes(&node.r)
 	if err != nil {
 		return err
 	}
-	if err := db.lvl.Put(makeKey(node.ID(), dbDiscoverRoot), blob, nil); err != nil {
-		return err
-	}
-	return db.storeUint64(makeKey(node.ID(), dbDiscoverSeq), node.Seq())
-}
-
-// NodeSeq returns the stored record sequence number of the given node.
-func (db *DB) NodeSeq(id ID) uint64 {
-	return db.fetchUint64(makeKey(id, dbDiscoverSeq))
-}
-
-// Resolve returns the stored record of the node if it has a larger sequence
-// number than n.
-func (db *DB) Resolve(n *Node) *Node {
-	if n.Seq() > db.NodeSeq(n.ID()) {
-		return n
-	}
-	return db.Node(n.ID())
+	return db.lvl.Put(makeKey(node.ID(), nodeDBDiscoverRoot), blob, nil)
 }
 
 // DeleteNode deletes all information/keys associated with a node.
@@ -254,7 +218,7 @@ func (db *DB) ensureExpirer() {
 // expirer should be started in a go routine, and is responsible for looping ad
 // infinitum and dropping stale data from the database.
 func (db *DB) expirer() {
-	tick := time.NewTicker(dbCleanupCycle)
+	tick := time.NewTicker(nodeDBCleanupCycle)
 	defer tick.Stop()
 	for {
 		select {
@@ -271,7 +235,7 @@ func (db *DB) expirer() {
 // expireNodes iterates over the database and deletes all nodes that have not
 // been seen (i.e. received a pong from) for some allotted time.
 func (db *DB) expireNodes() error {
-	threshold := time.Now().Add(-dbNodeExpiration)
+	threshold := time.Now().Add(-nodeDBNodeExpiration)
 
 	// Find discovered nodes that are older than the allowance
 	it := db.lvl.NewIterator(nil, nil)
@@ -280,7 +244,7 @@ func (db *DB) expireNodes() error {
 	for it.Next() {
 		// Skip the item if not a discovery node
 		id, field := splitKey(it.Key())
-		if field != dbDiscoverRoot {
+		if field != nodeDBDiscoverRoot {
 			continue
 		}
 		// Skip the node if not expired yet (and not self)
@@ -296,44 +260,34 @@ func (db *DB) expireNodes() error {
 // LastPingReceived retrieves the time of the last ping packet received from
 // a remote node.
 func (db *DB) LastPingReceived(id ID) time.Time {
-	return time.Unix(db.fetchInt64(makeKey(id, dbDiscoverPing)), 0)
+	return time.Unix(db.fetchInt64(makeKey(id, nodeDBDiscoverPing)), 0)
 }
 
 // UpdateLastPingReceived updates the last time we tried contacting a remote node.
 func (db *DB) UpdateLastPingReceived(id ID, instance time.Time) error {
-	return db.storeInt64(makeKey(id, dbDiscoverPing), instance.Unix())
+	return db.storeInt64(makeKey(id, nodeDBDiscoverPing), instance.Unix())
 }
 
 // LastPongReceived retrieves the time of the last successful pong from remote node.
 func (db *DB) LastPongReceived(id ID) time.Time {
 	// Launch expirer
 	db.ensureExpirer()
-	return time.Unix(db.fetchInt64(makeKey(id, dbDiscoverPong)), 0)
+	return time.Unix(db.fetchInt64(makeKey(id, nodeDBDiscoverPong)), 0)
 }
 
 // UpdateLastPongReceived updates the last pong time of a node.
 func (db *DB) UpdateLastPongReceived(id ID, instance time.Time) error {
-	return db.storeInt64(makeKey(id, dbDiscoverPong), instance.Unix())
+	return db.storeInt64(makeKey(id, nodeDBDiscoverPong), instance.Unix())
 }
 
 // FindFails retrieves the number of findnode failures since bonding.
 func (db *DB) FindFails(id ID) int {
-	return int(db.fetchInt64(makeKey(id, dbDiscoverFindFails)))
+	return int(db.fetchInt64(makeKey(id, nodeDBDiscoverFindFails)))
 }
 
 // UpdateFindFails updates the number of findnode failures since bonding.
 func (db *DB) UpdateFindFails(id ID, fails int) error {
-	return db.storeInt64(makeKey(id, dbDiscoverFindFails), int64(fails))
-}
-
-// LocalSeq retrieves the local record sequence counter.
-func (db *DB) localSeq(id ID) uint64 {
-	return db.fetchUint64(makeKey(id, dbLocalSeq))
-}
-
-// storeLocalSeq stores the local record sequence counter.
-func (db *DB) storeLocalSeq(id ID, n uint64) {
-	db.storeUint64(makeKey(id, dbLocalSeq), n)
+	return db.storeInt64(makeKey(id, nodeDBDiscoverFindFails), int64(fails))
 }
 
 // QuerySeeds retrieves random nodes to be used as potential seed nodes
@@ -355,7 +309,7 @@ seek:
 		ctr := id[0]
 		rand.Read(id[:])
 		id[0] = ctr + id[0]%16
-		it.Seek(makeKey(id, dbDiscoverRoot))
+		it.Seek(makeKey(id, nodeDBDiscoverRoot))
 
 		n := nextNode(it)
 		if n == nil {
@@ -380,7 +334,7 @@ seek:
 func nextNode(it iterator.Iterator) *Node {
 	for end := false; !end; end = !it.Next() {
 		id, field := splitKey(it.Key())
-		if field != dbDiscoverRoot {
+		if field != nodeDBDiscoverRoot {
 			continue
 		}
 		return mustDecodeNode(id[:], it.Value())

@@ -71,7 +71,6 @@ type dialstate struct {
 	maxDynDials int
 	ntab        discoverTable
 	netrestrict *netutil.Netlist
-	self        enode.ID
 
 	lookupRunning bool
 	dialing       map[enode.ID]connFlag
@@ -85,6 +84,7 @@ type dialstate struct {
 }
 
 type discoverTable interface {
+	Self() *enode.Node
 	Close()
 	Resolve(*enode.Node) *enode.Node
 	LookupRandom() []*enode.Node
@@ -126,11 +126,10 @@ type waitExpireTask struct {
 	time.Duration
 }
 
-func newDialState(self enode.ID, static []*enode.Node, bootnodes []*enode.Node, ntab discoverTable, maxdyn int, netrestrict *netutil.Netlist) *dialstate {
+func newDialState(static []*enode.Node, bootnodes []*enode.Node, ntab discoverTable, maxdyn int, netrestrict *netutil.Netlist) *dialstate {
 	s := &dialstate{
 		maxDynDials: maxdyn,
 		ntab:        ntab,
-		self:        self,
 		netrestrict: netrestrict,
 		static:      make(map[enode.ID]*dialTask),
 		dialing:     make(map[enode.ID]connFlag),
@@ -267,7 +266,7 @@ func (s *dialstate) checkDial(n *enode.Node, peers map[enode.ID]*Peer) error {
 		return errAlreadyDialing
 	case peers[n.ID()] != nil:
 		return errAlreadyConnected
-	case n.ID() == s.self:
+	case s.ntab != nil && n.ID() == s.ntab.Self().ID():
 		return errSelf
 	case s.netrestrict != nil && !s.netrestrict.Contains(n.IP()):
 		return errNotWhitelisted
