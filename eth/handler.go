@@ -18,9 +18,7 @@ package eth
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -53,9 +51,6 @@ const (
 	// txChanSize is the size of channel listening to NewTxsEvent.
 	// The number is referenced from the size of tx pool.
 	txChanSize = 4096
-
-	// minimim number of peers to broadcast entire blocks and transactions too.
-	minBroadcastPeers = 4
 )
 
 var (
@@ -84,11 +79,10 @@ type ProtocolManager struct {
 	chainconfig *params.ChainConfig
 	maxPeers    int
 
-	downloader   *downloader.Downloader
-	blockFetcher *fetcher.BlockFetcher
-	txFetcher    *fetcher.TxFetcher
-	peers        *peerSet
-	bft          *bft.Bfter
+	downloader *downloader.Downloader
+	fetcher    *fetcher.Fetcher
+	peers      *peerSet
+	bft        *bft.Bfter
 
 	eventMux      *event.TypeMux
 	txsCh         chan core.NewTxsEvent
@@ -116,9 +110,6 @@ type ProtocolManager struct {
 	knownVotes     *lru.Cache
 	knownSyncInfos *lru.Cache
 	knownTimeouts  *lru.Cache
-
-	// Test fields or hooks
-	broadcastTxAnnouncesOnly bool // Testing field, disable transaction propagation
 }
 
 // NewProtocolManagerEx add order pool to protocol
@@ -246,31 +237,14 @@ func NewProtocolManager(config *params.ChainConfig, mode downloader.SyncMode, ne
 		return blockchain.CurrentBlock().NumberU64()
 	}
 
-	inserter := func(blocks types.Blocks) (int, error) {
-		// If sync hasn't reached the checkpoint yet, deny importing weird blocks.
-		//
-		// Ideally we would also compare the head block's timestamp and similarly reject
-		// the propagated block if the head is too old. Unfortunately there is a corner
-		// case when starting new networks, where the genesis might be ancient (0 unix)
-		// which would prevent full nodes from accepting it.
-		if manager.blockchain.CurrentBlock().NumberU64() < manager.checkpointNumber {
-			log.Warn("Unsynced yet, discarded propagated block", "number", blocks[0].Number(), "hash", blocks[0].Hash())
-			return 0, nil
-		}
-		// If fast sync is running, deny importing weird blocks. This is a problematic
-		// clause when starting up a new network, because fast-syncing miners might not
-		// accept each others' blocks until a restart. Unfortunately we haven't figured
-		// out a way yet where nodes can decide unilaterally whether the network is new
-		// or not. This should be fixed if we figure out a solution.
+	inserter := func(block *types.Block) error {
+		// If fast sync is running, deny importing weird blocks
 		if atomic.LoadUint32(&manager.fastSync) == 1 {
-			log.Warn("Fast syncing, discarded propagated block", "number", blocks[0].Number(), "hash", blocks[0].Hash())
-			return 0, nil
+			log.Warn("Discarded bad propagated block", "number", block.Number(), "hash", block.Hash())
+			return nil
 		}
-		n, err := manager.blockchain.InsertChain(blocks)
-		if err == nil {
-			atomic.StoreUint32(&manager.acceptTxs, 1) // Mark initial sync done on any fetcher import
-		}
-		return n, err
+		atomic.StoreUint32(&manager.acceptTxs, 1) // Mark initial sync done on any fetcher import
+		return manager.blockchain.InsertBlock(block)
 	}
 
 	prepare := func(block *types.Block) error {
@@ -282,7 +256,7 @@ func NewProtocolManager(config *params.ChainConfig, mode downloader.SyncMode, ne
 		atomic.StoreUint32(&manager.acceptTxs, 1) // Mark initial sync done on any fetcher import
 		return manager.blockchain.PrepareBlock(block)
 	}
-	manager.blockFetcher = fetcher.NewBlockFetcher(blockchain.GetBlockByHash, validator, handleProposedBlock, manager.BroadcastBlock, heighter, inserter, prepare, manager.removePeer)
+	manager.fetcher = fetcher.New(blockchain.GetBlockByHash, validator, handleProposedBlock, manager.BroadcastBlock, heighter, inserter, prepare, manager.removePeer)
 	//Define bft function
 	broadcasts := bft.BroadcastFns{
 		Vote:     manager.BroadcastVote,
@@ -294,15 +268,6 @@ func NewProtocolManager(config *params.ChainConfig, mode downloader.SyncMode, ne
 		manager.bft.InitEpochNumber()
 		manager.bft.SetConsensusFuns(engine)
 	}
-
-	fetchTx := func(peer string, hashes []common.Hash) error {
-		p := manager.peers.Peer(peer)
-		if p == nil {
-			return errors.New("unknown peer")
-		}
-		return p.RequestTxs(hashes)
-	}
-	manager.txFetcher = fetcher.NewTxFetcher(txpool.Has, txpool.AddRemotes, fetchTx)
 
 	return manager, nil
 }
@@ -325,7 +290,7 @@ func (pm *ProtocolManager) makeProtocol(version uint) p2p.Protocol {
 		Version: version,
 		Length:  length,
 		Run: func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
-			peer := pm.newPeer(int(version), p, rw, pm.txpool.Get)
+			peer := pm.newPeer(int(version), p, rw)
 			select {
 			case pm.newPeerCh <- peer:
 				pm.wg.Add(1)
@@ -357,8 +322,6 @@ func (pm *ProtocolManager) removePeer(id string) {
 
 	// Unregister the peer from the downloader and Ethereum peer set
 	pm.downloader.UnregisterPeer(id)
-	pm.txFetcher.Drop(id)
-
 	if err := pm.peers.Unregister(id); err != nil {
 		log.Debug("Peer removal failed", "peer", id, "err", err)
 	}
@@ -391,7 +354,7 @@ func (pm *ProtocolManager) Start(maxPeers int) {
 
 	// start sync handlers
 	go pm.syncer()
-	go pm.txsyncLoop64() // TODO(karalabe): Legacy initial tx echange, drop with eth/64.
+	go pm.txsyncLoop()
 }
 
 func (pm *ProtocolManager) Stop() {
@@ -425,8 +388,8 @@ func (pm *ProtocolManager) Stop() {
 	log.Info("Ethereum protocol stopped")
 }
 
-func (pm *ProtocolManager) newPeer(pv int, p *p2p.Peer, rw p2p.MsgReadWriter, getPooledTx func(hash common.Hash) *types.Transaction) *peer {
-	return newPeer(pv, p, rw, getPooledTx)
+func (pm *ProtocolManager) newPeer(pv int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
+	return newPeer(pv, p, newMeteredMsgWriter(rw))
 }
 
 // handle is the callback invoked to manage the life cycle of an eth peer. When
@@ -449,6 +412,9 @@ func (pm *ProtocolManager) handle(p *peer) error {
 	if err := p.Handshake(pm.networkId, td, hash, genesis.Hash(), forkid.NewID(pm.blockchain), pm.forkFilter); err != nil {
 		p.Log().Debug("Ethereum handshake failed", "err", err)
 		return err
+	}
+	if rw, ok := p.rw.(*meteredMsgReadWriter); ok {
+		rw.Init(p.version)
 	}
 	// Register the peer locally
 	err := pm.peers.Register(p)
@@ -637,7 +603,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				return nil
 			}
 			// Irrelevant of the fork checks, send the header to the fetcher just in case
-			headers = pm.blockFetcher.FilterHeaders(p.id, headers, time.Now())
+			headers = pm.fetcher.FilterHeaders(p.id, headers, time.Now())
 		}
 		if len(headers) > 0 || !filter {
 			err := pm.downloader.DeliverHeaders(p.id, headers)
@@ -680,20 +646,20 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		// Deliver them all to the downloader for queuing
-		transactions := make([][]*types.Transaction, len(request))
+		trasactions := make([][]*types.Transaction, len(request))
 		uncles := make([][]*types.Header, len(request))
 
 		for i, body := range request {
-			transactions[i] = body.Transactions
+			trasactions[i] = body.Transactions
 			uncles[i] = body.Uncles
 		}
 		// Filter out any explicitly requested bodies, deliver the rest to the downloader
-		filter := len(transactions) > 0 || len(uncles) > 0
+		filter := len(trasactions) > 0 || len(uncles) > 0
 		if filter {
-			transactions, uncles = pm.blockFetcher.FilterBodies(p.id, transactions, uncles, time.Now())
+			trasactions, uncles = pm.fetcher.FilterBodies(p.id, trasactions, uncles, time.Now())
 		}
-		if len(transactions) > 0 || len(uncles) > 0 || !filter {
-			err := pm.downloader.DeliverBodies(p.id, transactions, uncles)
+		if len(trasactions) > 0 || len(uncles) > 0 || !filter {
+			err := pm.downloader.DeliverBodies(p.id, trasactions, uncles)
 			if err != nil {
 				log.Debug("Failed to deliver bodies", "err", err)
 			}
@@ -801,7 +767,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			}
 		}
 		for _, block := range unknown {
-			pm.blockFetcher.Notify(p.id, block.Hash, block.Number, time.Now(), p.RequestOneHeader, p.RequestBodies)
+			pm.fetcher.Notify(p.id, block.Hash, block.Number, time.Now(), p.RequestOneHeader, p.RequestBodies)
 		}
 
 	case msg.Code == NewBlockMsg:
@@ -815,7 +781,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 
 		// Mark the peer as owning the block and schedule it for import
 		p.MarkBlock(request.Block.Hash())
-		pm.blockFetcher.Enqueue(p.id, request.Block)
+		pm.fetcher.Enqueue(p.id, request.Block)
 
 		// Assuming the block is importable by the peer, but possibly not yet done so,
 		// calculate the head hash and TD that the peer truly must have.
@@ -836,59 +802,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			}
 		}
 
-	case msg.Code == NewPooledTransactionHashesMsg && p.version >= eth65:
-		// New transaction announcement arrived, make sure we have
-		// a valid and fresh chain to handle them
-		if atomic.LoadUint32(&pm.acceptTxs) == 0 {
-			break
-		}
-		var hashes []common.Hash
-		if err := msg.Decode(&hashes); err != nil {
-			return errResp(ErrDecode, "msg %v: %v", msg, err)
-		}
-		// Schedule all the unknown hashes for retrieval
-		for _, hash := range hashes {
-			p.MarkTransaction(hash)
-		}
-		pm.txFetcher.Notify(p.id, hashes)
-
-	case msg.Code == GetPooledTransactionsMsg && p.version >= eth65:
-		// Decode the retrieval message
-		msgStream := rlp.NewStream(msg.Payload, uint64(msg.Size))
-		if _, err := msgStream.List(); err != nil {
-			return err
-		}
-		// Gather transactions until the fetch or network limits is reached
-		var (
-			hash   common.Hash
-			bytes  int
-			hashes []common.Hash
-			txs    []rlp.RawValue
-		)
-		for bytes < softResponseLimit {
-			// Retrieve the hash of the next block
-			if err := msgStream.Decode(&hash); err == rlp.EOL {
-				break
-			} else if err != nil {
-				return errResp(ErrDecode, "msg %v: %v", msg, err)
-			}
-			// Retrieve the requested transaction, skipping if unknown to us
-			tx := pm.txpool.Get(hash)
-			if tx == nil {
-				continue
-			}
-			// If known, encode and queue for response packet
-			if encoded, err := rlp.EncodeToBytes(tx); err != nil {
-				log.Error("Failed to encode transaction", "err", err)
-			} else {
-				hashes = append(hashes, hash)
-				txs = append(txs, encoded)
-				bytes += len(encoded)
-			}
-		}
-		return p.SendPooledTransactionsRLP(hashes, txs)
-
-	case msg.Code == TransactionMsg || (msg.Code == PooledTransactionsMsg && p.version >= eth65):
+	case msg.Code == TxMsg:
 		// Transactions arrived, make sure we have a valid and fresh chain to handle them
 		if atomic.LoadUint32(&pm.acceptTxs) == 0 {
 			break
@@ -914,7 +828,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			}
 
 		}
-		pm.txFetcher.Enqueue(p.id, txs, msg.Code == PooledTransactionsMsg)
+		pm.txpool.AddRemotes(txs)
 
 	case msg.Code == OrderTxMsg:
 		// Transactions arrived, make sure we have a valid and fresh chain to handle them
@@ -1070,50 +984,22 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 	}
 }
 
-// BroadcastTransactions will propagate a batch of transactions to all peers which are not known to
+// BroadcastTxs will propagate a batch of transactions to all peers which are not known to
 // already have the given transaction.
-func (pm *ProtocolManager) BroadcastTransactions(txs types.Transactions, propagate bool) {
-	var (
-		txset = make(map[*peer][]common.Hash)
-		annos = make(map[*peer][]common.Hash)
-	)
-	// Broadcast transactions to a batch of peers not knowing about it
-	if propagate {
-		for _, tx := range txs {
-			peers := pm.peers.PeersWithoutTx(tx.Hash())
+func (pm *ProtocolManager) BroadcastTxs(txs types.Transactions) {
+	var txset = make(map[*peer]types.Transactions)
 
-			// Send the block to a subset of our peers
-			transferLen := int(math.Sqrt(float64(len(peers))))
-			if transferLen < minBroadcastPeers {
-				transferLen = minBroadcastPeers
-			}
-			if transferLen > len(peers) {
-				transferLen = len(peers)
-			}
-			transfer := peers[:transferLen]
-			for _, peer := range transfer {
-				txset[peer] = append(txset[peer], tx.Hash())
-			}
-			log.Trace("Broadcast transaction", "hash", tx.Hash(), "recipients", len(peers))
-		}
-		for peer, hashes := range txset {
-			peer.AsyncSendTransactions(hashes)
-		}
-		return
-	}
-	// Otherwise only broadcast the announcement to peers
+	// Broadcast transactions to a batch of peers not knowing about it
 	for _, tx := range txs {
 		peers := pm.peers.PeersWithoutTx(tx.Hash())
 		for _, peer := range peers {
-			annos[peer] = append(annos[peer], tx.Hash())
+			txset[peer] = append(txset[peer], tx)
 		}
+		log.Trace("Broadcast transaction", "hash", tx.Hash(), "recipients", len(peers))
 	}
-	for peer, hashes := range annos {
-		if peer.version >= eth65 {
-			peer.AsyncSendPooledTransactionHashes(hashes)
-		} else {
-			peer.AsyncSendTransactions(hashes)
-		}
+	// FIXME include this again: peers = peers[:int(math.Sqrt(float64(len(peers))))]
+	for peer, txs := range txset {
+		peer.SendTransactions(txs)
 	}
 }
 
@@ -1209,13 +1095,7 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 	for {
 		select {
 		case event := <-pm.txsCh:
-			// For testing purpose only, disable propagation
-			if pm.broadcastTxAnnouncesOnly {
-				pm.BroadcastTransactions(event.Txs, false)
-				continue
-			}
-			pm.BroadcastTransactions(event.Txs, true)  // First propagate transactions to peers
-			pm.BroadcastTransactions(event.Txs, false) // Only then announce to the rest
+			pm.BroadcastTxs(event.Txs)
 
 		// Err() channel will be closed when unsubscribing.
 		case <-pm.txsSub.Err():
