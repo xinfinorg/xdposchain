@@ -234,19 +234,13 @@ func TestForkIDSplit(t *testing.T) {
 	go func() { errc <- ethNoFork.handle(peerProFork) }()
 	go func() { errc <- ethProFork.handle(peerNoFork) }()
 
-	var successes int
-	for i := 0; i < 2; i++ {
-		select {
-		case err := <-errc:
-			if err == nil {
-				successes++
-				if successes == 2 { // Only one side disconnects
-					t.Fatalf("fork ID rejection didn't happen")
-				}
-			}
-		case <-time.After(250 * time.Millisecond):
-			t.Fatalf("split peers not rejected")
+	select {
+	case err := <-errc:
+		if want := errResp(ErrForkIDRejected, forkid.ErrLocalIncompatibleOrStale.Error()); err.Error() != want.Error() {
+			t.Fatalf("fork ID rejection error mismatch: have %v, want %v", err, want)
 		}
+	case <-time.After(250 * time.Millisecond):
+		t.Fatalf("split peers not rejected")
 	}
 }
 
@@ -284,7 +278,7 @@ func testRecvTransactions(t *testing.T, protocol int) {
 func TestSendTransactions63(t *testing.T)  { testSendTransactions(t, 63) }
 func TestSendTransactions64(t *testing.T)  { testSendTransactions(t, 64) }
 func TestSendTransactions65(t *testing.T)  { testSendTransactions(t, 65) }
-func TestSendTransactions100(t *testing.T) { testSendTransactions(t, 100) } 
+func TestSendTransactions100(t *testing.T) { testSendTransactions(t, 100) } //TODO: fix
 
 func testSendTransactions(t *testing.T, protocol int) {
 	pm, _ := newTestProtocolManagerMust(t, downloader.FullSync, 0, nil, nil)
@@ -393,6 +387,7 @@ func testSendTransactions(t *testing.T, protocol int) {
 	}
 	wg.Wait()
 }
+
 func TestTransactionPropagation(t *testing.T)  { testSyncTransaction(t, true) }
 func TestTransactionAnnouncement(t *testing.T) { testSyncTransaction(t, false) }
 

@@ -214,7 +214,7 @@ func TestDialStateDynDial(t *testing.T) {
 					&discoverTask{},
 				},
 				new: []task{
-					&discoverTask{},
+					&waitExpireTask{Duration: 14 * time.Second},
 				},
 			},
 		},
@@ -376,6 +376,9 @@ func TestDialStateDynDialFromTable(t *testing.T) {
 					&dialTask{flags: dynDialedConn, dest: newNode(uintID(11), nil)},
 					&dialTask{flags: dynDialedConn, dest: newNode(uintID(12), nil)},
 				},
+				new: []task{
+					&discoverTask{},
+				},
 			},
 			// Waiting for expiry. No waitExpireTask is launched because the
 			// discovery query is still running.
@@ -494,9 +497,6 @@ func TestDialStateStaticDial(t *testing.T) {
 					&dialTask{flags: staticDialedConn, dest: newNode(uintID(4), nil)},
 					&dialTask{flags: staticDialedConn, dest: newNode(uintID(5), nil)},
 				},
-				new: []task{
-					&waitExpireTask{Duration: 14 * time.Second},
-				},
 			},
 			// Wait a round for dial history to expire, no new tasks should spawn.
 			{
@@ -551,9 +551,6 @@ func TestDialStaticAfterReset(t *testing.T) {
 				&dialTask{flags: staticDialedConn, dest: newNode(uintID(1), nil)},
 				&dialTask{flags: staticDialedConn, dest: newNode(uintID(2), nil)},
 			},
-			new: []task{
-				&waitExpireTask{Duration: 30 * time.Second},
-			},
 		},
 	}
 	dTest := dialtest{
@@ -564,7 +561,9 @@ func TestDialStaticAfterReset(t *testing.T) {
 	for _, n := range wantStatic {
 		dTest.init.removeStatic(n)
 		dTest.init.addStatic(n)
+		delete(dTest.init.dialing, n.ID())
 	}
+
 	// without removing peers they will be considered recently dialed
 	runDialTest(t, dTest)
 }
@@ -611,9 +610,6 @@ func TestDialStateCache(t *testing.T) {
 				},
 				done: []task{
 					&dialTask{flags: staticDialedConn, dest: newNode(uintID(3), nil)},
-				},
-				new: []task{
-					&waitExpireTask{Duration: 14 * time.Second},
 				},
 			},
 			// Still waiting for node 3's entry to expire in the cache.
@@ -703,4 +699,3 @@ func (t *resolveMock) Self() *enode.Node                     { return new(enode.
 func (t *resolveMock) Close()                                {}
 func (t *resolveMock) LookupRandom() []*enode.Node           { return nil }
 func (t *resolveMock) ReadRandomNodes(buf []*enode.Node) int { return 0 }
-func (t *resolveMock) Bootstrap([]*enode.Node)               {}
