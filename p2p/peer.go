@@ -28,13 +28,8 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/common/mclock"
 	"github.com/XinFinOrg/XDPoSChain/event"
 	"github.com/XinFinOrg/XDPoSChain/log"
-	"github.com/XinFinOrg/XDPoSChain/p2p/enode"
-	"github.com/XinFinOrg/XDPoSChain/p2p/enr"
+	"github.com/XinFinOrg/XDPoSChain/p2p/discover"
 	"github.com/XinFinOrg/XDPoSChain/rlp"
-)
-
-var (
-	ErrShuttingDown = errors.New("shutting down")
 )
 
 const (
@@ -63,7 +58,7 @@ type protoHandshake struct {
 	Name       string
 	Caps       []Cap
 	ListenPort uint64
-	ID         []byte // secp256k1 public key
+	ID         discover.NodeID
 
 	// Ignore additional fields (for forward compatibility).
 	Rest []rlp.RawValue `rlp:"tail"`
@@ -93,12 +88,12 @@ const (
 // PeerEvent is an event emitted when peers are either added or dropped from
 // a p2p.Server or when a message is sent or received on a peer connection
 type PeerEvent struct {
-	Type     PeerEventType `json:"type"`
-	Peer     enode.ID      `json:"peer"`
-	Error    string        `json:"error,omitempty"`
-	Protocol string        `json:"protocol,omitempty"`
-	MsgCode  *uint64       `json:"msg_code,omitempty"`
-	MsgSize  *uint32       `json:"msg_size,omitempty"`
+	Type     PeerEventType   `json:"type"`
+	Peer     discover.NodeID `json:"peer"`
+	Error    string          `json:"error,omitempty"`
+	Protocol string          `json:"protocol,omitempty"`
+	MsgCode  *uint64         `json:"msg_code,omitempty"`
+	MsgSize  *uint32         `json:"msg_size,omitempty"`
 }
 
 // Peer represents a connected remote node.
@@ -120,23 +115,17 @@ type Peer struct {
 }
 
 // NewPeer returns a peer for testing purposes.
-func NewPeer(id enode.ID, name string, caps []Cap) *Peer {
+func NewPeer(id discover.NodeID, name string, caps []Cap) *Peer {
 	pipe, _ := net.Pipe()
-	node := enode.SignNull(new(enr.Record), id)
-	conn := &conn{fd: pipe, transport: nil, node: node, caps: caps, name: name}
+	conn := &conn{fd: pipe, transport: nil, id: id, caps: caps, name: name}
 	peer := newPeer(conn, nil)
 	close(peer.closed) // ensures Disconnect doesn't block
 	return peer
 }
 
 // ID returns the node's public key.
-func (p *Peer) ID() enode.ID {
-	return p.rw.node.ID()
-}
-
-// Node returns the peer's node descriptor.
-func (p *Peer) Node() *enode.Node {
-	return p.rw.node
+func (p *Peer) ID() discover.NodeID {
+	return p.rw.id
 }
 
 // Name returns the node name that the remote node advertised.
@@ -171,8 +160,7 @@ func (p *Peer) Disconnect(reason DiscReason) {
 
 // String implements fmt.Stringer.
 func (p *Peer) String() string {
-	id := p.ID()
-	return fmt.Sprintf("Peer %x %v", id[:8], p.RemoteAddr())
+	return fmt.Sprintf("Peer %x %v ", p.rw.id[:8], p.RemoteAddr())
 }
 
 // Inbound returns true if the peer is an inbound connection
@@ -190,7 +178,7 @@ func newPeer(conn *conn, protocols []Protocol) *Peer {
 		protoErr: make(chan error, len(protomap)+1), // protocols + pingLoop
 		closed:   make(chan struct{}),
 		pingRecv: make(chan struct{}, 16),
-		log:      log.New("id", conn.node.ID(), "conn", conn.flags),
+		log:      log.New("id", conn.id, "conn", conn.flags),
 	}
 	return p
 }

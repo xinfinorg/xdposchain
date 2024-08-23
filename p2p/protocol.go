@@ -19,7 +19,7 @@ package p2p
 import (
 	"fmt"
 
-	"github.com/XinFinOrg/XDPoSChain/p2p/enode"
+	"github.com/XinFinOrg/XDPoSChain/p2p/discover"
 )
 
 // Protocol represents a P2P subprotocol implementation.
@@ -51,7 +51,7 @@ type Protocol struct {
 	// PeerInfo is an optional helper method to retrieve protocol specific metadata
 	// about a certain peer in the network. If an info retrieval function is set,
 	// but returns nil, it is assumed that the protocol handshake is still running.
-	PeerInfo func(id enode.ID) interface{}
+	PeerInfo func(id discover.NodeID) interface{}
 }
 
 func (p Protocol) cap() Cap {
