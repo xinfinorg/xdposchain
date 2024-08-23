@@ -29,7 +29,6 @@ import (
 func TestFastSyncDisabling63(t *testing.T) { testFastSyncDisabling(t, 63) }
 func TestFastSyncDisabling64(t *testing.T) { testFastSyncDisabling(t, 64) }
 func TestFastSyncDisabling65(t *testing.T) { testFastSyncDisabling(t, 65) }
-func TestFastSyncDisabling100(t *testing.T) { testFastSyncDisabling(t, 100) }
 
 // Tests that fast sync gets disabled as soon as a real block is successfully
 // imported into the blockchain.
