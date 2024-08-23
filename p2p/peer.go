@@ -165,7 +165,7 @@ func (p *Peer) String() string {
 
 // Inbound returns true if the peer is an inbound connection
 func (p *Peer) Inbound() bool {
-	return p.rw.is(inboundConn)
+	return p.rw.flags&inboundConn != 0
 }
 
 func newPeer(conn *conn, protocols []Protocol) *Peer {
