@@ -71,7 +71,7 @@ func newTestProtocolManager(mode downloader.SyncMode, blocks int, generator func
 	}
 
 	// pm, err := NewProtocolManager(gspec.Config, mode, DefaultConfig.NetworkId, evmux, &testTxPool{added: newtx}, engine, blockchain, db)
-	pm, err := NewProtocolManager(gspec.Config, mode, ethconfig.Defaults.NetworkId, evmux, &testTxPool{added: newtx, pool: make(map[common.Hash]*types.Transaction)}, engine, blockchain, db)
+	pm, err := NewProtocolManager(gspec.Config, mode, DefaultConfig.NetworkId, evmux, &testTxPool{added: newtx, pool: make(map[common.Hash]*types.Transaction)}, engine, blockchain, db)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -207,18 +207,26 @@ func newTestPeer(name string, version int, pm *ProtocolManager, shake bool) (*te
 func (p *testPeer) handshake(t *testing.T, td *big.Int, head common.Hash, genesis common.Hash, forkID forkid.ID, forkFilter forkid.Filter) {
 	var msg interface{}
 	switch {
-	case isEth63(p.version):
+	case p.version == xdpos2:
 		msg = &statusData63{
 			ProtocolVersion: uint32(p.version),
-			NetworkId:       ethconfig.Defaults.NetworkId,
+			NetworkId:       DefaultConfig.NetworkId,
 			TD:              td,
 			CurrentBlock:    head,
 			GenesisBlock:    genesis,
 		}
-	case isEth64OrHigher(p.version):
+	case p.version == eth63:
+		msg = &statusData63{
+			ProtocolVersion: uint32(p.version),
+			NetworkId:       DefaultConfig.NetworkId,
+			TD:              td,
+			CurrentBlock:    head,
+			GenesisBlock:    genesis,
+		}
+	case p.version >= eth64:
 		msg = &statusData{
 			ProtocolVersion: uint32(p.version),
-			NetworkID:       ethconfig.Defaults.NetworkId,
+			NetworkID:       DefaultConfig.NetworkId,
 			TD:              td,
 			Head:            head,
 			Genesis:         genesis,
@@ -228,7 +236,6 @@ func (p *testPeer) handshake(t *testing.T, td *big.Int, head common.Hash, genesi
 		panic(fmt.Sprintf("unsupported eth protocol version: %d", p.version))
 	}
 	if err := p2p.ExpectMsg(p.app, StatusMsg, msg); err != nil {
-		fmt.Println("p2p expect msg err", err)
 		t.Fatalf("status recv: %v", err)
 	}
 	if err := p2p.Send(p.app, StatusMsg, msg); err != nil {
