@@ -1071,22 +1071,23 @@ func (env *Work) commitTransactions(mux *event.TypeMux, balanceFee map[common.Ad
 	// make a copy, the state caches the logs and these logs get "upgraded" from pending to mined
 	// logs by filling in the block hash when the block was mined by the local miner. This can
 	// cause a race condition if a log was "upgraded" before the PendingLogsEvent is processed.
-	if len(coalescedLogs) > 0 {
+	if len(coalescedLogs) > 0 || env.tcount > 0 {
 		cpy := make([]*types.Log, len(coalescedLogs))
 		for i, l := range coalescedLogs {
 			cpy[i] = new(types.Log)
 			*cpy[i] = *l
 		}
-		pendingLogsFeed.Send(cpy)
-	}
-	if env.tcount > 0 {
-		go func(tcount int) {
-			err := mux.Post(core.PendingStateEvent{})
-			if err != nil {
-				log.Warn("[commitTransactions] Error when sending PendingStateEvent", "tcount", tcount)
+		go func(logs []*types.Log, tcount int) {
+			if len(logs) > 0 {
+				pendingLogsFeed.Send(logs)
 			}
-		}(env.tcount)
-
+			if tcount > 0 {
+				err := mux.Post(core.PendingStateEvent{})
+				if err != nil {
+					log.Warn("[commitTransactions] Error when sending PendingStateEvent", "tcount", tcount)
+				}
+			}
+		}(cpy, env.tcount)
 	}
 }
 
