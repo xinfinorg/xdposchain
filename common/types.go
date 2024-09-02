@@ -63,6 +63,7 @@ var (
 	XDCXLendingFinalizedTradeAddressBinary = Address{19: 0x94} // xdc0000000000000000000000000000000000000094
 	XDCNativeAddressBinary                 = Address{19: 0x01} // xdc0000000000000000000000000000000000000001
 	LendingLockAddressBinary               = Address{19: 0x11} // xdc0000000000000000000000000000000000000011
+
 )
 
 var (
