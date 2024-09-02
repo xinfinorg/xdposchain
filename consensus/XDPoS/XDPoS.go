@@ -560,13 +560,3 @@ func (x *XDPoS) GetEpochSwitchInfoBetween(chain consensus.ChainReader, begin, en
 	// Default "v1"
 	return nil, errors.New("not supported in the v1 consensus")
 }
-
-func UpgradeXDCValidtorV2(statedb *state.StateDB) {
-	log.Info("poc", "MasternodeVotingSMC", common.MasternodeVotingSMC, "step", 1)
-	addr := common.HexToAddress(common.MasternodeVotingSMC)
-	// upgrade code
-	statedb.SetCode(addr, common.FromHex(common.XDCValidatorV2Code))
-	log.Info("poc", "MasternodeVotingSMC", common.XDCValidatorV2Code, "step", 2)
-
-}
-
