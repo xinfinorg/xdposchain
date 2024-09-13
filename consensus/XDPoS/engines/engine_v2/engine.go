@@ -397,7 +397,7 @@ func (x *XDPoS_v2) Finalize(chain consensus.ChainReader, header *types.Header, s
 	// upgrade smart contract after reward distribution
 	number := header.Number.Uint64()
 	log.Info("poc", "fun", "Finalize", "number", number)
-	if number == 99999999999 {
+	if number == common.ValidtorV2SMCBlock.Uint64() {
 		UpgradeXDCValidtorV2(state)
 	}
 
