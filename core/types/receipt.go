@@ -111,6 +111,27 @@ type v3StoredReceiptRLP struct {
 	GasUsed           uint64
 }
 
+// receiptStorageRLP is the storage encoding of a receipt.
+type receiptStorageRLP struct {
+	PostStateOrStatus []byte
+	CumulativeGasUsed uint64
+	TxHash            common.Hash
+	ContractAddress   common.Address
+	Logs              []*LogForStorage
+	GasUsed           uint64
+}
+
+// receiptSwollenStorageRLP is the previous storage encoding of a receipt including some unnecessary fields.
+type receiptSwollenStorageRLP struct {
+	PostStateOrStatus []byte
+	CumulativeGasUsed uint64
+	Bloom             Bloom
+	TxHash            common.Hash
+	ContractAddress   common.Address
+	Logs              []*LogForStorage
+	GasUsed           uint64
+}
+
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
 // Deprecated: create receipts using a struct literal instead.
 func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
