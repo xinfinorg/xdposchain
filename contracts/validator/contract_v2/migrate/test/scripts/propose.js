@@ -1,0 +1,13 @@
+const { walletClient, validator } = require("./constant");
+
+async function run() {
+  const res = await walletClient.writeContract({
+    ...validator,
+    functionName: "propose",
+    args: ["0x2C7e9c9C48917a0386AB20791cdfA698B0BC976b"],
+    value: "10000000000000000000000000",
+  });
+  console.log(res);
+}
+
+run();
