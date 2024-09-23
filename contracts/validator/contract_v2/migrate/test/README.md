@@ -16,11 +16,11 @@ This repository contains scripts for testing various workflows in a development 
 
    ```env
    RPC_URL=<Your Devnet RPC URL>
-   M1_PRIVETE_KEY=<Masternode 1 Private Key>
-   M2_PRIVETE_KEY=<Masternode 2 Private Key>
-   M3_PRIVETE_KEY=<Masternode 3 Private Key>
-   M4_PRIVETE_KEY=<Masternode 4 Private Key>
-   M5_PRIVETE_KEY=<Masternode 5 Private Key>
+   M1_PRIVETE_KEY=<Owner 1 Private Key>
+   M2_PRIVETE_KEY=<Owner 2 Private Key>
+   M3_PRIVETE_KEY=<Owner 3 Private Key>
+   M4_PRIVETE_KEY=<Owner 4 Private Key>
+   M5_PRIVETE_KEY=<Owner 5 Private Key>
    ```
 
    Replace the placeholders with the appropriate values.
