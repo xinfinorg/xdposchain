@@ -2,11 +2,11 @@ const { createPublicClient, http, createWalletClient } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const validatorABI = require("../abi/validatorABI.json");
 require("dotenv").config();
-const m1PrivateKey = process.env.M1_PRIVATE_KEY;
-const m2PrivateKey = process.env.M2_PRIVATE_KEY;
-const m3PrivateKey = process.env.M3_PRIVATE_KEY;
-const m4PrivateKey = process.env.M4_PRIVATE_KEY;
-const m5PrivateKey = process.env.M5_PRIVATE_KEY;
+const o1PrivateKey = process.env.O1_PRIVATE_KEY;
+const o2PrivateKey = process.env.O2_PRIVATE_KEY;
+const o3PrivateKey = process.env.O3_PRIVATE_KEY;
+const o4PrivateKey = process.env.O4_PRIVATE_KEY;
+const o5PrivateKey = process.env.O5_PRIVATE_KEY;
 
 const rpcUrl = process.env.RPC_URL;
 const xdc = {
@@ -24,11 +24,11 @@ const xdc = {
   },
 };
 
-const masternode1 = privateKeyToAccount(m1PrivateKey);
-const masternode2 = privateKeyToAccount(m2PrivateKey);
-const masternode3 = privateKeyToAccount(m3PrivateKey);
-const masternode4 = privateKeyToAccount(m4PrivateKey);
-const masternode5 = privateKeyToAccount(m5PrivateKey);
+const onwer1 = privateKeyToAccount(o1PrivateKey);
+const onwer2 = privateKeyToAccount(o2PrivateKey);
+const onwer3 = privateKeyToAccount(o3PrivateKey);
+const onwe4 = privateKeyToAccount(o4PrivateKey);
+const onwe5 = privateKeyToAccount(o5PrivateKey);
 
 const publicClient = createPublicClient({
   chain: xdc,
@@ -56,9 +56,9 @@ module.exports = {
   walletClient,
   validator,
   expect,
-  masternode1,
-  masternode2,
-  masternode3,
-  masternode4,
-  masternode5,
+  onwer1,
+  onwer2,
+  onwer3,
+  onwe4,
+  onwe5,
 };

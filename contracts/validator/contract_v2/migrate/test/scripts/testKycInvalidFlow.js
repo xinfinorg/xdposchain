@@ -3,11 +3,11 @@ const {
   validator,
   publicClient,
   expect,
-  masternode1,
-  masternode2,
-  masternode3,
-  masternode4,
-  masternode5,
+  onwer1,
+  onwer2,
+  onwer3,
+  onwe4,
+  onwe5,
 } = require("./constant");
 const { generatePrivateKey, privateKeyToAccount } = require("viem/accounts");
 
@@ -22,13 +22,13 @@ async function run() {
     functionName: "propose",
     args: [newCandidate.address],
     value: minCandidateCap,
-    account: masternode1,
+    account: onwer1,
   });
 
   await walletClient.sendTransaction({
     to: newCandidate.address,
     value: minCandidateCap,
-    account: masternode1,
+    account: onwer1,
   });
 
   await walletClient.writeContract({
@@ -63,26 +63,26 @@ async function run() {
   await walletClient.writeContract({
     ...validator,
     functionName: "voteInvalidKYC",
-    args: [masternode1.address],
-    account: masternode2,
+    args: [onwer1.address],
+    account: onwer2,
   });
   await walletClient.writeContract({
     ...validator,
     functionName: "voteInvalidKYC",
-    args: [masternode1.address],
-    account: masternode3,
+    args: [onwer1.address],
+    account: onwer3,
   });
   await walletClient.writeContract({
     ...validator,
     functionName: "voteInvalidKYC",
-    args: [masternode1.address],
-    account: masternode4,
+    args: [onwer1.address],
+    account: onwe4,
   });
   await walletClient.writeContract({
     ...validator,
     functionName: "voteInvalidKYC",
-    args: [masternode1.address],
-    account: masternode5,
+    args: [onwer1.address],
+    account: onwe5,
   });
 
   const pendingKYC2 = await publicClient.readContract({

@@ -3,7 +3,7 @@ const {
   publicClient,
   validator,
   expect,
-  masternode1,
+  onwer1,
 } = require("./constant");
 const { generatePrivateKey, privateKeyToAccount } = require("viem/accounts");
 
@@ -19,7 +19,7 @@ async function run() {
     functionName: "propose",
     args: [newCandidate.address],
     value: minCandidateCap,
-    account: masternode1,
+    account: onwer1,
   });
   const candidates = await publicClient.readContract({
     ...validator,
@@ -34,7 +34,7 @@ async function run() {
     ...validator,
     functionName: "resign",
     args: [newCandidate.address],
-    account: masternode1,
+    account: onwer1,
   });
 
   expect(
@@ -47,7 +47,7 @@ async function run() {
     functionName: "propose",
     args: [newCandidate.address],
     value: minCandidateCap,
-    account: masternode1,
+    account: onwer1,
   });
 
   await walletClient.writeContract({
@@ -55,7 +55,7 @@ async function run() {
     functionName: "vote",
     args: [newCandidate.address],
     value: minVoterCap,
-    account: masternode1,
+    account: onwer1,
   });
 
   const validatorsState = await publicClient.readContract({
@@ -70,7 +70,7 @@ async function run() {
     ...validator,
     functionName: "unvote",
     args: [newCandidate.address, minVoterCap],
-    account: masternode1,
+    account: onwer1,
   });
 
   const validatorsState2 = await publicClient.readContract({
