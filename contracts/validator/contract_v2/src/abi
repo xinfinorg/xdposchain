@@ -65,6 +65,29 @@
       "type": "function"
    },
    {
+      "constant": false,
+      "inputs": [],
+      "name": "removeCandidatesZeroAddresses",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+   },
+   {
+      "constant": true,
+      "inputs": [],
+      "name": "ownerCount",
+      "outputs": [
+         {
+            "name": "",
+            "type": "uint256"
+         }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+   },
+   {
       "constant": true,
       "inputs": [
          {
@@ -112,16 +135,16 @@
          {
             "name": "",
             "type": "address"
-         },
-         {
-            "name": "",
-            "type": "uint256"
          }
       ],
-      "name": "kycString",
+      "name": "pendingKYC",
       "outputs": [
          {
-            "name": "",
+            "name": "blockNumber",
+            "type": "uint256"
+         },
+         {
+            "name": "kycHash",
             "type": "string"
          }
       ],
@@ -165,6 +188,29 @@
          {
             "name": "",
             "type": "address[]"
+         }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+   },
+   {
+      "constant": true,
+      "inputs": [
+         {
+            "name": "owner",
+            "type": "address"
+         }
+      ],
+      "name": "isOwner",
+      "outputs": [
+         {
+            "name": "",
+            "type": "bool"
+         },
+         {
+            "name": "",
+            "type": "uint256"
          }
       ],
       "payable": false,
@@ -293,34 +339,6 @@
    },
    {
       "constant": true,
-      "inputs": [],
-      "name": "minCandidateNum",
-      "outputs": [
-         {
-            "name": "",
-            "type": "uint256"
-         }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-   },
-   {
-      "constant": true,
-      "inputs": [],
-      "name": "getGrandMasters",
-      "outputs": [
-         {
-            "name": "",
-            "type": "address[]"
-         }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-   },
-   {
-      "constant": true,
       "inputs": [
          {
             "name": "_candidate",
@@ -342,15 +360,15 @@
       "constant": true,
       "inputs": [
          {
-            "name": "",
+            "name": "_owner",
             "type": "address"
          }
       ],
-      "name": "grandMasterMap",
+      "name": "invalidPercent",
       "outputs": [
          {
             "name": "",
-            "type": "bool"
+            "type": "uint256"
          }
       ],
       "payable": false,
@@ -361,15 +379,19 @@
       "constant": true,
       "inputs": [
          {
-            "name": "_invalidCandidate",
+            "name": "",
             "type": "address"
-         }
-      ],
-      "name": "invalidPercent",
-      "outputs": [
+         },
          {
             "name": "",
             "type": "uint256"
+         }
+      ],
+      "name": "KYCString",
+      "outputs": [
+         {
+            "name": "",
+            "type": "string"
          }
       ],
       "payable": false,
@@ -403,25 +425,6 @@
       "constant": true,
       "inputs": [
          {
-            "name": "",
-            "type": "uint256"
-         }
-      ],
-      "name": "grandMasters",
-      "outputs": [
-         {
-            "name": "",
-            "type": "address"
-         }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-   },
-   {
-      "constant": true,
-      "inputs": [
-         {
             "name": "_address",
             "type": "address"
          }
@@ -435,6 +438,15 @@
       ],
       "payable": false,
       "stateMutability": "view",
+      "type": "function"
+   },
+   {
+      "constant": false,
+      "inputs": [],
+      "name": "removeOwnersZeroAddresses",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
       "type": "function"
    },
    {
@@ -468,6 +480,15 @@
       ],
       "payable": false,
       "stateMutability": "view",
+      "type": "function"
+   },
+   {
+      "constant": false,
+      "inputs": [],
+      "name": "claimKYC",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
       "type": "function"
    },
    {
@@ -510,6 +531,25 @@
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
+      "type": "function"
+   },
+   {
+      "constant": true,
+      "inputs": [
+         {
+            "name": "",
+            "type": "address"
+         }
+      ],
+      "name": "invalidCandidate",
+      "outputs": [
+         {
+            "name": "",
+            "type": "bool"
+         }
+      ],
+      "payable": false,
+      "stateMutability": "view",
       "type": "function"
    },
    {
@@ -613,6 +653,25 @@
    },
    {
       "constant": true,
+      "inputs": [
+         {
+            "name": "",
+            "type": "address"
+         }
+      ],
+      "name": "invalidOwner",
+      "outputs": [
+         {
+            "name": "",
+            "type": "bool"
+         }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+   },
+   {
+      "constant": true,
       "inputs": [],
       "name": "getOwnerCount",
       "outputs": [
@@ -629,7 +688,7 @@
       "constant": false,
       "inputs": [
          {
-            "name": "_invalidCandidate",
+            "name": "_owner",
             "type": "address"
          }
       ],
@@ -699,14 +758,6 @@
          },
          {
             "name": "_voterWithdrawDelay",
-            "type": "uint256"
-         },
-         {
-            "name": "_grandMasters",
-            "type": "address[]"
-         },
-         {
-            "name": "_minCandidateNum",
             "type": "uint256"
          }
       ],

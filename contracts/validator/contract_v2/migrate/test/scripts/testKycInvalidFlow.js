@@ -35,7 +35,7 @@ async function run() {
     ...validator,
     functionName: "uploadKYC",
     args: ["hello"],
-    account: newCandidate.address,
+    account: newCandidate,
   });
 
   const pendingKYC = await publicClient.readContract({
