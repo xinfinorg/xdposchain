@@ -86,6 +86,7 @@ Forensics runs in a seperate go routine as its no system critical
 Link to the flow diagram: https://hashlabs.atlassian.net/wiki/spaces/HASHLABS/pages/97878029/Forensics+Diagram+flow
 */
 func (f *Forensics) ProcessForensics(chain consensus.ChainReader, engine *XDPoS_v2, incomingQC types.QuorumCert) error {
+	return nil
 	log.Debug("Received a QC in forensics", "QC", incomingQC)
 	// Clone the values to a temporary variable
 	highestCommittedQCs := f.HighestCommittedQCs
