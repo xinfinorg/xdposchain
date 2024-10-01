@@ -394,6 +394,7 @@ Forensics runs in a seperate go routine as its no system critical
 Link to the flow diagram: https://hashlabs.atlassian.net/wiki/spaces/HASHLABS/pages/99516417/Vote+Equivocation+detection+specification
 */
 func (f *Forensics) ProcessVoteEquivocation(chain consensus.ChainReader, engine *XDPoS_v2, incomingVote *types.Vote) error {
+	return nil
 	log.Debug("Received a vote in forensics", "vote", incomingVote)
 	// Clone the values to a temporary variable
 	highestCommittedQCs := f.HighestCommittedQCs
@@ -484,6 +485,7 @@ func (f *Forensics) isVoteBlamed(chain consensus.ChainReader, highestCommittedQC
 }
 
 func (f *Forensics) DetectEquivocationInVotePool(vote *types.Vote, votePool *utils.Pool) {
+	return
 	poolKey := vote.PoolKey()
 	votePoolKeys := votePool.PoolObjKeysList()
 	signer, err := GetVoteSignerAddresses(vote)
