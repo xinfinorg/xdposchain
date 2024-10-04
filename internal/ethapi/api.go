@@ -1174,19 +1174,25 @@ func (s *PublicBlockChainAPI) GetPreviousCheckpointFromEpoch(ctx context.Context
 	epoch := s.b.ChainConfig().XDPoS.Epoch
 
 	if epochNum == rpc.LatestEpochNumber {
-		blockNumer := s.b.CurrentBlock().Number().Uint64()
-		diff := blockNumer % epoch
-		// checkpoint number
-		checkpointNumber = blockNumer - diff
-		epochNum = rpc.EpochNumber(checkpointNumber / epoch)
-		if diff > 0 {
-			epochNum += 1
+		blockNumer := s.b.CurrentBlock().Number()
+		if engine, ok := s.b.GetEngine().(*XDPoS.XDPoS); ok {
+			var err error
+			var currentEpoch uint64
+			checkpointNumber, currentEpoch, err = engine.GetCurrentEpochSwitchBlock(s.chainReader, blockNumer)
+			if err != nil {
+				log.Error("[GetPreviousCheckpointFromEpoch] Fail to get GetCurrentEpochSwitchBlock for current checkpoint block", "block", blockNumer, "err", err)
+				return 0, epochNum
+			}
+
+			epochNum = rpc.EpochNumber(currentEpoch)
 		}
 	} else if epochNum < 2 {
 		checkpointNumber = 0
 	} else {
+		// TODO this checkpointNumber needs to be recalculated for v2 blocks
 		checkpointNumber = epoch * (uint64(epochNum) - 1)
 	}
+
 	return rpc.BlockNumber(checkpointNumber), epochNum
 }
 
