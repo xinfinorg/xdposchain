@@ -374,7 +374,7 @@ var (
 		Usage: "Record information useful for VM and contract debugging",
 	}
 	RPCGlobalGasCapFlag = cli.Uint64Flag{
-		Name:  "rpc.gascap",
+		Name:  "rpc-gascap",
 		Usage: "Sets a cap on gas that can be used in eth_call/estimateGas (0=infinite)",
 		Value: ethconfig.Defaults.RPCGasCap,
 	}
