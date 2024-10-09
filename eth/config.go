@@ -50,12 +50,19 @@ var DefaultConfig = Config{
 	TrieTimeout:   5 * time.Minute,
 	GasPrice:      big.NewInt(0.25 * params.Shannon),
 
+<<<<<<< HEAD:eth/config.go
 	TxPool:    core.DefaultTxPoolConfig,
 	RPCGasCap: 25000000,
 	GPO: gasprice.Config{
 		Blocks:     20,
 		Percentile: 60,
 	},
+=======
+	TxPool:      core.DefaultTxPoolConfig,
+	RPCGasCap:   50000000,
+	GPO:         FullNodeGPO,
+	RPCTxFeeCap: 1, // 1 ether
+>>>>>>> 22c54206b (add flag rpc-gascap and set RPCGasCap to 50M (#664)):eth/ethconfig/config.go
 }
 
 func init() {

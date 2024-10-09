@@ -359,7 +359,7 @@ var (
 		Usage: "Record information useful for VM and contract debugging",
 	}
 	RPCGlobalGasCapFlag = cli.Uint64Flag{
-		Name:  "rpc.gascap",
+		Name:  "rpc-gascap",
 		Usage: "Sets a cap on gas that can be used in eth_call/estimateGas (0=infinite)",
 		Value: eth.DefaultConfig.RPCGasCap,
 	}
@@ -1171,6 +1171,15 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(DocRootFlag.Name) {
 		cfg.DocRoot = ctx.GlobalString(DocRootFlag.Name)
 	}
+<<<<<<< HEAD
+=======
+	if ctx.GlobalIsSet(RPCGlobalTxFeeCap.Name) {
+		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCap.Name)
+	}
+	if ctx.GlobalIsSet(RPCGlobalGasCapFlag.Name) {
+		cfg.RPCGasCap = ctx.GlobalUint64(RPCGlobalGasCapFlag.Name)
+	}
+>>>>>>> 22c54206b (add flag rpc-gascap and set RPCGasCap to 50M (#664))
 	if ctx.GlobalIsSet(ExtraDataFlag.Name) {
 		cfg.ExtraData = []byte(ctx.GlobalString(ExtraDataFlag.Name))
 	}
