@@ -869,7 +869,7 @@ func (s *PublicBlockChainAPI) GetCandidateStatus(ctx context.Context, coinbaseAd
 	epochConfig := s.b.ChainConfig().XDPoS.Epoch
 
 	// checkpoint block
-	checkpointNumber, epochNumber = s.GetPreviousCheckpointFromEpoch(ctx, epoch)
+	checkpointNumber, epochNumber = s.GetCheckpointFromEpoch(ctx, epoch)
 	result[fieldEpoch] = epochNumber.Int64()
 
 	block, err = s.b.BlockByNumber(ctx, checkpointNumber)
@@ -1024,7 +1024,7 @@ func (s *PublicBlockChainAPI) GetCandidates(ctx context.Context, epoch rpc.Epoch
 	}
 	epochConfig := s.b.ChainConfig().XDPoS.Epoch
 
-	checkpointNumber, epochNumber = s.GetPreviousCheckpointFromEpoch(ctx, epoch)
+	checkpointNumber, epochNumber = s.GetCheckpointFromEpoch(ctx, epoch)
 	result[fieldEpoch] = epochNumber.Int64()
 
 	block, err = s.b.BlockByNumber(ctx, checkpointNumber)
@@ -1168,8 +1168,8 @@ func (s *PublicBlockChainAPI) GetCandidates(ctx context.Context, epoch rpc.Epoch
 	return result, nil
 }
 
-// GetPreviousCheckpointFromEpoch returns header of the previous checkpoint
-func (s *PublicBlockChainAPI) GetPreviousCheckpointFromEpoch(ctx context.Context, epochNum rpc.EpochNumber) (rpc.BlockNumber, rpc.EpochNumber) {
+// GetCheckpointFromEpoch returns header of the previous checkpoint
+func (s *PublicBlockChainAPI) GetCheckpointFromEpoch(ctx context.Context, epochNum rpc.EpochNumber) (rpc.BlockNumber, rpc.EpochNumber) {
 	var checkpointNumber uint64
 	epoch := s.b.ChainConfig().XDPoS.Epoch
 
@@ -1180,7 +1180,7 @@ func (s *PublicBlockChainAPI) GetPreviousCheckpointFromEpoch(ctx context.Context
 			var currentEpoch uint64
 			checkpointNumber, currentEpoch, err = engine.GetCurrentEpochSwitchBlock(s.chainReader, blockNumer)
 			if err != nil {
-				log.Error("[GetPreviousCheckpointFromEpoch] Fail to get GetCurrentEpochSwitchBlock for current checkpoint block", "block", blockNumer, "err", err)
+				log.Error("[GetCheckpointFromEpoch] Fail to get GetCurrentEpochSwitchBlock for current checkpoint block", "block", blockNumer, "err", err)
 				return 0, epochNum
 			}
 
