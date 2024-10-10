@@ -303,7 +303,7 @@ func (t *udp) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) <-ch
 		To:         makeEndpoint(toaddr, 0), // TODO: maybe use known TCP port from DB
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 	}
-	packet, hash, err := encodePacket(t.priv, pingPacket, req)
+	packet, hash, err := encodePacket(t.priv, pingXDC, req)
 	if err != nil {
 		errc := make(chan error, 1)
 		errc <- err
