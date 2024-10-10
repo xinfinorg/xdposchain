@@ -372,13 +372,10 @@ func (x *XDPoS_v2) Prepare(chain consensus.ChainReader, header *types.Header) er
 // rewards given, and returns the final block.
 func (x *XDPoS_v2) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, parentState *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// set block reward
+	number := header.Number.Uint64()
+	rCheckpoint := chain.Config().XDPoS.RewardCheckpoint
 
-	isEpochSwitch, _, err := x.IsEpochSwitch(header)
-	if err != nil {
-		log.Error("[Finalize] IsEpochSwitch bug!", "err", err)
-		return nil, err
-	}
-	if x.HookReward != nil && isEpochSwitch {
+	if x.HookReward != nil && number%rCheckpoint == 0 {
 		rewards, err := x.HookReward(chain, state, parentState, header)
 		if err != nil {
 			return nil, err
