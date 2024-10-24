@@ -237,6 +237,25 @@ func (x *XDPoS_v2) GetBlockByEpochNumber(chain consensus.ChainReader, targetEpoc
 	if targetEpochNum < x.config.V2.SwitchBlock.Uint64()/x.config.Epoch {
 		return nil, errors.New("input epoch number < v2 begin epoch number")
 	}
+	// the block's round should be in [estRound,estRound+Epoch-1]
+	estRound := types.Round((targetEpochNum - x.config.V2.SwitchBlock.Uint64()/x.config.Epoch) * x.config.Epoch)
+	// check the round2epochBlockInfo cache
+	epochSwitchInCache := make([]*types.BlockInfo, 0)
+	for r := estRound; r < estRound+types.Round(x.config.Epoch); r++ {
+		info, ok := x.round2epochBlockInfo.Get(r)
+		if ok {
+			blockInfo := &types.BlockInfo{
+				Hash:   info.(*types.BlockInfo).Hash,
+				Number: info.(*types.BlockInfo).Number,
+				Round:  r,
+			}
+			epochSwitchInCache = append(epochSwitchInCache, blockInfo)
+		}
+	}
+	if len(epochSwitchInCache) == 1 {
+		return epochSwitchInCache[0], nil
+	}
+	// there may be multiple blocks (forking, it's very rare and ok) or cache miss, use recursive
 	epoch := big.NewInt(int64(x.config.Epoch))
 	estblockNumDiff := new(big.Int).Mul(epoch, big.NewInt(int64(epochNum-targetEpochNum)))
 	estBlockNum := new(big.Int).Sub(epochSwitchInfo.EpochSwitchBlockInfo.Number, estblockNumDiff)
