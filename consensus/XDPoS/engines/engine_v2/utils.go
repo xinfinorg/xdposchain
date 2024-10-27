@@ -323,7 +323,8 @@ func (x *XDPoS_v2) GetBlockByEpochNumber(chain consensus.ChainReader, targetEpoc
 		estBlockNum.Set(x.config.V2.SwitchBlock)
 	}
 	// if the targrt is close, we search brute-forcily
-	if 2 >= epochNum-targetEpochNum {
+	closeEpochNum := uint64(2)
+	if closeEpochNum >= epochNum-targetEpochNum {
 		estBlockHeader := chain.GetHeaderByNumber(estBlockNum.Uint64())
 		epochSwitchInfos, err := x.GetEpochSwitchInfoBetween(chain, estBlockHeader, currentHeader)
 		if err != nil {
@@ -338,5 +339,4 @@ func (x *XDPoS_v2) GetBlockByEpochNumber(chain consensus.ChainReader, targetEpoc
 	}
 	// else, we use binary search
 	return x.binarySearchBlockByEpochNumber(chain, targetEpochNum, estBlockNum.Uint64(), epochSwitchInfo.EpochSwitchBlockInfo.Number.Uint64())
-	// return nil, errors.New("input epoch number not found (all rounds in this epoch are missed, which is very rare)")
 }
