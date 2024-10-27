@@ -244,11 +244,7 @@ func (x *XDPoS_v2) GetBlockByEpochNumber(chain consensus.ChainReader, targetEpoc
 	for r := estRound; r < estRound+types.Round(x.config.Epoch); r++ {
 		info, ok := x.round2epochBlockInfo.Get(r)
 		if ok {
-			blockInfo := &types.BlockInfo{
-				Hash:   info.(*types.BlockInfo).Hash,
-				Number: info.(*types.BlockInfo).Number,
-				Round:  r,
-			}
+			blockInfo := info.(*types.BlockInfo)
 			epochSwitchInCache = append(epochSwitchInCache, blockInfo)
 		}
 	}

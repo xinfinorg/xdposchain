@@ -89,7 +89,7 @@ func (x *XDPoS_v2) getEpochSwitchInfo(chain consensus.ChainReader, header *types
 		x.round2epochBlockInfo.Add(round, &types.BlockInfo{
 			Hash:   hash,
 			Number: h.Number,
-			// skip round since it is already the key
+			Round:  round,
 		})
 		return epochSwitchInfo, nil
 	}
