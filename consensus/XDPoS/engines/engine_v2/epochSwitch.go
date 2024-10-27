@@ -86,11 +86,6 @@ func (x *XDPoS_v2) getEpochSwitchInfo(chain consensus.ChainReader, header *types
 		}
 
 		x.epochSwitches.Add(hash, epochSwitchInfo)
-		x.round2epochBlockInfo.Add(round, &types.BlockInfo{
-			Hash:   hash,
-			Number: h.Number,
-			Round:  round,
-		})
 		return epochSwitchInfo, nil
 	}
 	epochSwitchInfo, err := x.getEpochSwitchInfo(chain, nil, h.ParentHash)
@@ -159,6 +154,14 @@ func (x *XDPoS_v2) IsEpochSwitch(header *types.Header) (bool, uint64, error) {
 		return true, epochNum, nil
 	}
 	log.Debug("[IsEpochSwitch]", "is", parentRound < epochStartRound, "parentRound", parentRound, "round", round, "number", header.Number.Uint64(), "epochNum", epochNum, "hash", header.Hash())
+	// if isEpochSwitch, add to cache
+	if parentRound < epochStartRound {
+		x.round2epochBlockInfo.Add(round, &types.BlockInfo{
+			Hash:   header.Hash(),
+			Number: header.Number,
+			Round:  round,
+		})
+	}
 	return parentRound < epochStartRound, epochNum, nil
 }
 
