@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -302,12 +303,14 @@ func (w *worker) update() {
 			if atomic.LoadInt32(&w.mining) == 1 {
 				w.commitNewWork()
 			}
-			timeout.Reset(time.Duration(minePeriod) * time.Second)
+			resetTime := getResetTime(w.chain, minePeriod)
+			timeout.Reset(resetTime)
 
 		// Handle ChainHeadEvent
 		case <-w.chainHeadCh:
 			w.commitNewWork()
-			timeout.Reset(time.Duration(minePeriod) * time.Second)
+			resetTime := getResetTime(w.chain, minePeriod)
+			timeout.Reset(resetTime)
 
 		// Handle ChainSideEvent
 		case <-w.chainSideCh:
@@ -352,6 +355,22 @@ func (w *worker) update() {
 			return
 		}
 	}
+}
+
+func getResetTime(chain *core.BlockChain, minePeriod int) time.Duration {
+	minePeriodDuration := time.Duration(minePeriod) * time.Second
+	currentBlockTime := chain.CurrentBlock().Time().Int64()
+	nowTime := time.Now().UnixMilli()
+	resetTime := time.Duration(currentBlockTime)*time.Second + minePeriodDuration - time.Duration(nowTime)*time.Millisecond
+	// in case the current block time is not very accurate
+	if resetTime > minePeriodDuration {
+		resetTime = minePeriodDuration
+	}
+	if resetTime < 0 {
+		resetTime = 0
+	}
+	log.Info("Miner worker timer reset", "reset milliseconds", resetTime.Milliseconds(), "mine period sec", minePeriod, "current block time sec", currentBlockTime, "now time sec", fmt.Sprintf("%d.%d", nowTime/1000, nowTime%1000))
+	return resetTime
 }
 
 func (w *worker) wait() {
