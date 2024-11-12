@@ -366,8 +366,9 @@ func getResetTime(chain *core.BlockChain, minePeriod int) time.Duration {
 	if resetTime > minePeriodDuration {
 		resetTime = minePeriodDuration
 	}
+	// in case the current block is too far in the past, the block time already is huge, we wait for mine period
 	if resetTime < 0 {
-		resetTime = 0
+		resetTime = minePeriodDuration
 	}
 	log.Info("Miner worker timer reset", "reset milliseconds", resetTime.Milliseconds(), "mine period sec", minePeriod, "current block time sec", currentBlockTime, "now time sec", fmt.Sprintf("%d.%d", nowTime/1000, nowTime%1000))
 	return resetTime
