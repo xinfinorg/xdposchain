@@ -291,6 +291,7 @@ func (self *worker) update() {
 		}
 	}()
 	for {
+		prevReset0TimeMillisec := int64(0)
 		// A real event arrived, process interesting content
 		select {
 		case v := <-MinePeriodCh:
@@ -302,13 +303,14 @@ func (self *worker) update() {
 			if atomic.LoadInt32(&self.mining) == 1 {
 				self.commitNewWork()
 			}
-			resetTime := getResetTime(self.chain, minePeriod)
+			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
 			timeout.Reset(resetTime)
 
 		// Handle ChainHeadEvent
 		case <-self.chainHeadCh:
 			self.commitNewWork()
-			timeout.Reset(time.Duration(minePeriod) * time.Second)
+			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
+			timeout.Reset(resetTime)
 
 		// Handle ChainSideEvent
 		case <-self.chainSideCh:
@@ -355,7 +357,7 @@ func (self *worker) update() {
 	}
 }
 
-func getResetTime(chain *core.BlockChain, minePeriod int) time.Duration {
+func getResetTime(chain *core.BlockChain, minePeriod int, prevReset0TimeMillisec *int64) time.Duration {
 	minePeriodDuration := time.Duration(minePeriod) * time.Second
 	currentBlockTime := chain.CurrentBlock().Time().Int64()
 	nowTime := time.Now().UnixMilli()
@@ -368,7 +370,15 @@ func getResetTime(chain *core.BlockChain, minePeriod int) time.Duration {
 	if resetTime < 0 {
 		resetTime = minePeriodDuration
 	}
-	log.Info("Miner worker timer reset", "reset milliseconds", resetTime.Milliseconds(), "mine period sec", minePeriod, "current block time sec", currentBlockTime, "now time sec", fmt.Sprintf("%d.%d", nowTime/1000, nowTime%1000))
+	if resetTime == 0 {
+		if nowTime == *prevReset0TimeMillisec {
+			// in case it resets to 0 in one millisecond too many times, we wait for mine period
+			resetTime = minePeriodDuration
+		} else {
+			*prevReset0TimeMillisec = nowTime
+		}
+	}
+	log.Debug("[update] Miner worker timer reset", "reset milliseconds", resetTime.Milliseconds(), "mine period sec", minePeriod, "current block time sec", currentBlockTime, "now time sec", fmt.Sprintf("%d.%03d", nowTime/1000, nowTime%1000))
 	return resetTime
 }
 
