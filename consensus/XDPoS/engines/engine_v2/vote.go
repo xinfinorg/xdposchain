@@ -76,10 +76,14 @@ func (x *XDPoS_v2) voteHandler(chain consensus.ChainReader, voteMsg *types.Vote)
 	go x.ForensicsProcessor.DetectEquivocationInVotePool(voteMsg, x.votePool)
 	go x.ForensicsProcessor.ProcessVoteEquivocation(chain, x, voteMsg)
 
-	epochInfo, err := x.getEpochSwitchInfo(chain, chain.CurrentHeader(), chain.CurrentHeader().Hash())
+	epochInfo, err := x.getEpochSwitchInfo(chain, nil, voteMsg.ProposedBlockInfo.Hash)
 	if err != nil {
-		log.Error("[voteHandler] Error when getting epoch switch Info", "error", err)
-		return errors.New("Fail on voteHandler due to failure in getting epoch switch info")
+		return &utils.ErrIncomingMessageBlockNotFound{
+			Type:                "vote",
+			IncomingBlockHash:   voteMsg.ProposedBlockInfo.Hash,
+			IncomingBlockNumber: voteMsg.ProposedBlockInfo.Number,
+			Err:                 err,
+		}
 	}
 
 	certThreshold := x.config.V2.Config(uint64(voteMsg.ProposedBlockInfo.Round)).CertThreshold
@@ -175,7 +179,7 @@ func (x *XDPoS_v2) onVotePoolThresholdReached(chain consensus.ChainReader, poole
 		}
 	}
 
-	epochInfo, err := x.getEpochSwitchInfo(chain, chain.CurrentHeader(), chain.CurrentHeader().Hash())
+	epochInfo, err := x.getEpochSwitchInfo(chain, nil, currentVoteMsg.(*types.Vote).ProposedBlockInfo.Hash)
 	if err != nil {
 		log.Error("[voteHandler] Error when getting epoch switch Info", "error", err)
 		return errors.New("Fail on voteHandler due to failure in getting epoch switch info")
