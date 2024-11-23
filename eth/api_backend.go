@@ -408,25 +408,19 @@ func (b *EthApiBackend) StateAtBlock(ctx context.Context, block *types.Block, re
 
 func (s *EthApiBackend) GetRewardByHash(hash common.Hash) map[string]map[string]map[string]*big.Int {
 	header := s.eth.blockchain.GetHeaderByHash(hash)
+	err := errors.New("header hash not found")
 	if header != nil {
-		data, err := os.ReadFile(filepath.Join(common.StoreRewardFolder, header.Number.String()+"."+header.Hash().Hex()))
+		data, err := os.ReadFile(filepath.Join(common.StoreRewardFolder, header.Number.String()))
 		if err == nil {
 			rewards := make(map[string]map[string]map[string]*big.Int)
 			err = json.Unmarshal(data, &rewards)
 			if err == nil {
+				log.Info("[GetRewardByHash] file found and returning rewards", "blocknum", header.Number.String())
 				return rewards
-			}
-		} else {
-			data, err = os.ReadFile(filepath.Join(common.StoreRewardFolder, header.Number.String()+"."+header.HashNoValidator().Hex()))
-			if err == nil {
-				rewards := make(map[string]map[string]map[string]*big.Int)
-				err = json.Unmarshal(data, &rewards)
-				if err == nil {
-					return rewards
-				}
 			}
 		}
 	}
+	log.Error("[GetRewardByHash]", "err", err)
 	return make(map[string]map[string]map[string]*big.Int)
 }
 

@@ -393,7 +393,7 @@ func (x *XDPoS_v2) Finalize(chain consensus.ChainReader, header *types.Header, s
 		if len(common.StoreRewardFolder) > 0 {
 			data, err := json.Marshal(rewards)
 			if err == nil {
-				err = os.WriteFile(filepath.Join(common.StoreRewardFolder, header.Number.String()+"."+header.Hash().Hex()), data, 0644)
+				err = os.WriteFile(filepath.Join(common.StoreRewardFolder, header.Number.String()), data, 0644)
 			}
 			if err != nil {
 				log.Error("Error when save reward info ", "number", header.Number, "hash", header.Hash().Hex(), "err", err)
