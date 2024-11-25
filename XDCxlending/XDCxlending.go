@@ -311,7 +311,7 @@ func (l *Lending) SyncDataToSDKNode(chain consensus.ChainContext, statedb *state
 		}
 		// maker dirty order
 		makerFilledAmount := big.NewInt(0)
-		makerOrderHash := common.Hash{}
+		var makerOrderHash common.Hash
 		if updatedTakerLendingItem.Side == lendingstate.Borrowing {
 			makerOrderHash = tradeRecord.InvestingOrderHash
 		} else {
@@ -665,7 +665,7 @@ func (l *Lending) GetLendingState(block *types.Block, author common.Address) (*l
 		return nil, err
 	}
 	if l.StateCache == nil {
-		return nil, errors.New("Not initialized XDCx")
+		return nil, errors.New("not initialized XDCx")
 	}
 	state, err := lendingstate.New(root, l.StateCache)
 	if err != nil {
@@ -684,10 +684,7 @@ func (l *Lending) HasLendingState(block *types.Block, author common.Address) boo
 		return false
 	}
 	_, err = l.StateCache.OpenTrie(root)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (l *Lending) GetTriegc() *prque.Prque {
@@ -926,7 +923,7 @@ func (l *Lending) ProcessLiquidationData(header *types.Header, chain consensus.C
 						trade := lendingState.GetLendingTrade(lendingBook, tradingIdHash)
 						log.Debug("TestRecall", "borrower", trade.Borrower.Hex(), "lendingToken", trade.LendingToken.Hex(), "collateral", trade.CollateralToken.Hex(), "price", price, "tradingIdHash", tradingIdHash.Hex())
 						if trade.AutoTopUp {
-							err, _, newTrade := l.ProcessRecallLendingTrade(lendingState, statedb, tradingState, lendingBook, tradingIdHash, newLiquidatePrice)
+							_, newTrade, err := l.ProcessRecallLendingTrade(lendingState, statedb, tradingState, lendingBook, tradingIdHash, newLiquidatePrice)
 							if err != nil {
 								log.Error("ProcessRecallLendingTrade", "lendingBook", lendingBook.Hex(), "tradingIdHash", tradingIdHash.Hex(), "newLiquidatePrice", newLiquidatePrice, "err", err)
 								return updatedTrades, liquidatedTrades, autoRepayTrades, autoTopUpTrades, autoRecallTrades, err

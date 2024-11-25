@@ -38,6 +38,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/consensus/XDPoS"
 	"github.com/XinFinOrg/XDPoSChain/consensus/ethash"
 	"github.com/XinFinOrg/XDPoSChain/core"
+	"github.com/XinFinOrg/XDPoSChain/core/txpool"
 	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/crypto"
 	"github.com/XinFinOrg/XDPoSChain/eth/downloader"
@@ -57,7 +58,6 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/p2p/netutil"
 	"github.com/XinFinOrg/XDPoSChain/params"
 	"github.com/XinFinOrg/XDPoSChain/rpc"
-	whisper "github.com/XinFinOrg/XDPoSChain/whisper/whisperv6"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -261,12 +261,12 @@ var (
 	TxPoolJournalFlag = cli.StringFlag{
 		Name:  "txpool.journal",
 		Usage: "Disk journal for local transaction to survive node restarts",
-		Value: core.DefaultTxPoolConfig.Journal,
+		Value: txpool.DefaultConfig.Journal,
 	}
 	TxPoolRejournalFlag = cli.DurationFlag{
 		Name:  "txpool.rejournal",
 		Usage: "Time interval to regenerate the local transaction journal",
-		Value: core.DefaultTxPoolConfig.Rejournal,
+		Value: txpool.DefaultConfig.Rejournal,
 	}
 	TxPoolPriceLimitFlag = cli.Uint64Flag{
 		Name:  "txpool.pricelimit",
@@ -434,10 +434,20 @@ var (
 		Usage: "HTTP-RPC server listening port",
 		Value: node.DefaultHTTPPort,
 	}
+	RPCHttpReadTimeoutFlag = cli.DurationFlag{
+		Name:  "rpcreadtimeout",
+		Usage: "HTTP-RPC server read timeout",
+		Value: rpc.DefaultHTTPTimeouts.ReadTimeout,
+	}
 	RPCHttpWriteTimeoutFlag = cli.DurationFlag{
 		Name:  "rpcwritetimeout",
-		Usage: "HTTP-RPC server write timeout (default = 10s)",
-		Value: node.DefaultHTTPWriteTimeOut,
+		Usage: "HTTP-RPC server write timeout",
+		Value: rpc.DefaultHTTPTimeouts.WriteTimeout,
+	}
+	RPCHttpIdleTimeoutFlag = cli.DurationFlag{
+		Name:  "rpcidletimeout",
+		Usage: "HTTP-RPC server idle timeout",
+		Value: rpc.DefaultHTTPTimeouts.IdleTimeout,
 	}
 	RPCCORSDomainFlag = cli.StringFlag{
 		Name:  "rpccorsdomain",
@@ -499,12 +509,12 @@ var (
 	MaxPeersFlag = cli.IntFlag{
 		Name:  "maxpeers",
 		Usage: "Maximum number of network peers (network disabled if set to 0)",
-		Value: 25,
+		Value: node.DefaultConfig.P2P.MaxPeers,
 	}
 	MaxPendingPeersFlag = cli.IntFlag{
 		Name:  "maxpendpeers",
 		Usage: "Maximum number of pending connection attempts (defaults used if set to 0)",
-		Value: 0,
+		Value: node.DefaultConfig.P2P.MaxPendingPeers,
 	}
 	ListenPortFlag = cli.IntFlag{
 		Name:  "port",
@@ -580,20 +590,6 @@ var (
 		Usage: "Gas price below which gpo will ignore transactions",
 		Value: ethconfig.Defaults.GPO.IgnorePrice.Int64(),
 	}
-	WhisperEnabledFlag = cli.BoolFlag{
-		Name:  "shh",
-		Usage: "Enable Whisper",
-	}
-	WhisperMaxMessageSizeFlag = cli.IntFlag{
-		Name:  "shh.maxmessagesize",
-		Usage: "Max message size accepted",
-		Value: int(whisper.DefaultMaxMessageSize),
-	}
-	WhisperMinPOWFlag = cli.Float64Flag{
-		Name:  "shh.pow",
-		Usage: "Minimum POW accepted",
-		Value: whisper.DefaultMinimumPoW,
-	}
 	XDCXDataDirFlag = DirectoryFlag{
 		Name:  "XDCx.datadir",
 		Usage: "Data directory for the XDCX databases",
@@ -621,6 +617,16 @@ var (
 	XDCSlaveModeFlag = cli.BoolFlag{
 		Name:  "slave",
 		Usage: "Enable slave mode",
+	}
+	// Deprecated November 2023
+	LogBacktraceAtFlag = &cli.StringFlag{
+		Name:  "log-backtrace",
+		Usage: "Request a stack trace at a specific logging statement (deprecated)",
+		Value: "",
+	}
+	LogDebugFlag = &cli.BoolFlag{
+		Name:  "log-debug",
+		Usage: "Prepends log messages with call-site location (deprecated)",
 	}
 )
 
@@ -757,12 +763,15 @@ func setNAT(ctx *cli.Context, cfg *p2p.Config) {
 
 // splitAndTrim splits input separated by a comma
 // and trims excessive white space from the substrings.
-func splitAndTrim(input string) []string {
-	result := strings.Split(input, ",")
-	for i, r := range result {
-		result[i] = strings.TrimSpace(r)
+func splitAndTrim(input string) (ret []string) {
+	l := strings.Split(input, ",")
+	for _, r := range l {
+		r = strings.TrimSpace(r)
+		if len(r) > 0 {
+			ret = append(ret, r)
+		}
 	}
-	return result
+	return ret
 }
 
 // setHTTP creates the HTTP RPC listener interface string from the set
@@ -778,8 +787,14 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 	if ctx.GlobalIsSet(RPCPortFlag.Name) {
 		cfg.HTTPPort = ctx.GlobalInt(RPCPortFlag.Name)
 	}
+	if ctx.GlobalIsSet(RPCHttpReadTimeoutFlag.Name) {
+		cfg.HTTPTimeouts.ReadTimeout = ctx.GlobalDuration(RPCHttpReadTimeoutFlag.Name)
+	}
 	if ctx.GlobalIsSet(RPCHttpWriteTimeoutFlag.Name) {
-		cfg.HTTPWriteTimeout = ctx.GlobalDuration(RPCHttpWriteTimeoutFlag.Name)
+		cfg.HTTPTimeouts.WriteTimeout = ctx.GlobalDuration(RPCHttpWriteTimeoutFlag.Name)
+	}
+	if ctx.GlobalIsSet(RPCHttpIdleTimeoutFlag.Name) {
+		cfg.HTTPTimeouts.IdleTimeout = ctx.GlobalDuration(RPCHttpIdleTimeoutFlag.Name)
 	}
 	if ctx.GlobalIsSet(RPCCORSDomainFlag.Name) {
 		cfg.HTTPCors = splitAndTrim(ctx.GlobalString(RPCCORSDomainFlag.Name))
@@ -1010,14 +1025,20 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	if ctx.GlobalIsSet(AnnounceTxsFlag.Name) {
 		cfg.AnnounceTxs = ctx.GlobalBool(AnnounceTxsFlag.Name)
 	}
+	// deprecation notice for log debug flags (TODO: find a more appropriate place to put these?)
+	if ctx.IsSet(LogBacktraceAtFlag.Name) {
+		log.Warn("log.backtrace flag is deprecated")
+	}
+	if ctx.IsSet(LogDebugFlag.Name) {
+		log.Warn("log.debug flag is deprecated")
+	}
 }
 
 func setGPO(ctx *cli.Context, cfg *gasprice.Config, light bool) {
 	// If we are running the light client, apply another group
 	// settings for gas oracle.
 	if light {
-		cfg.Blocks = ethconfig.LightClientGPO.Blocks
-		cfg.Percentile = ethconfig.LightClientGPO.Percentile
+		*cfg = ethconfig.LightClientGPO
 	}
 	if ctx.GlobalIsSet(GpoBlocksFlag.Name) {
 		cfg.Blocks = ctx.GlobalInt(GpoBlocksFlag.Name)
@@ -1033,7 +1054,7 @@ func setGPO(ctx *cli.Context, cfg *gasprice.Config, light bool) {
 	}
 }
 
-func setTxPool(ctx *cli.Context, cfg *core.TxPoolConfig) {
+func setTxPool(ctx *cli.Context, cfg *txpool.Config) {
 	if ctx.GlobalIsSet(TxPoolNoLocalsFlag.Name) {
 		cfg.NoLocals = ctx.GlobalBool(TxPoolNoLocalsFlag.Name)
 	}
@@ -1122,16 +1143,6 @@ func checkExclusive(ctx *cli.Context, args ...interface{}) {
 	}
 	if len(set) > 1 {
 		Fatalf("Flags %v can't be used at the same time", strings.Join(set, ", "))
-	}
-}
-
-// SetShhConfig applies shh-related command line flags to the config.
-func SetShhConfig(ctx *cli.Context, stack *node.Node, cfg *whisper.Config) {
-	if ctx.GlobalIsSet(WhisperMaxMessageSizeFlag.Name) {
-		cfg.MaxMessageSize = uint32(ctx.GlobalUint(WhisperMaxMessageSizeFlag.Name))
-	}
-	if ctx.GlobalIsSet(WhisperMinPOWFlag.Name) {
-		cfg.MinimumAcceptedPOW = ctx.GlobalFloat64(WhisperMinPOWFlag.Name)
 	}
 }
 
@@ -1247,6 +1258,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	}
 	if ctx.GlobalIsSet(RPCGlobalTxFeeCap.Name) {
 		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCap.Name)
+	}
+	if ctx.GlobalIsSet(RPCGlobalGasCapFlag.Name) {
+		cfg.RPCGasCap = ctx.GlobalUint64(RPCGlobalGasCapFlag.Name)
 	}
 	if ctx.GlobalIsSet(ExtraDataFlag.Name) {
 		cfg.ExtraData = []byte(ctx.GlobalString(ExtraDataFlag.Name))

@@ -147,7 +147,7 @@ type SignerFn func(accounts.Account, []byte) ([]byte, error)
 func sigHash(header *types.Header) (hash common.Hash) {
 	hasher := sha3.NewKeccak256()
 
-	rlp.Encode(hasher, []interface{}{
+	enc := []interface{}{
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
@@ -163,7 +163,11 @@ func sigHash(header *types.Header) (hash common.Hash) {
 		header.Extra[:len(header.Extra)-65], // Yes, this will panic if extra is too short
 		header.MixDigest,
 		header.Nonce,
-	})
+	}
+	if header.BaseFee != nil {
+		enc = append(enc, header.BaseFee)
+	}
+	rlp.Encode(hasher, enc)
 	hasher.Sum(hash[:0])
 	return hash
 }
@@ -390,7 +394,7 @@ func (c *Clique) snapshot(chain consensus.ChainReader, number uint64, hash commo
 		headers []*types.Header
 		snap    *Snapshot
 	)
-	for snap == nil {
+	for {
 		// If an in-memory snapshot was found, use that
 		if s, ok := c.recents.Get(hash); ok {
 			snap = s.(*Snapshot)
@@ -644,7 +648,7 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 		}
 	}
 	// Sweet, the protocol permits us to sign the block, wait for our time
-	delay := time.Unix(header.Time.Int64(), 0).Sub(time.Now()) // nolint: gosimple
+	delay := time.Until(time.Unix(header.Time.Int64(), 0))
 	if header.Difficulty.Cmp(diffNoTurn) == 0 {
 		// It's not our turn explicitly to sign, delay it a bit
 		wiggle := time.Duration(len(snap.Signers)/2+1) * wiggleTime

@@ -147,7 +147,9 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.RPCGlobalGasCapFlag,
 			utils.RPCListenAddrFlag,
 			utils.RPCPortFlag,
+			utils.RPCHttpReadTimeoutFlag,
 			utils.RPCHttpWriteTimeoutFlag,
+			utils.RPCHttpIdleTimeoutFlag,
 			utils.RPCApiFlag,
 			utils.WSEnabledFlag,
 			utils.WSListenAddrFlag,
@@ -215,10 +217,6 @@ var AppHelpFlagGroups = []flagGroup{
 			//utils.NoCompactionFlag,
 		}, debug.Flags...),
 	},
-	//{
-	//	Name:  "WHISPER (EXPERIMENTAL)",
-	//	Flags: whisperFlags,
-	//},
 	{
 		Name: "DEPRECATED",
 		Flags: []cli.Flag{

@@ -136,6 +136,8 @@ var (
 		utils.GpoIgnoreGasPriceFlag,
 		//utils.ExtraDataFlag,
 		configFileFlag,
+		utils.LogDebugFlag,
+		utils.LogBacktraceAtFlag,
 		utils.AnnounceTxsFlag,
 		utils.StoreRewardFlag,
 		utils.RollbackFlag,
@@ -147,7 +149,9 @@ var (
 		utils.RPCGlobalGasCapFlag,
 		utils.RPCListenAddrFlag,
 		utils.RPCPortFlag,
+		utils.RPCHttpReadTimeoutFlag,
 		utils.RPCHttpWriteTimeoutFlag,
+		utils.RPCHttpIdleTimeoutFlag,
 		utils.RPCApiFlag,
 		utils.WSEnabledFlag,
 		utils.WSListenAddrFlag,
@@ -157,12 +161,6 @@ var (
 		utils.IPCDisabledFlag,
 		utils.IPCPathFlag,
 		utils.RPCGlobalTxFeeCap,
-	}
-
-	whisperFlags = []cli.Flag{
-		utils.WhisperEnabledFlag,
-		utils.WhisperMaxMessageSizeFlag,
-		utils.WhisperMinPOWFlag,
 	}
 )
 
@@ -196,7 +194,6 @@ func init() {
 	app.Flags = append(app.Flags, rpcFlags...)
 	app.Flags = append(app.Flags, consoleFlags...)
 	app.Flags = append(app.Flags, debug.Flags...)
-	app.Flags = append(app.Flags, whisperFlags...)
 
 	app.Before = func(ctx *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -229,6 +226,7 @@ func main() {
 // blocking mode, waiting for it to be shut down.
 func XDC(ctx *cli.Context) error {
 	node, cfg := makeFullNode(ctx)
+	defer node.Close()
 	startNode(ctx, node, cfg)
 	node.Wait()
 	return nil
