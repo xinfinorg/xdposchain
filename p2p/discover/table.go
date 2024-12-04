@@ -105,6 +105,7 @@ func newTable(t transport, self *enode.Node, db *enode.DB, bootnodes []*enode.No
 	tab := &Table{
 		net:        t,
 		db:         db,
+		log:        log.Root(),
 		self:       wrapNode(self),
 		refreshReq: make(chan chan struct{}),
 		initDone:   make(chan struct{}),
