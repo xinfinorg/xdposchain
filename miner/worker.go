@@ -305,7 +305,6 @@ func (self *worker) update() {
 		}
 	}()
 	for {
-		prevReset0TimeMillisec := int64(0)
 		// A real event arrived, process interesting content
 		select {
 		case v := <-MinePeriodCh:
@@ -317,19 +316,19 @@ func (self *worker) update() {
 			if atomic.LoadInt32(&self.mining) == 1 {
 				self.commitNewWork()
 			}
-			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
+			resetTime := getResetTime(self.chain, minePeriod)
 			self.resetCh <- resetTime
 
 		// Handle ChainHeadEvent
 		case <-self.chainHeadCh:
 			self.commitNewWork()
-			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
+			resetTime := getResetTime(self.chain, minePeriod)
 			self.resetCh <- resetTime
 
 		// Handle new round
 		case <-NewRoundCh:
 			self.commitNewWork()
-			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
+			resetTime := getResetTime(self.chain, minePeriod)
 			self.resetCh <- resetTime
 
 		// Handle ChainSideEvent
@@ -377,26 +376,14 @@ func (self *worker) update() {
 	}
 }
 
-func getResetTime(chain *core.BlockChain, minePeriod int, prevReset0TimeMillisec *int64) time.Duration {
+func getResetTime(chain *core.BlockChain, minePeriod int) time.Duration {
 	minePeriodDuration := time.Duration(minePeriod) * time.Second
 	currentBlockTime := chain.CurrentBlock().Time().Int64()
 	nowTime := time.Now().UnixMilli()
 	resetTime := time.Duration(currentBlockTime)*time.Second + minePeriodDuration - time.Duration(nowTime)*time.Millisecond
 	// in case the current block time is not very accurate
-	if resetTime > minePeriodDuration {
+	if resetTime > minePeriodDuration || resetTime <= 0 {
 		resetTime = minePeriodDuration
-	}
-	// in case the current block is too far in the past, the block time already is huge, we wait for 0 time (which will be handled in the next if statement)
-	if resetTime < 0 {
-		resetTime = 0
-	}
-	if resetTime == 0 {
-		if nowTime == *prevReset0TimeMillisec {
-			// in case it resets to 0 in one millisecond too many times, we wait for mine period
-			resetTime = minePeriodDuration
-		} else {
-			*prevReset0TimeMillisec = nowTime
-		}
 	}
 	log.Debug("[update] Miner worker timer reset", "resetMilliseconds", resetTime.Milliseconds(), "minePeriodSec", minePeriod, "currentBlockTimeSec", fmt.Sprintf("%d", currentBlockTime), "currentSystemTimeSec", fmt.Sprintf("%d.%03d", nowTime/1000, nowTime%1000))
 	return resetTime
