@@ -116,7 +116,9 @@ type worker struct {
 	chainHeadSub event.Subscription
 	chainSideCh  chan core.ChainSideEvent
 	chainSideSub event.Subscription
-	wg           sync.WaitGroup
+	resetCh      chan time.Duration // Channel to request timer resets
+
+	wg sync.WaitGroup
 
 	agents map[Agent]struct{}
 	recv   chan *Result
@@ -158,6 +160,7 @@ func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase com
 		txsCh:          make(chan core.NewTxsEvent, txChanSize),
 		chainHeadCh:    make(chan core.ChainHeadEvent, chainHeadChanSize),
 		chainSideCh:    make(chan core.ChainSideEvent, chainSideChanSize),
+		resetCh:        make(chan time.Duration, 1),
 		chainDb:        eth.ChainDb(),
 		recv:           make(chan *Result, resultQueueSize),
 		chain:          eth.BlockChain(),
@@ -284,6 +287,16 @@ func (self *worker) update() {
 		for {
 			// A real event arrived, process interesting content
 			select {
+			case d := <-self.resetCh:
+				// Reset the timer to the new duration.
+				if !timeout.Stop() {
+					// Drain the timer channel if it had already expired.
+					select {
+					case <-timeout.C:
+					default:
+					}
+				}
+				timeout.Reset(d)
 			case <-timeout.C:
 				c <- struct{}{}
 			case <-finish:
@@ -298,26 +311,26 @@ func (self *worker) update() {
 		case v := <-MinePeriodCh:
 			log.Info("[worker] update wait period", "period", v)
 			minePeriod = v
-			timeout.Reset(time.Duration(minePeriod) * time.Second)
+			self.resetCh <- time.Duration(minePeriod) * time.Second
 
 		case <-c:
 			if atomic.LoadInt32(&self.mining) == 1 {
 				self.commitNewWork()
 			}
 			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
-			timeout.Reset(resetTime)
+			self.resetCh <- resetTime
 
 		// Handle ChainHeadEvent
 		case <-self.chainHeadCh:
 			self.commitNewWork()
 			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
-			timeout.Reset(resetTime)
+			self.resetCh <- resetTime
 
 		// Handle new round
 		case <-NewRoundCh:
 			self.commitNewWork()
 			resetTime := getResetTime(self.chain, minePeriod, &prevReset0TimeMillisec)
-			timeout.Reset(resetTime)
+			self.resetCh <- resetTime
 
 		// Handle ChainSideEvent
 		case <-self.chainSideCh:
