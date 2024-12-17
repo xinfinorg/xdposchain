@@ -139,7 +139,7 @@ func (x *XDPoS_v2) UpdateParams(header *types.Header) {
 
 	// Setup timeoutTimer
 	duration := time.Duration(x.config.V2.CurrentConfig.TimeoutPeriod) * time.Second
-	x.timeoutWorker.SetTimeoutDuration(duration)
+	x.timeoutWorker.SetParams(duration)
 
 	// avoid deadlock
 	go func() {

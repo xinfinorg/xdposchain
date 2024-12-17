@@ -11,7 +11,7 @@ import (
 func TestCountdownWillCallback(t *testing.T) {
 	var fakeI interface{}
 	called := make(chan int)
-	OnTimeoutFn := func(time.Time, interface{}) error {
+	OnTimeoutFn := func(time.Time, ...interface{}) error {
 		called <- 1
 		return nil
 	}
@@ -26,7 +26,7 @@ func TestCountdownWillCallback(t *testing.T) {
 func TestCountdownShouldReset(t *testing.T) {
 	var fakeI interface{}
 	called := make(chan int)
-	OnTimeoutFn := func(time.Time, interface{}) error {
+	OnTimeoutFn := func(time.Time, ...interface{}) error {
 		called <- 1
 		return nil
 	}
@@ -74,7 +74,7 @@ firstReset:
 func TestCountdownShouldResetEvenIfErrored(t *testing.T) {
 	var fakeI interface{}
 	called := make(chan int)
-	OnTimeoutFn := func(time.Time, interface{}) error {
+	OnTimeoutFn := func(time.Time, ...interface{}) error {
 		called <- 1
 		return errors.New("ERROR!")
 	}
@@ -122,7 +122,7 @@ firstReset:
 func TestCountdownShouldBeAbleToStop(t *testing.T) {
 	var fakeI interface{}
 	called := make(chan int)
-	OnTimeoutFn := func(time.Time, interface{}) error {
+	OnTimeoutFn := func(time.Time, ...interface{}) error {
 		called <- 1
 		return nil
 	}
@@ -145,7 +145,7 @@ func TestCountdownShouldAvoidDeadlock(t *testing.T) {
 	var fakeI interface{}
 	called := make(chan int)
 	countdown := NewCountDown(5000 * time.Millisecond)
-	OnTimeoutFn := func(time.Time, interface{}) error {
+	OnTimeoutFn := func(time.Time, ...interface{}) error {
 		countdown.Reset(fakeI)
 		called <- 1
 		return nil
