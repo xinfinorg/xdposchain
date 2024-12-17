@@ -28,7 +28,7 @@ func NewCountDown(duration time.Duration) *CountdownTimer {
 		resetc:         make(chan int),
 		quitc:          make(chan chan struct{}),
 		initilised:     false,
-		durationHelper: NewConstTimeoutDuration(duration),
+		durationHelper: NewConstTimeoutDuration(duration), //TODO: change to NewExpTimeoutDuration
 	}
 }
 
