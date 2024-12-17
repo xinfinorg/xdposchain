@@ -40,14 +40,14 @@ func (t *CountdownTimer) StopTimer() {
 }
 
 func (t *CountdownTimer) SetParams(inputs ...interface{}) {
-	t.durationHelper.SetParams(inputs)
+	t.durationHelper.SetParams(inputs...)
 }
 
 // Reset will start the countdown timer if it's already stopped, or simply reset the countdown time back to the defual `duration`
 func (t *CountdownTimer) Reset(inputs ...interface{}) {
 	if !t.isInitilised() {
 		t.setInitilised(true)
-		go t.startTimer(inputs)
+		go t.startTimer(inputs...)
 	} else {
 		t.resetc <- 0
 	}
@@ -57,7 +57,7 @@ func (t *CountdownTimer) Reset(inputs ...interface{}) {
 func (t *CountdownTimer) startTimer(inputs ...interface{}) {
 	// Make sure we mark Initilised to false when we quit the countdown
 	defer t.setInitilised(false)
-	timer := time.NewTimer(t.durationHelper.GetTimeoutDuration(inputs))
+	timer := time.NewTimer(t.durationHelper.GetTimeoutDuration(inputs...))
 	// We start with a inf loop
 	for {
 		select {
@@ -68,16 +68,16 @@ func (t *CountdownTimer) startTimer(inputs ...interface{}) {
 		case <-timer.C:
 			log.Debug("Countdown time reached!")
 			go func() {
-				err := t.OnTimeoutFn(time.Now(), inputs)
+				err := t.OnTimeoutFn(time.Now(), inputs...)
 				if err != nil {
 					log.Error("OnTimeoutFn error", "error", err)
 				}
 				log.Debug("OnTimeoutFn processed")
 			}()
-			timer.Reset(t.durationHelper.GetTimeoutDuration(inputs))
+			timer.Reset(t.durationHelper.GetTimeoutDuration(inputs...))
 		case <-t.resetc:
 			log.Debug("Reset countdown timer")
-			timer.Reset(t.durationHelper.GetTimeoutDuration(inputs))
+			timer.Reset(t.durationHelper.GetTimeoutDuration(inputs...))
 		}
 	}
 }
