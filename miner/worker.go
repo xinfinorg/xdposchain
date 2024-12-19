@@ -61,7 +61,7 @@ const (
 	txMatchGasLimit = 40000000
 )
 
-// Agent can register themw with the worker
+// Agent can register themself with the worker
 type Agent interface {
 	Work() chan<- *Work
 	SetReturnCh(chan<- *Result)
