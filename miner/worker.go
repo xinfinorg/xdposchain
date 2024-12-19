@@ -279,7 +279,7 @@ func (self *worker) update() {
 	NewRoundCh := self.engine.(*XDPoS.XDPoS).NewRoundCh
 
 	timeout := time.NewTimer(time.Duration(minePeriod) * time.Second)
-	c := make(chan struct{})
+	c := make(chan struct{}, 1)
 	finish := make(chan struct{})
 	defer close(finish)
 	defer timeout.Stop()
