@@ -50,6 +50,11 @@ func TestExpDuration(t *testing.T) {
 	currentRound++
 	result = helper.GetTimeoutDuration(nil, currentRound, highestQCRound)
 	assert.Equal(t, duration*time.Duration(base)*time.Duration(base)*time.Duration(base), result)
+
+	// extreme case
+	helper.SetParams(duration, float64(0), uint8(0))
+	result = helper.GetTimeoutDuration(nil, currentRound, highestQCRound)
+	assert.Equal(t, duration, result)
 }
 
 func TestInvalidParameter(t *testing.T) {
