@@ -127,12 +127,12 @@ func (x *XDPoS_v2) verifyTC(chain consensus.ChainReader, timeoutCert *types.Time
 	log.Info("[verifyTC] Init epochInfo", "number", epochBlockInfo.Number, "round", epochRound, "tcRound", timeoutCert.Round, "tcEpoch", tempTCEpoch)
 	for epochBlockInfo.Round > timeoutCert.Round {
 		tempTCEpoch--
-		epochBlockInfo, err := x.GetBlockByEpochNumber(chain, tempTCEpoch)
-		log.Debug("[verifyTC] Loop to get right epochInfo", "number", epochBlockInfo.Number, "round", epochBlockInfo.Round, "tcRound", timeoutCert.Round, "tcEpoch", tempTCEpoch)
+		epochBlockInfo, err = x.GetBlockByEpochNumber(chain, tempTCEpoch)
 		if err != nil {
 			log.Error("[verifyTC] Error when getting epoch block info by tc round", "error", err)
 			return fmt.Errorf("fail on verifyTC due to failure in getting epoch block info tc round, %s", err)
 		}
+		log.Debug("[verifyTC] Loop to get right epochInfo", "number", epochBlockInfo.Number, "round", epochBlockInfo.Round, "tcRound", timeoutCert.Round, "tcEpoch", tempTCEpoch)
 	}
 	tcEpoch := tempTCEpoch
 	log.Info("[verifyTC] Final TC epochInfo", "number", epochBlockInfo.Number, "round", epochBlockInfo.Round, "tcRound", timeoutCert.Round, "tcEpoch", tcEpoch)
