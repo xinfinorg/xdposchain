@@ -43,7 +43,7 @@ jobs:
           - name: J-N tests
             script: go run build/ci.go test -coverage $(go list ./... | grep "github.com/XinFinOrg/XDPoSChain/[j-n].*")
           - name: O-S tests
-            script: go run build/ci.go test -coverage $(go list ./... | grep "github.com/XinFinOrg/XDPoSChain/[o-r].*")
+            script: go run build/ci.go test -coverage $(go list ./... | grep "github.com/XinFinOrg/XDPoSChain/[o-s].*")
           - name: T-Z tests
             script: go run build/ci.go test -coverage $(go list ./... | grep "github.com/XinFinOrg/XDPoSChain/[t-z].*")
     steps:
