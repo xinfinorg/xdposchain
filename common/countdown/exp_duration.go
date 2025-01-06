@@ -2,77 +2,69 @@
 package countdown
 
 import (
+	"fmt"
 	"math"
 	"time"
 
 	"github.com/XinFinOrg/XDPoSChain/core/types"
-	"github.com/XinFinOrg/XDPoSChain/log"
 )
 
-const max_exponent_upperbound uint8 = 32
+const maxExponentUpperbound uint8 = 32
 
 type ExpTimeoutDuration struct {
-	duration     time.Duration
-	base         float64
-	max_exponent uint8
+	duration    time.Duration
+	base        float64
+	maxExponent uint8
 }
 
-func NewExpTimeoutDuration(duration time.Duration, base float64, max_exponent uint8) *ExpTimeoutDuration {
+func NewExpTimeoutDuration(duration time.Duration, base float64, maxExponent uint8) (*ExpTimeoutDuration, error) {
 	d := &ExpTimeoutDuration{
-		duration:     duration,
-		base:         base,
-		max_exponent: max_exponent,
+		duration:    duration,
+		base:        base,
+		maxExponent: maxExponent,
 	}
-	d.sanityCheck()
-	return d
+	err := d.sanityCheck()
+	return d, err
 }
 
-func (d *ExpTimeoutDuration) sanityCheck() {
-	if d.max_exponent >= max_exponent_upperbound {
-		log.Error("max_exponent (e)= >= max_exponent_upperbound (e_upper)", "e", d.max_exponent, "e_upper", max_exponent_upperbound)
-		panic("max_exponent (e)= >= max_exponent_upperbound (e_upper)")
+func (d *ExpTimeoutDuration) sanityCheck() error {
+	if d.maxExponent >= maxExponentUpperbound {
+		return fmt.Errorf("max_exponent (%d)= >= max_exponent_upperbound (%d)", d.maxExponent, maxExponentUpperbound)
 	}
-	if math.Pow(d.base, float64(d.max_exponent)) >= float64(math.MaxUint32) {
-		log.Error("base^max_exponent (b^e) should be less than 2^32", "b", d.base, "e", d.max_exponent)
-		panic("base^max_exponent (b^e) should be less than 2^32")
+	if math.Pow(d.base, float64(d.maxExponent)) >= float64(math.MaxUint32) {
+		return fmt.Errorf("base^max_exponent (%f^%d) should be less than 2^32", d.base, d.maxExponent)
 	}
+	return nil
 }
 
-// The inputs should be: [blockchain, currentRound, highestQuorumCert's round]
-func (d *ExpTimeoutDuration) GetTimeoutDuration(inputs ...interface{}) time.Duration {
+// The inputs should be: currentRound, highestQuorumCert's round
+func (d *ExpTimeoutDuration) GetTimeoutDuration(currentRound, highestRound types.Round) time.Duration {
 	power := float64(1)
-	if len(inputs) >= 3 {
-		if currentRound, ok := inputs[1].(types.Round); ok {
-			if highestRound, ok := inputs[2].(types.Round); ok {
-				// below statement must be true, just to prevent negative result
-				if highestRound < currentRound {
-					exp := uint8(currentRound-highestRound) - 1
-					if exp > d.max_exponent {
-						exp = d.max_exponent
-					}
-					power = math.Pow(d.base, float64(exp))
-				}
-			}
+	// below statement must be true, just to prevent negative result
+	if highestRound < currentRound {
+		exp := uint8(currentRound-highestRound) - 1
+		if exp > d.maxExponent {
+			exp = d.maxExponent
 		}
+		power = math.Pow(d.base, float64(exp))
 	}
 	return d.duration * time.Duration(power)
 }
 
-func (d *ExpTimeoutDuration) SetParams(inputs ...interface{}) {
-	if len(inputs) >= 1 {
-		if duration, ok := inputs[0].(time.Duration); ok {
-			d.duration = duration
-		}
+func (d *ExpTimeoutDuration) SetParams(duration time.Duration, base float64, maxExponent uint8) error {
+	prevDuration := d.duration
+	prevBase := d.base
+	prevME := d.maxExponent
+
+	d.duration = duration
+	d.base = base
+	d.maxExponent = maxExponent
+	// if parameters are wrong, should remain instead of change or panic
+	if err := d.sanityCheck(); err != nil {
+		d.duration = prevDuration
+		d.base = prevBase
+		d.maxExponent = prevME
+		return err
 	}
-	if len(inputs) >= 2 {
-		if base, ok := inputs[1].(float64); ok {
-			d.base = base
-		}
-	}
-	if len(inputs) >= 3 {
-		if exponent, ok := inputs[2].(uint8); ok {
-			d.max_exponent = exponent
-		}
-	}
-	d.sanityCheck()
+	return nil
 }
