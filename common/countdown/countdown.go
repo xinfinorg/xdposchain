@@ -23,15 +23,6 @@ type CountdownTimer struct {
 	OnTimeoutFn func(time time.Time, i ...interface{}) error
 }
 
-func NewConstCountDown(duration time.Duration) *CountdownTimer {
-	return &CountdownTimer{
-		resetc:         make(chan int),
-		quitc:          make(chan chan struct{}),
-		initilised:     false,
-		durationHelper: NewConstTimeoutDuration(duration),
-	}
-}
-
 func NewExpCountDown(duration time.Duration, base float64, max_exponent uint8) *CountdownTimer {
 	return &CountdownTimer{
 		resetc:         make(chan int),
