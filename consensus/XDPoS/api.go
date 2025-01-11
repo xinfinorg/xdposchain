@@ -265,12 +265,12 @@ func (api *API) NetworkInformation() NetworkInformation {
 		info.LendingAddress = common.HexToAddress(common.LendingRegistrationSMCTestnet)
 		info.RelayerRegistrationAddress = common.HexToAddress(common.RelayerRegistrationSMCTestnet)
 		info.XDCXListingAddress = common.XDCXListingSMCTestNet
-		info.XDCZAddress = common.TRC21IssuerSMCTestNet
+		info.XDCZAddress = common.XDC21IssuerSMCTestNet
 	} else {
 		info.LendingAddress = common.HexToAddress(common.LendingRegistrationSMC)
 		info.RelayerRegistrationAddress = common.HexToAddress(common.RelayerRegistrationSMC)
 		info.XDCXListingAddress = common.XDCXListingSMC
-		info.XDCZAddress = common.TRC21IssuerSMC
+		info.XDCZAddress = common.XDC21IssuerSMC
 	}
 	info.ConsensusConfigs = *api.XDPoS.config
 

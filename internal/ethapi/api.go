@@ -1955,7 +1955,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		}
 		// Copy the original db so we don't modify it
 		statedb := db.Copy()
-		feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+		feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 		var balanceTokenFee *big.Int
 		if value, ok := feeCapacity[to]; ok {
 			balanceTokenFee = value

@@ -369,10 +369,10 @@ func (tx *Transaction) AsMessage(s Signer, balanceFee *big.Int, number *big.Int)
 	if balanceFee != nil {
 		if number.Cmp(common.BlockNumberGas50x) >= 0 {
 			msg.gasPrice = common.GasPrice50x
-		} else if number.Cmp(common.TIPTRC21Fee) > 0 {
-			msg.gasPrice = common.TRC21GasPrice
+		} else if number.Cmp(common.TIPXDC21Fee) > 0 {
+			msg.gasPrice = common.XDC21GasPrice
 		} else {
-			msg.gasPrice = common.TRC21GasPriceBefore
+			msg.gasPrice = common.XDC21GasPriceBefore
 		}
 	}
 	return msg, err
@@ -493,9 +493,9 @@ func (tx *Transaction) IsXDCZApplyTransaction() bool {
 		return false
 	}
 
-	addr := common.TRC21IssuerSMC
+	addr := common.XDC21IssuerSMC
 	if common.IsTestnet {
-		addr = common.TRC21IssuerSMCTestNet
+		addr = common.XDC21IssuerSMCTestNet
 	}
 	if *to != addr {
 		return false
@@ -615,14 +615,14 @@ func (s TxByPriceAndTime) Less(i, j int) bool {
 	i_price := s.txs[i].GasPrice()
 	if s.txs[i].To() != nil {
 		if _, ok := s.payersSwap[*s.txs[i].To()]; ok {
-			i_price = common.TRC21GasPrice
+			i_price = common.XDC21GasPrice
 		}
 	}
 
 	j_price := s.txs[j].GasPrice()
 	if s.txs[j].To() != nil {
 		if _, ok := s.payersSwap[*s.txs[j].To()]; ok {
-			j_price = common.TRC21GasPrice
+			j_price = common.XDC21GasPrice
 		}
 	}
 

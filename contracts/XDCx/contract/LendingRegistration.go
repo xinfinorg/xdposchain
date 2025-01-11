@@ -425,123 +425,123 @@ func (_LAbstractXDCXListing *LAbstractXDCXListingCallerSession) GetTokenStatus(a
 	return _LAbstractXDCXListing.Contract.GetTokenStatus(&_LAbstractXDCXListing.CallOpts, arg0)
 }
 
-// LAbstractTokenTRC21ABI is the input ABI used to generate the binding from.
-const LAbstractTokenTRC21ABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"issuer\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+// LAbstractTokenXDC21ABI is the input ABI used to generate the binding from.
+const LAbstractTokenXDC21ABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"issuer\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
-// LAbstractTokenTRC21Bin is the compiled bytecode used for deploying new contracts.
-const LAbstractTokenTRC21Bin = `0x`
+// LAbstractTokenXDC21Bin is the compiled bytecode used for deploying new contracts.
+const LAbstractTokenXDC21Bin = `0x`
 
-// DeployLAbstractTokenTRC21 deploys a new Ethereum contract, binding an instance of LAbstractTokenTRC21 to it.
-func DeployLAbstractTokenTRC21(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *LAbstractTokenTRC21, error) {
-	parsed, err := abi.JSON(strings.NewReader(LAbstractTokenTRC21ABI))
+// DeployLAbstractTokenXDC21 deploys a new Ethereum contract, binding an instance of LAbstractTokenXDC21 to it.
+func DeployLAbstractTokenXDC21(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *LAbstractTokenXDC21, error) {
+	parsed, err := abi.JSON(strings.NewReader(LAbstractTokenXDC21ABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LAbstractTokenTRC21Bin), backend)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LAbstractTokenXDC21Bin), backend)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	return address, tx, &LAbstractTokenTRC21{LAbstractTokenTRC21Caller: LAbstractTokenTRC21Caller{contract: contract}, LAbstractTokenTRC21Transactor: LAbstractTokenTRC21Transactor{contract: contract}, LAbstractTokenTRC21Filterer: LAbstractTokenTRC21Filterer{contract: contract}}, nil
+	return address, tx, &LAbstractTokenXDC21{LAbstractTokenXDC21Caller: LAbstractTokenXDC21Caller{contract: contract}, LAbstractTokenXDC21Transactor: LAbstractTokenXDC21Transactor{contract: contract}, LAbstractTokenXDC21Filterer: LAbstractTokenXDC21Filterer{contract: contract}}, nil
 }
 
-// LAbstractTokenTRC21 is an auto generated Go binding around an Ethereum contract.
-type LAbstractTokenTRC21 struct {
-	LAbstractTokenTRC21Caller     // Read-only binding to the contract
-	LAbstractTokenTRC21Transactor // Write-only binding to the contract
-	LAbstractTokenTRC21Filterer   // Log filterer for contract events
+// LAbstractTokenXDC21 is an auto generated Go binding around an Ethereum contract.
+type LAbstractTokenXDC21 struct {
+	LAbstractTokenXDC21Caller     // Read-only binding to the contract
+	LAbstractTokenXDC21Transactor // Write-only binding to the contract
+	LAbstractTokenXDC21Filterer   // Log filterer for contract events
 }
 
-// LAbstractTokenTRC21Caller is an auto generated read-only Go binding around an Ethereum contract.
-type LAbstractTokenTRC21Caller struct {
+// LAbstractTokenXDC21Caller is an auto generated read-only Go binding around an Ethereum contract.
+type LAbstractTokenXDC21Caller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// LAbstractTokenTRC21Transactor is an auto generated write-only Go binding around an Ethereum contract.
-type LAbstractTokenTRC21Transactor struct {
+// LAbstractTokenXDC21Transactor is an auto generated write-only Go binding around an Ethereum contract.
+type LAbstractTokenXDC21Transactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// LAbstractTokenTRC21Filterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type LAbstractTokenTRC21Filterer struct {
+// LAbstractTokenXDC21Filterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type LAbstractTokenXDC21Filterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// LAbstractTokenTRC21Session is an auto generated Go binding around an Ethereum contract,
+// LAbstractTokenXDC21Session is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type LAbstractTokenTRC21Session struct {
-	Contract     *LAbstractTokenTRC21 // Generic contract binding to set the session for
+type LAbstractTokenXDC21Session struct {
+	Contract     *LAbstractTokenXDC21 // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts        // Call options to use throughout this session
 	TransactOpts bind.TransactOpts    // Transaction auth options to use throughout this session
 }
 
-// LAbstractTokenTRC21CallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// LAbstractTokenXDC21CallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type LAbstractTokenTRC21CallerSession struct {
-	Contract *LAbstractTokenTRC21Caller // Generic contract caller binding to set the session for
+type LAbstractTokenXDC21CallerSession struct {
+	Contract *LAbstractTokenXDC21Caller // Generic contract caller binding to set the session for
 	CallOpts bind.CallOpts              // Call options to use throughout this session
 }
 
-// LAbstractTokenTRC21TransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// LAbstractTokenXDC21TransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type LAbstractTokenTRC21TransactorSession struct {
-	Contract     *LAbstractTokenTRC21Transactor // Generic contract transactor binding to set the session for
+type LAbstractTokenXDC21TransactorSession struct {
+	Contract     *LAbstractTokenXDC21Transactor // Generic contract transactor binding to set the session for
 	TransactOpts bind.TransactOpts              // Transaction auth options to use throughout this session
 }
 
-// LAbstractTokenTRC21Raw is an auto generated low-level Go binding around an Ethereum contract.
-type LAbstractTokenTRC21Raw struct {
-	Contract *LAbstractTokenTRC21 // Generic contract binding to access the raw methods on
+// LAbstractTokenXDC21Raw is an auto generated low-level Go binding around an Ethereum contract.
+type LAbstractTokenXDC21Raw struct {
+	Contract *LAbstractTokenXDC21 // Generic contract binding to access the raw methods on
 }
 
-// LAbstractTokenTRC21CallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type LAbstractTokenTRC21CallerRaw struct {
-	Contract *LAbstractTokenTRC21Caller // Generic read-only contract binding to access the raw methods on
+// LAbstractTokenXDC21CallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type LAbstractTokenXDC21CallerRaw struct {
+	Contract *LAbstractTokenXDC21Caller // Generic read-only contract binding to access the raw methods on
 }
 
-// LAbstractTokenTRC21TransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type LAbstractTokenTRC21TransactorRaw struct {
-	Contract *LAbstractTokenTRC21Transactor // Generic write-only contract binding to access the raw methods on
+// LAbstractTokenXDC21TransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type LAbstractTokenXDC21TransactorRaw struct {
+	Contract *LAbstractTokenXDC21Transactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewLAbstractTokenTRC21 creates a new instance of LAbstractTokenTRC21, bound to a specific deployed contract.
-func NewLAbstractTokenTRC21(address common.Address, backend bind.ContractBackend) (*LAbstractTokenTRC21, error) {
-	contract, err := bindLAbstractTokenTRC21(address, backend, backend, backend)
+// NewLAbstractTokenXDC21 creates a new instance of LAbstractTokenXDC21, bound to a specific deployed contract.
+func NewLAbstractTokenXDC21(address common.Address, backend bind.ContractBackend) (*LAbstractTokenXDC21, error) {
+	contract, err := bindLAbstractTokenXDC21(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &LAbstractTokenTRC21{LAbstractTokenTRC21Caller: LAbstractTokenTRC21Caller{contract: contract}, LAbstractTokenTRC21Transactor: LAbstractTokenTRC21Transactor{contract: contract}, LAbstractTokenTRC21Filterer: LAbstractTokenTRC21Filterer{contract: contract}}, nil
+	return &LAbstractTokenXDC21{LAbstractTokenXDC21Caller: LAbstractTokenXDC21Caller{contract: contract}, LAbstractTokenXDC21Transactor: LAbstractTokenXDC21Transactor{contract: contract}, LAbstractTokenXDC21Filterer: LAbstractTokenXDC21Filterer{contract: contract}}, nil
 }
 
-// NewLAbstractTokenTRC21Caller creates a new read-only instance of LAbstractTokenTRC21, bound to a specific deployed contract.
-func NewLAbstractTokenTRC21Caller(address common.Address, caller bind.ContractCaller) (*LAbstractTokenTRC21Caller, error) {
-	contract, err := bindLAbstractTokenTRC21(address, caller, nil, nil)
+// NewLAbstractTokenXDC21Caller creates a new read-only instance of LAbstractTokenXDC21, bound to a specific deployed contract.
+func NewLAbstractTokenXDC21Caller(address common.Address, caller bind.ContractCaller) (*LAbstractTokenXDC21Caller, error) {
+	contract, err := bindLAbstractTokenXDC21(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &LAbstractTokenTRC21Caller{contract: contract}, nil
+	return &LAbstractTokenXDC21Caller{contract: contract}, nil
 }
 
-// NewLAbstractTokenTRC21Transactor creates a new write-only instance of LAbstractTokenTRC21, bound to a specific deployed contract.
-func NewLAbstractTokenTRC21Transactor(address common.Address, transactor bind.ContractTransactor) (*LAbstractTokenTRC21Transactor, error) {
-	contract, err := bindLAbstractTokenTRC21(address, nil, transactor, nil)
+// NewLAbstractTokenXDC21Transactor creates a new write-only instance of LAbstractTokenXDC21, bound to a specific deployed contract.
+func NewLAbstractTokenXDC21Transactor(address common.Address, transactor bind.ContractTransactor) (*LAbstractTokenXDC21Transactor, error) {
+	contract, err := bindLAbstractTokenXDC21(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &LAbstractTokenTRC21Transactor{contract: contract}, nil
+	return &LAbstractTokenXDC21Transactor{contract: contract}, nil
 }
 
-// NewLAbstractTokenTRC21Filterer creates a new log filterer instance of LAbstractTokenTRC21, bound to a specific deployed contract.
-func NewLAbstractTokenTRC21Filterer(address common.Address, filterer bind.ContractFilterer) (*LAbstractTokenTRC21Filterer, error) {
-	contract, err := bindLAbstractTokenTRC21(address, nil, nil, filterer)
+// NewLAbstractTokenXDC21Filterer creates a new log filterer instance of LAbstractTokenXDC21, bound to a specific deployed contract.
+func NewLAbstractTokenXDC21Filterer(address common.Address, filterer bind.ContractFilterer) (*LAbstractTokenXDC21Filterer, error) {
+	contract, err := bindLAbstractTokenXDC21(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &LAbstractTokenTRC21Filterer{contract: contract}, nil
+	return &LAbstractTokenXDC21Filterer{contract: contract}, nil
 }
 
-// bindLAbstractTokenTRC21 binds a generic wrapper to an already deployed contract.
-func bindLAbstractTokenTRC21(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(LAbstractTokenTRC21ABI))
+// bindLAbstractTokenXDC21 binds a generic wrapper to an already deployed contract.
+func bindLAbstractTokenXDC21(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(LAbstractTokenXDC21ABI))
 	if err != nil {
 		return nil, err
 	}
@@ -552,64 +552,64 @@ func bindLAbstractTokenTRC21(address common.Address, caller bind.ContractCaller,
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21Raw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _LAbstractTokenTRC21.Contract.LAbstractTokenTRC21Caller.contract.Call(opts, result, method, params...)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21Raw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _LAbstractTokenXDC21.Contract.LAbstractTokenXDC21Caller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21Raw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _LAbstractTokenTRC21.Contract.LAbstractTokenTRC21Transactor.contract.Transfer(opts)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21Raw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LAbstractTokenXDC21.Contract.LAbstractTokenXDC21Transactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21Raw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _LAbstractTokenTRC21.Contract.LAbstractTokenTRC21Transactor.contract.Transact(opts, method, params...)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21Raw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _LAbstractTokenXDC21.Contract.LAbstractTokenXDC21Transactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21CallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _LAbstractTokenTRC21.Contract.contract.Call(opts, result, method, params...)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21CallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _LAbstractTokenXDC21.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21TransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _LAbstractTokenTRC21.Contract.contract.Transfer(opts)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21TransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LAbstractTokenXDC21.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21TransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _LAbstractTokenTRC21.Contract.contract.Transact(opts, method, params...)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21TransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _LAbstractTokenXDC21.Contract.contract.Transact(opts, method, params...)
 }
 
 // Issuer is a free data retrieval call binding the contract method 0x1d143848.
 //
 // Solidity: function issuer() constant returns(address)
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21Caller) Issuer(opts *bind.CallOpts) (common.Address, error) {
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21Caller) Issuer(opts *bind.CallOpts) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _LAbstractTokenTRC21.contract.Call(opts, out, "issuer")
+	err := _LAbstractTokenXDC21.contract.Call(opts, out, "issuer")
 	return *ret0, err
 }
 
 // Issuer is a free data retrieval call binding the contract method 0x1d143848.
 //
 // Solidity: function issuer() constant returns(address)
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21Session) Issuer() (common.Address, error) {
-	return _LAbstractTokenTRC21.Contract.Issuer(&_LAbstractTokenTRC21.CallOpts)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21Session) Issuer() (common.Address, error) {
+	return _LAbstractTokenXDC21.Contract.Issuer(&_LAbstractTokenXDC21.CallOpts)
 }
 
 // Issuer is a free data retrieval call binding the contract method 0x1d143848.
 //
 // Solidity: function issuer() constant returns(address)
-func (_LAbstractTokenTRC21 *LAbstractTokenTRC21CallerSession) Issuer() (common.Address, error) {
-	return _LAbstractTokenTRC21.Contract.Issuer(&_LAbstractTokenTRC21.CallOpts)
+func (_LAbstractTokenXDC21 *LAbstractTokenXDC21CallerSession) Issuer() (common.Address, error) {
+	return _LAbstractTokenXDC21.Contract.Issuer(&_LAbstractTokenXDC21.CallOpts)
 }
 
 // LendingABI is the input ABI used to generate the binding from.

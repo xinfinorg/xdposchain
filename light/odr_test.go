@@ -179,7 +179,7 @@ func odrContractCall(ctx context.Context, db ethdb.Database, bc *core.BlockChain
 
 		// Perform read-only call.
 		st.SetBalance(testBankAddress, math.MaxBig256)
-		feeCapacity := state.GetTRC21FeeCapacityFromState(st)
+		feeCapacity := state.GetXDC21FeeCapacityFromState(st)
 		var balanceTokenFee *big.Int
 		if value, ok := feeCapacity[testContractAddr]; ok {
 			balanceTokenFee = value

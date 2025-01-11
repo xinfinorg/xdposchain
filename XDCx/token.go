@@ -17,7 +17,7 @@ import (
 
 // GetTokenAbi return token abi
 func GetTokenAbi() (*abi.ABI, error) {
-	contractABI, err := abi.JSON(strings.NewReader(contract.TRC21ABI))
+	contractABI, err := abi.JSON(strings.NewReader(contract.XDC21ABI))
 	if err != nil {
 		return nil, err
 	}

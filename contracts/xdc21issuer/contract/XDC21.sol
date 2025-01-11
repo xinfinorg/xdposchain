@@ -2,9 +2,9 @@ pragma solidity ^0.4.24;
 import "./libs/SafeMath.sol";
 
 /**
- * @title TRC21 interface
+ * @title XDC21 interface
  */
-interface ITRC21 {
+interface IXDC21 {
 	function totalSupply() external view returns (uint256);
 
 	function balanceOf(address who) external view returns (uint256);
@@ -27,10 +27,10 @@ interface ITRC21 {
 }
 
 /**
- * @title Standard TRC21 token
+ * @title Standard XDC21 token
  * @dev Implementation of the basic standard token.
  */
-contract TRC21 is ITRC21 {
+contract XDC21 is IXDC21 {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -186,7 +186,7 @@ contract TRC21 is ITRC21 {
 
 }
 
-contract MyTRC21 is TRC21 {
+contract MyXDC21 is XDC21 {
     string private _name;
     string private _symbol;
     uint8 private _decimals;
