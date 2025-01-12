@@ -16,12 +16,16 @@ type TimeoutDurationHelper interface {
 
 type CountdownTimer struct {
 	lock           sync.RWMutex // Protects the Initilised field
-	resetc         chan int
+	resetc         chan ResetInfo
 	quitc          chan chan struct{}
 	initilised     bool
 	durationHelper TimeoutDurationHelper
 	// Triggered when the countdown timer timeout for the `timeoutDuration` period, it will pass current timestamp to the callback function
 	OnTimeoutFn func(time time.Time, i interface{}) error
+}
+
+type ResetInfo struct {
+	currentRound, highestRound types.Round
 }
 
 func NewExpCountDown(duration time.Duration, base float64, max_exponent uint8) (*CountdownTimer, error) {
@@ -30,7 +34,7 @@ func NewExpCountDown(duration time.Duration, base float64, max_exponent uint8) (
 		return nil, err
 	}
 	return &CountdownTimer{
-		resetc:         make(chan int),
+		resetc:         make(chan ResetInfo),
 		quitc:          make(chan chan struct{}),
 		initilised:     false,
 		durationHelper: durationHelper,
@@ -54,7 +58,7 @@ func (t *CountdownTimer) Reset(i interface{}, currentRound, highestRound types.R
 		t.setInitilised(true)
 		go t.startTimer(i, currentRound, highestRound)
 	} else {
-		t.resetc <- 0
+		t.resetc <- ResetInfo{currentRound, highestRound}
 	}
 }
 
@@ -80,8 +84,13 @@ func (t *CountdownTimer) startTimer(i interface{}, currentRound, highestRound ty
 				log.Debug("OnTimeoutFn processed")
 			}()
 			timer.Reset(t.durationHelper.GetTimeoutDuration(currentRound, highestRound))
-		case <-t.resetc:
+		case info := <-t.resetc:
 			log.Debug("Reset countdown timer")
+			currentRound = info.currentRound
+			highestRound = info.highestRound
+			if !timer.Stop() {
+				<-timer.C
+			}
 			timer.Reset(t.durationHelper.GetTimeoutDuration(currentRound, highestRound))
 		}
 	}
