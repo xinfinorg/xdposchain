@@ -3,9 +3,9 @@ pragma solidity ^0.4.24;
 import "./SafeMath.sol";
 
 /**
- * @title TRC21 interface
+ * @title XDC21 interface
  */
-interface ITRC21 {
+interface IXDC21 {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address who) external view returns (uint256);
@@ -32,10 +32,10 @@ interface ITRC21 {
 }
 
 /**
- * @title Standard TRC21 token
+ * @title Standard XDC21 token
  * @dev Implementation of the basic standard token.
  */
-contract TRC21 is ITRC21 {
+contract XDC21 is IXDC21 {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -234,7 +234,7 @@ contract TRC21 is ITRC21 {
 }
 
 //Wrap token based on multisig wallet that only mints new token if there are user deposits 
-contract MyTRC21 is TRC21 {
+contract MyXDC21 is XDC21 {
     /*
      *  Events
      */
@@ -347,7 +347,7 @@ contract MyTRC21 is TRC21 {
                  string memory _symbol, uint8 _decimals,
                  uint256 cap, uint256 minFee,
                  uint256 depositFee, uint256 withdrawFee
-                ) TRC21(_name, _symbol, _decimals) public validRequirement(_owners.length, _required) {
+                ) XDC21(_name, _symbol, _decimals) public validRequirement(_owners.length, _required) {
         _mint(msg.sender, cap);
         _changeIssuer(msg.sender);
         _changeMinFee(minFee);

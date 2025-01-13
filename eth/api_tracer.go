@@ -232,7 +232,7 @@ func (api *PrivateDebugAPI) traceChain(ctx context.Context, start, end *types.Bl
 			for task := range tasks {
 				signer := types.MakeSigner(api.config, task.block.Number())
 				blockCtx := core.NewEVMBlockContext(task.block.Header(), api.eth.blockchain, nil)
-				feeCapacity := state.GetTRC21FeeCapacityFromState(task.statedb)
+				feeCapacity := state.GetXDC21FeeCapacityFromState(task.statedb)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
 					var balance *big.Int
@@ -327,7 +327,7 @@ func (api *PrivateDebugAPI) traceChain(ctx context.Context, start, end *types.Bl
 				}
 				traced += uint64(len(txs))
 			}
-			feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+			feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 			// Generate the next state snapshot fast without tracing
 			_, _, _, err := api.eth.blockchain.Processor().Process(block, statedb, XDCxState, vm.Config{}, feeCapacity)
 			if err != nil {
@@ -479,7 +479,7 @@ func (api *PrivateDebugAPI) traceBlock(ctx context.Context, block *types.Block, 
 			defer pend.Done()
 			// Fetch and execute the next transaction trace tasks
 			for task := range jobs {
-				feeCapacity := state.GetTRC21FeeCapacityFromState(task.statedb)
+				feeCapacity := state.GetXDC21FeeCapacityFromState(task.statedb)
 				var balance *big.Int
 				if txs[task.index].To() != nil {
 					if value, ok := feeCapacity[*txs[task.index].To()]; ok {
@@ -503,7 +503,7 @@ func (api *PrivateDebugAPI) traceBlock(ctx context.Context, block *types.Block, 
 		}()
 	}
 	// Feed the transactions into the tracers and return
-	feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+	feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 	var failed error
 	for i, tx := range txs {
 		// Send the trace task over for execution
@@ -596,7 +596,7 @@ func (api *PrivateDebugAPI) computeStateDB(block *types.Block, reexec uint64) (*
 		if block = api.eth.blockchain.GetBlockByNumber(block.NumberU64() + 1); block == nil {
 			return nil, nil, fmt.Errorf("block #%d not found", block.NumberU64()+1)
 		}
-		feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+		feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 		_, _, _, err := api.eth.blockchain.Processor().Process(block, statedb, XDCxState, vm.Config{}, feeCapacity)
 		if err != nil {
 			return nil, nil, err
@@ -788,7 +788,7 @@ func (api *PrivateDebugAPI) computeTxEnv(blockHash common.Hash, txIndex int, ree
 		return nil, vm.BlockContext{}, nil, err
 	}
 	// Recompute transactions up to the target index.
-	feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+	feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 	if common.TIPSigning.Cmp(block.Header().Number) == 0 {
 		statedb.DeleteAddress(common.BlockSignersBinary)
 	}

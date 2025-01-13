@@ -14,10 +14,10 @@ var (
 	MainKey, _  = crypto.HexToECDSA(os.Getenv("MAIN_ADDRESS_KEY"))
 	MainAddr    = crypto.PubkeyToAddress(MainKey.PublicKey) //0x17F2beD710ba50Ed27aEa52fc4bD7Bda5ED4a037
 
-	// TRC21 Token
-	MinTRC21Apply  = big.NewInt(0).Mul(big.NewInt(10), BaseXDC) // 10 XDC
-	TRC21TokenCap  = big.NewInt(0).Mul(big.NewInt(1000000000000), BaseXDC)
-	TRC21TokenFee  = big.NewInt(0)
+	// XDC21 Token
+	MinXDC21Apply  = big.NewInt(0).Mul(big.NewInt(10), BaseXDC) // 10 XDC
+	XDC21TokenCap  = big.NewInt(0).Mul(big.NewInt(1000000000000), BaseXDC)
+	XDC21TokenFee  = big.NewInt(0)
 	XDCXListingFee = big.NewInt(0).Mul(big.NewInt(1000), BaseXDC) // 1000 XDC
 
 	// XDCX

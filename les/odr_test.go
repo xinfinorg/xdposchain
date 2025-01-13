@@ -129,7 +129,7 @@ func odrContractCall(ctx context.Context, db ethdb.Database, config *params.Chai
 			if err == nil {
 				from := statedb.GetOrNewStateObject(testBankAddress)
 				from.SetBalance(math.MaxBig256)
-				feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+				feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 				var balanceTokenFee *big.Int
 				if value, ok := feeCapacity[testContractAddr]; ok {
 					balanceTokenFee = value
@@ -150,7 +150,7 @@ func odrContractCall(ctx context.Context, db ethdb.Database, config *params.Chai
 			header := lc.GetHeaderByHash(bhash)
 			statedb := light.NewState(ctx, header, lc.Odr())
 			statedb.SetBalance(testBankAddress, math.MaxBig256)
-			feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+			feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 			var balanceTokenFee *big.Int
 			if value, ok := feeCapacity[testContractAddr]; ok {
 				balanceTokenFee = value

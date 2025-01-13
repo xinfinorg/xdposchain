@@ -389,7 +389,7 @@ func (st *StateTransition) TransitionDb(owner common.Address) (*ExecutionResult,
 		st.refundGas(params.RefundQuotientEIP3529)
 	}
 
-	if st.evm.Context.BlockNumber.Cmp(common.TIPTRC21Fee) > 0 {
+	if st.evm.Context.BlockNumber.Cmp(common.TIPXDC21Fee) > 0 {
 		if (owner != common.Address{}) {
 			st.state.AddBalance(owner, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))
 		}

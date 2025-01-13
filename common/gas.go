@@ -11,8 +11,8 @@ func GetGasFee(blockNumber, gas uint64) *big.Int {
 
 	if blockNumber >= BlockNumberGas50x.Uint64() {
 		fee = fee.Mul(fee, GasPrice50x)
-	} else if blockNumber > TIPTRC21Fee.Uint64() {
-		fee = fee.Mul(fee, TRC21GasPrice)
+	} else if blockNumber > TIPXDC21Fee.Uint64() {
+		fee = fee.Mul(fee, XDC21GasPrice)
 	}
 
 	return fee
@@ -20,7 +20,7 @@ func GetGasFee(blockNumber, gas uint64) *big.Int {
 
 func GetGasPrice(number *big.Int) *big.Int {
 	if number == nil || number.Cmp(BlockNumberGas50x) < 0 {
-		return new(big.Int).Set(TRC21GasPrice)
+		return new(big.Int).Set(XDC21GasPrice)
 	} else {
 		return new(big.Int).Set(GasPrice50x)
 	}

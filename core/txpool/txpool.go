@@ -292,7 +292,7 @@ type TxPool struct {
 	changesSinceReorg int // A counter for how many drops we've performed in-between reorg.
 
 	IsSigner         func(address common.Address) bool
-	trc21FeeCapacity map[common.Address]*big.Int
+	xdc21FeeCapacity map[common.Address]*big.Int
 }
 
 type txpoolResetRequest struct {
@@ -323,7 +323,7 @@ func NewTxPool(config Config, chainconfig *params.ChainConfig, chain blockChain)
 		reorgShutdownCh:  make(chan struct{}),
 		initDoneCh:       make(chan struct{}),
 		gasPrice:         new(big.Int).SetUint64(config.PriceLimit),
-		trc21FeeCapacity: map[common.Address]*big.Int{},
+		xdc21FeeCapacity: map[common.Address]*big.Int{},
 	}
 	pool.locals = newAccountSet(pool.signer)
 	for _, addr := range config.Locals {
@@ -688,9 +688,9 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	feeCapacity := big.NewInt(0)
 
 	if tx.To() != nil {
-		if value, ok := pool.trc21FeeCapacity[*tx.To()]; ok {
+		if value, ok := pool.xdc21FeeCapacity[*tx.To()]; ok {
 			feeCapacity = value
-			if !state.ValidateTRC21Tx(pool.currentState, from, *tx.To(), tx.Data()) {
+			if !state.ValidateXDC21Tx(pool.currentState, from, *tx.To(), tx.Data()) {
 				return core.ErrInsufficientFunds
 			}
 			cost = tx.TxCost(number)
@@ -1431,8 +1431,8 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 		return
 	}
 	pool.currentState = statedb
-	pool.trc21FeeCapacity = state.GetTRC21FeeCapacityFromStateWithCache(newHead.Root, statedb)
-	pool.pendingNonces = newNoncer(statedb)
+	pool.xdc21FeeCapacity = state.GetXDC21FeeCapacityFromStateWithCache(newHead.Root, statedb)
+	pool.pendingNonces = newTxNoncer(statedb)
 	pool.currentMaxGas = newHead.GasLimit
 
 	// Inject any transactions discarded due to reorgs
@@ -1476,7 +1476,7 @@ func (pool *TxPool) promoteExecutables(accounts []common.Address) []*types.Trans
 		if pool.chain.CurrentHeader() != nil {
 			number = pool.chain.CurrentHeader().Number
 		}
-		drops, _ := list.Filter(pool.currentState.GetBalance(addr), pool.currentMaxGas, pool.trc21FeeCapacity, number)
+		drops, _ := list.Filter(pool.currentState.GetBalance(addr), pool.currentMaxGas, pool.xdc21FeeCapacity, number)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			pool.all.Remove(hash)
@@ -1677,7 +1677,7 @@ func (pool *TxPool) demoteUnexecutables() {
 		if pool.chain.CurrentHeader() != nil {
 			number = pool.chain.CurrentHeader().Number
 		}
-		drops, invalids := list.Filter(pool.currentState.GetBalance(addr), pool.currentMaxGas, pool.trc21FeeCapacity, number)
+		drops, invalids := list.Filter(pool.currentState.GetBalance(addr), pool.currentMaxGas, pool.xdc21FeeCapacity, number)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending transaction", "hash", hash)

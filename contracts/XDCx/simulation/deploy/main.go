@@ -30,15 +30,15 @@ func main() {
 	auth.GasLimit = uint64(10000000) // in units
 	auth.GasPrice = big.NewInt(250000000000000)
 
-	// init trc21 issuer
+	// init xdc21 issuer
 	auth.Nonce = big.NewInt(int64(nonce))
-	trc21IssuerAddr, trc21Issuer, err := XDCx.DeployTRC21Issuer(auth, client, simulation.MinTRC21Apply)
+	xdc21IssuerAddr, xdc21Issuer, err := XDCx.DeployXDC21Issuer(auth, client, simulation.MinXDC21Apply)
 	if err != nil {
-		log.Fatal("DeployTRC21Issuer", err)
+		log.Fatal("DeployXDC21Issuer", err)
 	}
-	trc21Issuer.TransactOpts.GasPrice = big.NewInt(250000000000000)
+	xdc21Issuer.TransactOpts.GasPrice = big.NewInt(250000000000000)
 
-	fmt.Println("===> trc21 issuer address", trc21IssuerAddr.Hex())
+	fmt.Println("===> xdc21 issuer address", xdc21IssuerAddr.Hex())
 	fmt.Println("wait 10s to execute init smart contract : TRC Issuer")
 	time.Sleep(2 * time.Second)
 
@@ -78,11 +78,11 @@ func main() {
 	time.Sleep(2 * time.Second)
 
 	currentNonce := nonce + 4
-	tokenList := initTRC21(auth, client, currentNonce, simulation.TokenNameList)
+	tokenList := initXDC21(auth, client, currentNonce, simulation.TokenNameList)
 
 	currentNonce = currentNonce + uint64(len(simulation.TokenNameList)) // init smartcontract
 
-	applyIssuer(trc21Issuer, tokenList, currentNonce)
+	applyIssuer(xdc21Issuer, tokenList, currentNonce)
 
 	currentNonce = currentNonce + uint64(len(simulation.TokenNameList))
 	applyXDCXListing(XDCxListing, tokenList, currentNonce)
@@ -330,34 +330,34 @@ func main() {
 	time.Sleep(2 * time.Second)
 }
 
-func initTRC21(auth *bind.TransactOpts, client *ethclient.Client, nonce uint64, tokenNameList []string) []map[string]interface{} {
+func initXDC21(auth *bind.TransactOpts, client *ethclient.Client, nonce uint64, tokenNameList []string) []map[string]interface{} {
 	tokenListResult := []map[string]interface{}{}
 	for _, tokenName := range tokenNameList {
 		auth.Nonce = big.NewInt(int64(nonce))
 		d := uint8(18)
 		depositFee := big.NewInt(0)
 		withdrawFee := big.NewInt(0)
-		tokenCap := simulation.TRC21TokenCap
+		tokenCap := simulation.XDC21TokenCap
 		if tokenName == "ADA" {
 			d = 0
-			tokenCap = new(big.Int).Div(simulation.TRC21TokenCap, simulation.BaseXDC)
+			tokenCap = new(big.Int).Div(simulation.XDC21TokenCap, simulation.BaseXDC)
 		}
 		if tokenName == "USDT" {
 			d = 6
-			tokenCap = new(big.Int).Div(simulation.TRC21TokenCap, big.NewInt(1000000000000))
+			tokenCap = new(big.Int).Div(simulation.XDC21TokenCap, big.NewInt(1000000000000))
 			withdrawFee = big.NewInt(970000)
 		}
 		if tokenName == "BTC" {
 			d = 8
-			tokenCap = new(big.Int).Div(simulation.TRC21TokenCap, big.NewInt(10000000000))
+			tokenCap = new(big.Int).Div(simulation.XDC21TokenCap, big.NewInt(10000000000))
 			withdrawFee = big.NewInt(40000)
 		}
 		if tokenName == "ETH" {
 			withdrawFee = big.NewInt(3000000000000000)
 		}
-		tokenAddr, _, err := XDCx.DeployTRC21(auth, client, simulation.Owners, simulation.Required, tokenName, tokenName, d, tokenCap, simulation.TRC21TokenFee, depositFee, withdrawFee)
+		tokenAddr, _, err := XDCx.DeployXDC21(auth, client, simulation.Owners, simulation.Required, tokenName, tokenName, d, tokenCap, simulation.XDC21TokenFee, depositFee, withdrawFee)
 		if err != nil {
-			log.Fatal("DeployTRC21 ", tokenName, err)
+			log.Fatal("DeployXDC21 ", tokenName, err)
 		}
 
 		fmt.Println(tokenName+" token address", tokenAddr.Hex(), "cap", tokenCap)
@@ -373,13 +373,13 @@ func initTRC21(auth *bind.TransactOpts, client *ethclient.Client, nonce uint64, 
 	return tokenListResult
 }
 
-func applyIssuer(trc21Issuer *XDCx.TRC21Issuer, tokenList []map[string]interface{}, nonce uint64) {
+func applyIssuer(xdc21Issuer *XDCx.XDC21Issuer, tokenList []map[string]interface{}, nonce uint64) {
 	for _, token := range tokenList {
-		trc21Issuer.TransactOpts.Nonce = big.NewInt(int64(nonce))
-		trc21Issuer.TransactOpts.Value = simulation.MinTRC21Apply
-		_, err := trc21Issuer.Apply(token["address"].(common.Address))
+		xdc21Issuer.TransactOpts.Nonce = big.NewInt(int64(nonce))
+		xdc21Issuer.TransactOpts.Value = simulation.MinXDC21Apply
+		_, err := xdc21Issuer.Apply(token["address"].(common.Address))
 		if err != nil {
-			log.Fatal("trc21Issuer Apply  ", token["name"].(string), err)
+			log.Fatal("xdc21Issuer Apply  ", token["name"].(string), err)
 		}
 		fmt.Println("applyIssuer ", token["name"].(string))
 		nonce = nonce + 1
@@ -404,11 +404,11 @@ func applyXDCXListing(XDCxListing *XDCx.XDCXListing, tokenList []map[string]inte
 func airdrop(auth *bind.TransactOpts, client *ethclient.Client, tokenList []map[string]interface{}, addresses []common.Address, nonce uint64) {
 	for _, token := range tokenList {
 		for _, address := range addresses {
-			trc21Contract, _ := XDCx.NewTRC21(auth, token["address"].(common.Address), client)
-			trc21Contract.TransactOpts.Nonce = big.NewInt(int64(nonce))
+			xdc21Contract, _ := XDCx.NewXDC21(auth, token["address"].(common.Address), client)
+			xdc21Contract.TransactOpts.Nonce = big.NewInt(int64(nonce))
 			baseAmount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token["decimals"].(uint8))), nil)
 			amount := big.NewInt(0).Mul(baseAmount, big.NewInt(1000000))
-			_, err := trc21Contract.Transfer(address, amount)
+			_, err := xdc21Contract.Transfer(address, amount)
 			if err == nil {
 				fmt.Printf("Transfer %v %v to %v successfully", amount.String(), token["name"].(string), address.String())
 				fmt.Println()

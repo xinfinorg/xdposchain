@@ -1,4 +1,4 @@
-package trc21issuer
+package xdc21issuer
 
 import (
 	"context"
@@ -28,7 +28,7 @@ var (
 	minApply = big.NewInt(0).Mul(big.NewInt(1000), big.NewInt(100000000000000000)) // 100 XDC
 )
 
-func TestFeeTxWithTRC21Token(t *testing.T) {
+func TestFeeTxWithXDC21Token(t *testing.T) {
 
 	// init genesis
 	contractBackend := backends.NewSimulatedBackend(core.GenesisAlloc{
@@ -36,45 +36,45 @@ func TestFeeTxWithTRC21Token(t *testing.T) {
 	})
 	transactOpts := bind.NewKeyedTransactor(mainKey)
 	// deploy payer swap SMC
-	trc21IssuerAddr, trc21Issuer, err := DeployTRC21Issuer(transactOpts, contractBackend, minApply)
+	xdc21IssuerAddr, xdc21Issuer, err := DeployXDC21Issuer(transactOpts, contractBackend, minApply)
 
 	//set contract address to config
-	common.TRC21IssuerSMC = trc21IssuerAddr
+	common.XDC21IssuerSMC = xdc21IssuerAddr
 	if err != nil {
 		t.Fatal("can't deploy smart contract: ", err)
 	}
 	contractBackend.Commit()
 	cap := big.NewInt(0).Mul(big.NewInt(10000000), big.NewInt(10000000000000))
-	TRC21fee := big.NewInt(100)
-	//  deploy a TRC21 SMC
-	trc21TokenAddr, trc21, err := DeployTRC21(transactOpts, contractBackend, "TEST", "XDC", 18, cap, TRC21fee)
+	XDC21fee := big.NewInt(100)
+	//  deploy a XDC21 SMC
+	xdc21TokenAddr, xdc21, err := DeployXDC21(transactOpts, contractBackend, "TEST", "XDC", 18, cap, XDC21fee)
 	if err != nil {
 		t.Fatal("can't deploy smart contract: ", err)
 	}
 	contractBackend.Commit()
-	// add trc21 address to list token trc21Issuer
-	trc21Issuer.TransactOpts.Value = minApply
-	_, err = trc21Issuer.Apply(trc21TokenAddr)
+	// add xdc21 address to list token xdc21Issuer
+	xdc21Issuer.TransactOpts.Value = minApply
+	_, err = xdc21Issuer.Apply(xdc21TokenAddr)
 	if err != nil {
 		t.Fatal("can't add a token in  smart contract pay swap: ", err)
 	}
 	contractBackend.Commit()
 
-	//check trc21 SMC balance
-	balance, err := contractBackend.BalanceAt(context.TODO(), trc21IssuerAddr, nil)
+	//check xdc21 SMC balance
+	balance, err := contractBackend.BalanceAt(context.TODO(), xdc21IssuerAddr, nil)
 	if err != nil || balance.Cmp(minApply) != 0 {
-		t.Fatal("can't get balance  in trc21Issuer SMC: ", err, "got", balance, "wanted", minApply)
+		t.Fatal("can't get balance  in xdc21Issuer SMC: ", err, "got", balance, "wanted", minApply)
 	}
 
 	//check balance fee
-	balanceIssuerFee, err := trc21Issuer.GetTokenCapacity(trc21TokenAddr)
+	balanceIssuerFee, err := xdc21Issuer.GetTokenCapacity(xdc21TokenAddr)
 	if err != nil || balanceIssuerFee.Cmp(minApply) != 0 {
 		t.Fatal("can't get balance token fee in  smart contract: ", err, "got", balanceIssuerFee, "wanted", minApply)
 	}
-	trc21Issuer.TransactOpts.Value = big.NewInt(0)
+	xdc21Issuer.TransactOpts.Value = big.NewInt(0)
 	airDropAmount := big.NewInt(1000000000)
-	// airdrop token trc21 to a address no XDC
-	tx, err := trc21.Transfer(airdropAddr, airDropAmount)
+	// airdrop token xdc21 to a address no XDC
+	tx, err := xdc21.Transfer(airdropAddr, airDropAmount)
 	if err != nil {
 		t.Fatal("can't execute transfer in tr20: ", err)
 	}
@@ -86,29 +86,29 @@ func TestFeeTxWithTRC21Token(t *testing.T) {
 	fee := common.GetGasFee(receipt.Logs[0].BlockNumber, receipt.GasUsed)
 	remainFee := big.NewInt(0).Sub(minApply, fee)
 
-	// check balance trc21 again
-	balance, err = trc21.BalanceOf(airdropAddr)
+	// check balance xdc21 again
+	balance, err = xdc21.BalanceOf(airdropAddr)
 	if err != nil || balance.Cmp(airDropAmount) != 0 {
 		t.Fatal("check balance after fail transfer in tr20: ", err, "get", balance, "transfer", airDropAmount)
 	}
 
 	// check balance fee
-	balanceIssuerFee, err = trc21Issuer.GetTokenCapacity(trc21TokenAddr)
+	balanceIssuerFee, err = xdc21Issuer.GetTokenCapacity(xdc21TokenAddr)
 	if err != nil {
 		t.Fatal("can't get balance token fee in smart contract: ", err)
 	}
 	if balanceIssuerFee.Cmp(remainFee) != 0 {
 		t.Fatal("check balance token fee in smart contract: got", balanceIssuerFee, "wanted", remainFee)
 	}
-	//check trc21 SMC balance
-	balance, err = contractBackend.BalanceAt(context.TODO(), trc21IssuerAddr, nil)
+	//check xdc21 SMC balance
+	balance, err = contractBackend.BalanceAt(context.TODO(), xdc21IssuerAddr, nil)
 	if err != nil || balance.Cmp(remainFee) != 0 {
 		t.Fatal("can't get balance token fee in  smart contract: ", err, "got", balanceIssuerFee, "wanted", remainFee)
 	}
 
-	// access to address which received token trc21 but dont have XDC
+	// access to address which received token xdc21 but dont have XDC
 	key1TransactOpts := bind.NewKeyedTransactor(airdropKey)
-	key1Trc20, _ := NewTRC21(key1TransactOpts, trc21TokenAddr, contractBackend)
+	key1Trc20, _ := NewXDC21(key1TransactOpts, xdc21TokenAddr, contractBackend)
 
 	transferAmount := big.NewInt(100000)
 	// execute transfer trc to other address
@@ -118,15 +118,15 @@ func TestFeeTxWithTRC21Token(t *testing.T) {
 	}
 	contractBackend.Commit()
 
-	balance, err = trc21.BalanceOf(subAddr)
+	balance, err = xdc21.BalanceOf(subAddr)
 	if err != nil || balance.Cmp(transferAmount) != 0 {
 		t.Fatal("check balance after fail transfer in tr20: ", err, "get", balance, "transfer", transferAmount)
 	}
 
 	remainAirDrop := big.NewInt(0).Sub(airDropAmount, transferAmount)
-	remainAirDrop = remainAirDrop.Sub(remainAirDrop, TRC21fee)
-	// check balance trc21 again
-	balance, err = trc21.BalanceOf(airdropAddr)
+	remainAirDrop = remainAirDrop.Sub(remainAirDrop, XDC21fee)
+	// check balance xdc21 again
+	balance, err = xdc21.BalanceOf(airdropAddr)
 	if err != nil || balance.Cmp(remainAirDrop) != 0 {
 		t.Fatal("check balance after fail transfer in tr20: ", err, "get", balance, "wanted", remainAirDrop)
 	}
@@ -138,12 +138,12 @@ func TestFeeTxWithTRC21Token(t *testing.T) {
 	fee = common.GetGasFee(receipt.Logs[0].BlockNumber, receipt.GasUsed)
 	remainFee = big.NewInt(0).Sub(remainFee, fee)
 	//check balance fee
-	balanceIssuerFee, err = trc21Issuer.GetTokenCapacity(trc21TokenAddr)
+	balanceIssuerFee, err = xdc21Issuer.GetTokenCapacity(xdc21TokenAddr)
 	if err != nil || balanceIssuerFee.Cmp(remainFee) != 0 {
 		t.Fatal("can't get balance token fee in  smart contract: ", err, "got", balanceIssuerFee, "wanted", remainFee)
 	}
-	//check trc21 SMC balance
-	balance, err = contractBackend.BalanceAt(context.TODO(), trc21IssuerAddr, nil)
+	//check xdc21 SMC balance
+	balance, err = contractBackend.BalanceAt(context.TODO(), xdc21IssuerAddr, nil)
 	if err != nil || balance.Cmp(remainFee) != 0 {
 		t.Fatal("can't get balance token fee in  smart contract: ", err, "got", balanceIssuerFee, "wanted", remainFee)
 	}

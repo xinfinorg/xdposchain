@@ -104,7 +104,7 @@ func CallContractWithState(call ethereum.CallMsg, chain consensus.ChainContext, 
 	}
 	// Execute the call.
 	msg := callMsg{call}
-	feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
+	feeCapacity := state.GetXDC21FeeCapacityFromState(statedb)
 	if msg.To() != nil {
 		if value, ok := feeCapacity[*msg.To()]; ok {
 			msg.CallMsg.BalanceTokenFee = value
@@ -132,7 +132,7 @@ func ValidateXDCXApplyTransaction(chain consensus.ChainContext, blockNumber *big
 	if !chain.Config().IsTIPXDCXReceiver(blockNumber) {
 		return nil
 	}
-	contractABI, err := GetTokenAbi(contract.TRC21ABI)
+	contractABI, err := GetTokenAbi(contract.XDC21ABI)
 	if err != nil {
 		return fmt.Errorf("ValidateXDCXApplyTransaction: cannot parse ABI. Err: %v", err)
 	}
@@ -154,7 +154,7 @@ func ValidateXDCZApplyTransaction(chain consensus.ChainContext, blockNumber *big
 	if !chain.Config().IsTIPXDCXReceiver(blockNumber) {
 		return nil
 	}
-	contractABI, err := GetTokenAbi(contract.TRC21ABI)
+	contractABI, err := GetTokenAbi(contract.XDC21ABI)
 	if err != nil {
 		return fmt.Errorf("ValidateXDCZApplyTransaction: cannot parse ABI. Err: %v", err)
 	}
@@ -171,8 +171,8 @@ func ValidateXDCZApplyTransaction(chain consensus.ChainContext, blockNumber *big
 }
 
 func SetRandomBalance(copyState *state.StateDB, tokenAddr, addr common.Address, randomValue *big.Int) {
-	slotBalanceTrc21 := state.SlotTRC21Token["balances"]
-	balanceKey := state.GetLocMappingAtKey(addr.Hash(), slotBalanceTrc21)
+	slotBalanceXdc21 := state.SlotXDC21Token["balances"]
+	balanceKey := state.GetLocMappingAtKey(addr.Hash(), slotBalanceXdc21)
 	copyState.SetState(tokenAddr, common.BigToHash(balanceKey), common.BytesToHash(randomValue.Bytes()))
 }
 
@@ -183,11 +183,11 @@ func ValidateBalanceSlot(chain consensus.ChainContext, copyState *state.StateDB,
 	result, err := RunContract(chain, copyState, tokenAddr, contractABI, balanceOfFunction, addr)
 
 	if err != nil || result == nil {
-		return fmt.Errorf("cannot get balance at slot %v . Token: %s . Err: %v", state.SlotTRC21Token["balances"], tokenAddr.Hex(), err)
+		return fmt.Errorf("cannot get balance at slot %v . Token: %s . Err: %v", state.SlotXDC21Token["balances"], tokenAddr.Hex(), err)
 	}
 	balance, ok := result.(*big.Int)
 	if !ok {
-		return fmt.Errorf("invalid balance at slot %v . Token: %s . GotBalance: %v . ResultType: %T", state.SlotTRC21Token["balances"], tokenAddr.Hex(), result, result)
+		return fmt.Errorf("invalid balance at slot %v . Token: %s . GotBalance: %v . ResultType: %T", state.SlotXDC21Token["balances"], tokenAddr.Hex(), result, result)
 	}
 	if balance.Cmp(randBalance) != 0 {
 		log.Debug("invalid balance slot", "balance_set_at_slot_0", randBalance, "balance_get_from_abi", balance)
@@ -198,16 +198,16 @@ func ValidateBalanceSlot(chain consensus.ChainContext, copyState *state.StateDB,
 
 func ValidateMinFeeSlot(chain consensus.ChainContext, copyState *state.StateDB, tokenAddr common.Address, contractABI *abi.ABI) error {
 	randomValue := new(big.Int).SetInt64(int64(rand.Intn(1000000000)))
-	slotMinFeeTrc21 := state.SlotTRC21Token["minFee"]
-	copyState.SetState(tokenAddr, common.BigToHash(new(big.Int).SetUint64(slotMinFeeTrc21)), common.BytesToHash(randomValue.Bytes()))
+	slotMinFeeXDC21 := state.SlotXDC21Token["minFee"]
+	copyState.SetState(tokenAddr, common.BigToHash(new(big.Int).SetUint64(slotMinFeeXDC21)), common.BytesToHash(randomValue.Bytes()))
 
 	result, err := RunContract(chain, copyState, tokenAddr, contractABI, minFeeFunction)
 	if err != nil || result == nil {
-		return fmt.Errorf("cannot get minFee at slot %v . Token: %s. Err: %v", state.SlotTRC21Token["minFee"], tokenAddr.Hex(), err)
+		return fmt.Errorf("cannot get minFee at slot %v . Token: %s. Err: %v", state.SlotXDC21Token["minFee"], tokenAddr.Hex(), err)
 	}
 	minFee, ok := result.(*big.Int)
 	if !ok {
-		return fmt.Errorf("invalid minFee at slot %v . Token: %s . GotMinFee: %v . ResultType: %T", state.SlotTRC21Token["minFee"], tokenAddr.Hex(), result, result)
+		return fmt.Errorf("invalid minFee at slot %v . Token: %s . GotMinFee: %v . ResultType: %T", state.SlotXDC21Token["minFee"], tokenAddr.Hex(), result, result)
 	}
 	if minFee.Cmp(randomValue) != 0 {
 		log.Debug("invalid minFee slot", "minFee_set_at_slot_1", randomValue, "minFee_get_from_abi", minFee)

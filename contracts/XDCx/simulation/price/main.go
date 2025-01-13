@@ -30,7 +30,7 @@ func main() {
 	auth.GasLimit = uint64(4000000) // in units
 	auth.GasPrice = big.NewInt(250000000000000)
 
-	// init trc21 issuer
+	// init xdc21 issuer
 	auth.Nonce = big.NewInt(int64(nonce))
 
 	price := new(big.Int)

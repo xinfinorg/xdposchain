@@ -9,7 +9,7 @@ contract LAbstractXDCXListing {
     function getTokenStatus(address) public view returns (bool);
 }
 
-contract LAbstractTokenTRC21 {
+contract LAbstractTokenXDC21 {
     function issuer() public view returns (address);
 }
 
@@ -135,7 +135,7 @@ contract Lending {
         if (indexOf(COLLATERALS, token)) {
             require(msg.sender == ORACLE_PRICE_FEEDER, "Oracle Price Feeder required");
         } else {
-            LAbstractTokenTRC21 t = LAbstractTokenTRC21(token);
+            LAbstractTokenXDC21 t = LAbstractTokenXDC21(token);
             require(t.issuer() == msg.sender, "Required token issuer");
         }
 
@@ -157,7 +157,7 @@ contract Lending {
         bool b = XDCXListing.getTokenStatus(token);
         require(b, "Invalid collateral");
 
-        LAbstractTokenTRC21 t = LAbstractTokenTRC21(token);
+        LAbstractTokenXDC21 t = LAbstractTokenXDC21(token);
         require(t.issuer() == msg.sender, "Required token issuer");
 
         COLLATERAL_LIST[token] = Collateral({
