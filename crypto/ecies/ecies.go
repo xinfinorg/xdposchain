@@ -35,17 +35,18 @@ import (
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/subtle"
+	"encoding/binary"
 	"errors"
-	"fmt"
 	"hash"
 	"io"
 	"math/big"
+
+	"github.com/XinFinOrg/XDPoSChain/crypto"
 )
 
 var (
 	ErrImport                     = errors.New("ecies: failed to import key")
 	ErrInvalidCurve               = errors.New("ecies: invalid elliptic curve")
-	ErrInvalidParams              = errors.New("ecies: invalid ECIES parameters")
 	ErrInvalidPublicKey           = errors.New("ecies: invalid public key")
 	ErrSharedKeyIsPointAtInfinity = errors.New("ecies: shared key is point at infinity")
 	ErrSharedKeyTooBig            = errors.New("ecies: shared key params are too big")
@@ -96,15 +97,15 @@ func ImportECDSA(prv *ecdsa.PrivateKey) *PrivateKey {
 // Generate an elliptic curve public / private keypair. If params is nil,
 // the recommended default parameters for the key will be chosen.
 func GenerateKey(rand io.Reader, curve elliptic.Curve, params *ECIESParams) (prv *PrivateKey, err error) {
-	pb, x, y, err := elliptic.GenerateKey(curve, rand)
+	sk, err := ecdsa.GenerateKey(curve, rand)
 	if err != nil {
 		return
 	}
 	prv = new(PrivateKey)
-	prv.PublicKey.X = x
-	prv.PublicKey.Y = y
+	prv.PublicKey.X = sk.X
+	prv.PublicKey.Y = sk.Y
 	prv.PublicKey.Curve = curve
-	prv.D = new(big.Int).SetBytes(pb)
+	prv.D = new(big.Int).Set(sk.D)
 	if params == nil {
 		params = ParamsFromCurve(curve)
 	}
@@ -139,57 +140,39 @@ func (prv *PrivateKey) GenerateShared(pub *PublicKey, skLen, macLen int) (sk []b
 }
 
 var (
-	ErrKeyDataTooLong = errors.New("ecies: can't supply requested key data")
 	ErrSharedTooLong  = errors.New("ecies: shared secret is too long")
 	ErrInvalidMessage = errors.New("ecies: invalid message")
 )
 
-var (
-	big2To32   = new(big.Int).Exp(big.NewInt(2), big.NewInt(32), nil)
-	big2To32M1 = new(big.Int).Sub(big2To32, big.NewInt(1))
-)
-
-func incCounter(ctr []byte) {
-	if ctr[3]++; ctr[3] != 0 {
-		return
-	}
-	if ctr[2]++; ctr[2] != 0 {
-		return
-	}
-	if ctr[1]++; ctr[1] != 0 {
-		return
-	}
-	if ctr[0]++; ctr[0] != 0 {
-		return
-	}
-}
-
 // NIST SP 800-56 Concatenation Key Derivation Function (see section 5.8.1).
-func concatKDF(hash hash.Hash, z, s1 []byte, kdLen int) (k []byte, err error) {
-	if s1 == nil {
-		s1 = make([]byte, 0)
-	}
-
-	reps := ((kdLen + 7) * 8) / (hash.BlockSize() * 8)
-	if big.NewInt(int64(reps)).Cmp(big2To32M1) > 0 {
-		fmt.Println(big2To32M1)
-		return nil, ErrKeyDataTooLong
-	}
-
-	counter := []byte{0, 0, 0, 1}
-	k = make([]byte, 0)
-
-	for i := 0; i <= reps; i++ {
-		hash.Write(counter)
+func concatKDF(hash hash.Hash, z, s1 []byte, kdLen int) []byte {
+	counterBytes := make([]byte, 4)
+	k := make([]byte, 0, roundup(kdLen, hash.Size()))
+	for counter := uint32(1); len(k) < kdLen; counter++ {
+		binary.BigEndian.PutUint32(counterBytes, counter)
+		hash.Reset()
+		hash.Write(counterBytes)
 		hash.Write(z)
 		hash.Write(s1)
-		k = append(k, hash.Sum(nil)...)
-		hash.Reset()
-		incCounter(counter)
+		k = hash.Sum(k)
 	}
+	return k[:kdLen]
+}
 
-	k = k[:kdLen]
-	return
+// roundup rounds size up to the next multiple of blocksize.
+func roundup(size, blocksize int) int {
+	return size + blocksize - (size % blocksize)
+}
+
+// deriveKeys creates the encryption and MAC keys using concatKDF.
+func deriveKeys(hash hash.Hash, z, s1 []byte, keyLen int) (Ke, Km []byte) {
+	K := concatKDF(hash, z, s1, 2*keyLen)
+	Ke = K[:keyLen]
+	Km = K[keyLen:]
+	hash.Reset()
+	hash.Write(Km)
+	Km = hash.Sum(Km[:0])
+	return Ke, Km
 }
 
 // messageTag computes the MAC of a message (called the tag) as per
@@ -210,7 +193,6 @@ func generateIV(params *ECIESParams, rand io.Reader) (iv []byte, err error) {
 }
 
 // symEncrypt carries out CTR encryption using the block cipher specified in the
-// parameters.
 func symEncrypt(rand io.Reader, params *ECIESParams, key, m []byte) (ct []byte, err error) {
 	c, err := params.Cipher(key)
 	if err != nil {
@@ -250,46 +232,40 @@ func symDecrypt(params *ECIESParams, key, ct []byte) (m []byte, err error) {
 // ciphertext. s1 is fed into key derivation, s2 is fed into the MAC. If the
 // shared information parameters aren't being used, they should be nil.
 func Encrypt(rand io.Reader, pub *PublicKey, m, s1, s2 []byte) (ct []byte, err error) {
-	params := pub.Params
-	if params == nil {
-		if params = ParamsFromCurve(pub.Curve); params == nil {
-			err = ErrUnsupportedECIESParameters
-			return
-		}
+	params, err := pubkeyParams(pub)
+	if err != nil {
+		return nil, err
 	}
+
 	R, err := GenerateKey(rand, pub.Curve, params)
 	if err != nil {
-		return
+		return nil, err
+	}
+
+	z, err := R.GenerateShared(pub, params.KeyLen, params.KeyLen)
+	if err != nil {
+		return nil, err
 	}
 
 	hash := params.Hash()
-	z, err := R.GenerateShared(pub, params.KeyLen, params.KeyLen)
-	if err != nil {
-		return
-	}
-	K, err := concatKDF(hash, z, s1, params.KeyLen+params.KeyLen)
-	if err != nil {
-		return
-	}
-	Ke := K[:params.KeyLen]
-	Km := K[params.KeyLen:]
-	hash.Write(Km)
-	Km = hash.Sum(nil)
-	hash.Reset()
+	Ke, Km := deriveKeys(hash, z, s1, params.KeyLen)
 
 	em, err := symEncrypt(rand, params, Ke, m)
 	if err != nil || len(em) <= params.BlockSize {
-		return
+		return nil, err
 	}
 
 	d := messageTag(params.Hash, Km, em, s2)
 
-	Rb := elliptic.Marshal(pub.Curve, R.PublicKey.X, R.PublicKey.Y)
-	ct = make([]byte, len(Rb)+len(em)+len(d))
-	copy(ct, Rb)
-	copy(ct[len(Rb):], em)
-	copy(ct[len(Rb)+len(em):], d)
-	return
+	if curve, ok := pub.Curve.(crypto.EllipticCurve); ok {
+		Rb := curve.Marshal(R.PublicKey.X, R.PublicKey.Y)
+		ct = make([]byte, len(Rb)+len(em)+len(d))
+		copy(ct, Rb)
+		copy(ct[len(Rb):], em)
+		copy(ct[len(Rb)+len(em):], d)
+		return ct, nil
+	}
+	return nil, ErrInvalidCurve
 }
 
 // Decrypt decrypts an ECIES ciphertext.
@@ -297,13 +273,11 @@ func (prv *PrivateKey) Decrypt(c, s1, s2 []byte) (m []byte, err error) {
 	if len(c) == 0 {
 		return nil, ErrInvalidMessage
 	}
-	params := prv.PublicKey.Params
-	if params == nil {
-		if params = ParamsFromCurve(prv.PublicKey.Curve); params == nil {
-			err = ErrUnsupportedECIESParameters
-			return
-		}
+	params, err := pubkeyParams(&prv.PublicKey)
+	if err != nil {
+		return nil, err
 	}
+
 	hash := params.Hash()
 
 	var (
@@ -317,12 +291,10 @@ func (prv *PrivateKey) Decrypt(c, s1, s2 []byte) (m []byte, err error) {
 	case 2, 3, 4:
 		rLen = (prv.PublicKey.Curve.Params().BitSize + 7) / 4
 		if len(c) < (rLen + hLen + 1) {
-			err = ErrInvalidMessage
-			return
+			return nil, ErrInvalidMessage
 		}
 	default:
-		err = ErrInvalidPublicKey
-		return
+		return nil, ErrInvalidPublicKey
 	}
 
 	mStart = rLen
@@ -330,38 +302,24 @@ func (prv *PrivateKey) Decrypt(c, s1, s2 []byte) (m []byte, err error) {
 
 	R := new(PublicKey)
 	R.Curve = prv.PublicKey.Curve
-	R.X, R.Y = elliptic.Unmarshal(R.Curve, c[:rLen])
-	if R.X == nil {
-		err = ErrInvalidPublicKey
-		return
-	}
-	if !R.Curve.IsOnCurve(R.X, R.Y) {
-		err = ErrInvalidCurve
-		return
-	}
 
-	z, err := prv.GenerateShared(R, params.KeyLen, params.KeyLen)
-	if err != nil {
-		return
+	if curve, ok := R.Curve.(crypto.EllipticCurve); ok {
+		R.X, R.Y = curve.Unmarshal(c[:rLen])
+		if R.X == nil {
+			return nil, ErrInvalidPublicKey
+		}
+
+		z, err := prv.GenerateShared(R, params.KeyLen, params.KeyLen)
+		if err != nil {
+			return nil, err
+		}
+		Ke, Km := deriveKeys(hash, z, s1, params.KeyLen)
+
+		d := messageTag(params.Hash, Km, c[mStart:mEnd], s2)
+		if subtle.ConstantTimeCompare(c[mEnd:], d) != 1 {
+			return nil, ErrInvalidMessage
+		}
+		return symDecrypt(params, Ke, c[mStart:mEnd])
 	}
-
-	K, err := concatKDF(hash, z, s1, params.KeyLen+params.KeyLen)
-	if err != nil {
-		return
-	}
-
-	Ke := K[:params.KeyLen]
-	Km := K[params.KeyLen:]
-	hash.Write(Km)
-	Km = hash.Sum(nil)
-	hash.Reset()
-
-	d := messageTag(params.Hash, Km, c[mStart:mEnd], s2)
-	if subtle.ConstantTimeCompare(c[mEnd:], d) != 1 {
-		err = ErrInvalidMessage
-		return
-	}
-
-	m, err = symDecrypt(params, Ke, c[mStart:mEnd])
-	return
+	return nil, ErrInvalidCurve
 }
