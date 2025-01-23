@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -288,4 +289,26 @@ func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
 
 func zeroBytes(bytes []byte) {
 	clear(bytes)
+}
+
+// For a future step and use of secure smart card transactions. Implementation will take place as a test on the sub-net.
+// SHA256 for smartcard compatibility and Social Coin
+func SHA256(data ...[]byte) []byte {
+	h := sha256.New()
+	for _, b := range data {
+		h.Write(b)
+	}
+	return h.Sum(nil)
+}
+
+// For a future step and use of secure smart card transactions. Implementation will take place as a test on the sub-net.
+// SHA256Hash calculates and returns the SHA-256 hash of the input data,
+// converting it to an internal Hash data structure.
+func SHA256Hash(data ...[]byte) (h common.Hash) {
+	h256 := sha256.New()
+	for _, b := range data {
+		h256.Write(b)
+	}
+	h256.Sum(h[:0])
+	return h
 }

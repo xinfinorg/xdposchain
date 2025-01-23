@@ -157,10 +157,10 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, XDCConfig) {
 	// Check testnet is enable.
 	if ctx.Bool(utils.XDCTestnetFlag.Name) {
 		common.IsTestnet = true
-		common.TRC21IssuerSMC = common.TRC21IssuerSMCTestNet
+		common.XDC21IssuerSMC = common.XDC21IssuerSMCTestNet
 		cfg.Eth.NetworkId = 51
 		common.RelayerRegistrationSMC = common.RelayerRegistrationSMCTestnet
-		common.TIPTRC21Fee = common.TIPTRC21FeeTestnet
+		common.TIPXDC21Fee = common.TIPXDC21FeeTestnet
 		common.TIPXDCXCancellationFee = common.TIPXDCXCancellationFeeTestnet
 	}
 

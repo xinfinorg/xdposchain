@@ -332,7 +332,7 @@ func (l *list) Forward(threshold uint64) types.Transactions {
 // a point in calculating all the costs or if the balance covers all. If the threshold
 // is lower than the costgas cap, the caps will be reset to a new high after removing
 // the newly invalidated transactions.
-func (l *list) Filter(costLimit *big.Int, gasLimit uint64, trc21Issuers map[common.Address]*big.Int, number *big.Int) (types.Transactions, types.Transactions) {
+func (l *list) Filter(costLimit *big.Int, gasLimit uint64, xdc21Issuers map[common.Address]*big.Int, number *big.Int) (types.Transactions, types.Transactions) {
 	// If all transactions are below the threshold, short circuit
 	if l.costcap.Cmp(costLimit) <= 0 && l.gascap <= gasLimit {
 		return nil, nil
@@ -344,7 +344,7 @@ func (l *list) Filter(costLimit *big.Int, gasLimit uint64, trc21Issuers map[comm
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
 		maximum := costLimit
 		if tx.To() != nil {
-			if feeCapacity, ok := trc21Issuers[*tx.To()]; ok {
+			if feeCapacity, ok := xdc21Issuers[*tx.To()]; ok {
 				return tx.Gas() > gasLimit || new(big.Int).Add(costLimit, feeCapacity).Cmp(tx.TxCost(number)) < 0
 			}
 		}
@@ -489,7 +489,7 @@ func (h *priceHeap) Pop() interface{} {
 // better candidates for inclusion while in other cases (at the top of the baseFee peak)
 // the floating heap is better. When baseFee is decreasing they behave similarly.
 type pricedList struct {
-	all              *lookup  // Pointer to the map of all transactions
+	all              *lookup    // Pointer to the map of all transactions
 	urgent, floating priceHeap  // Heaps of prices of all the stored **remote** transactions
 	stales           int64      // Number of stale price points to (re-heap trigger)
 	reheapMu         sync.Mutex // Mutex asserts that only one routine is reheaping the list

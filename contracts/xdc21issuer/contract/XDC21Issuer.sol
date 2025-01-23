@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 import "./libs/SafeMath.sol";
 
-contract AbstractTokenTRC21 {
+contract AbstractTokenXDC21 {
     function issuer() public view returns (address);
 }
-contract TRC21Issuer {
+contract XDC21Issuer {
     using SafeMath for uint256;
     uint256 _minCap;
     address[] _tokens;
@@ -36,7 +36,7 @@ contract TRC21Issuer {
     }
 
     function apply(address token) public payable onlyValidCapacity(token) {
-        AbstractTokenTRC21 t = AbstractTokenTRC21(token);
+        AbstractTokenXDC21 t = AbstractTokenXDC21(token);
         require(t.issuer() == msg.sender);
         _tokens.push(token);
         tokensState[token] = tokensState[token].add(msg.value);

@@ -129,6 +129,21 @@ func (b *BlockGen) AddTxWithChain(bc *BlockChain, tx *types.Transaction) {
 // The evm interpreter can be customized with the provided vm config.
 func (b *BlockGen) AddTxWithVMConfig(tx *types.Transaction, config vm.Config) {
 	b.addTx(nil, config, tx)
+	if b.gasPool == nil {
+		b.SetCoinbase(common.Address{})
+	}
+	feeCapacity := state.GetXDC21FeeCapacityFromState(b.statedb)
+	b.statedb.Prepare(tx.Hash(), common.Hash{}, len(b.txs))
+	receipt, gas, err, tokenFeeUsed := ApplyTransaction(b.config, feeCapacity, bc, &b.header.Coinbase, b.gasPool, b.statedb, nil, b.header, tx, &b.header.GasUsed, vm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	b.txs = append(b.txs, tx)
+	b.receipts = append(b.receipts, receipt)
+	if tokenFeeUsed {
+		fee := common.GetGasFee(b.header.Number.Uint64(), gas)
+		state.UpdateXDC21Fee(b.statedb, map[common.Address]*big.Int{*tx.To(): new(big.Int).Sub(feeCapacity[*tx.To()], new(big.Int).SetUint64(gas))}, fee)
+	}
 }
 
 // AddUncheckedTx forcefully adds a transaction to the block without any
