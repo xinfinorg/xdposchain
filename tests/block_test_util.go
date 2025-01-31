@@ -50,8 +50,8 @@ func (t *BlockTest) UnmarshalJSON(in []byte) error {
 type btJSON struct {
 	Blocks    []btBlock             `json:"blocks"`
 	Genesis   btHeader              `json:"genesisBlockHeader"`
-	Pre       core.GenesisAlloc     `json:"pre"`
-	Post      core.GenesisAlloc     `json:"postState"`
+	Pre       types.GenesisAlloc    `json:"pre"`
+	Post      types.GenesisAlloc    `json:"postState"`
 	BestBlock common.UnprefixedHash `json:"lastblockhash"`
 	Network   string                `json:"network"`
 }
@@ -63,7 +63,7 @@ type btBlock struct {
 	UncleHeaders    []*btHeader
 }
 
-//go:generate gencodec -type btHeader -field-override btHeaderMarshaling -out gen_btheader.go
+//go:generate go run github.com/fjl/gencodec -type btHeader -field-override btHeaderMarshaling -out gen_btheader.go
 
 type btHeader struct {
 	Bloom            types.Bloom

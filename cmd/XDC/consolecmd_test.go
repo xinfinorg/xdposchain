@@ -19,7 +19,6 @@ package main
 import (
 	"crypto/rand"
 	"math/big"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -39,12 +38,11 @@ const (
 // then terminated by closing the input stream.
 func TestConsoleWelcome(t *testing.T) {
 	coinbase := "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
-	datadir := tmpdir(t)
-	defer os.RemoveAll(datadir)
+	datadir := t.TempDir()
 
 	// Start a XDC console, make sure it's cleaned up and terminate the console
 	XDC := runXDC(t,
-		"console", "--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx/"+time.Now().String(),
+		"console", "--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx",
 		"--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none",
 		"--miner-etherbase", coinbase)
 
@@ -77,8 +75,7 @@ at block: 0 ({{niltime}})
 func TestIPCAttachWelcome(t *testing.T) {
 	// Configure the instance for IPC attachement
 	coinbase := "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
-	datadir := tmpdir(t)
-	defer os.RemoveAll(datadir)
+	datadir := t.TempDir()
 	var ipc string
 	if runtime.GOOS == "windows" {
 		ipc = `\\.\pipe\XDC` + strconv.Itoa(trulyRandInt(100000, 999999))
@@ -86,7 +83,7 @@ func TestIPCAttachWelcome(t *testing.T) {
 		ipc = filepath.Join(datadir, "XDC.ipc")
 	}
 	XDC := runXDC(t,
-		"--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx/"+time.Now().String(),
+		"--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx",
 		"--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none",
 		"--miner-etherbase", coinbase, "--ipcpath", ipc)
 
@@ -100,10 +97,9 @@ func TestIPCAttachWelcome(t *testing.T) {
 func TestHTTPAttachWelcome(t *testing.T) {
 	coinbase := "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
 	port := strconv.Itoa(trulyRandInt(1024, 65536)) // Yeah, sometimes this will fail, sorry :P
-	datadir := tmpdir(t)
-	defer os.RemoveAll(datadir)
+	datadir := t.TempDir()
 	XDC := runXDC(t,
-		"--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx/"+time.Now().String(),
+		"--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx",
 		"--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none",
 		"--miner-etherbase", coinbase, "--http", "--http-port", port)
 
@@ -117,10 +113,9 @@ func TestHTTPAttachWelcome(t *testing.T) {
 func TestWSAttachWelcome(t *testing.T) {
 	coinbase := "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
 	port := strconv.Itoa(trulyRandInt(1024, 65536)) // Yeah, sometimes this will fail, sorry :P
-	datadir := tmpdir(t)
-	defer os.RemoveAll(datadir)
+	datadir := t.TempDir()
 	XDC := runXDC(t,
-		"--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx/"+time.Now().String(),
+		"--datadir", datadir, "--XDCx-datadir", datadir+"/XDCx",
 		"--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none",
 		"--miner-etherbase", coinbase, "--ws", "--ws-port", port)
 

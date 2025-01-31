@@ -47,6 +47,7 @@ var (
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        30,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		2000: {
 			MaxMasternodes:       108,
@@ -55,6 +56,7 @@ var (
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        600,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		8000: {
 			MaxMasternodes:       108,
@@ -63,6 +65,7 @@ var (
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        60,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		220000: {
 			MaxMasternodes:       108,
@@ -71,6 +74,7 @@ var (
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        30,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		460000: {
 			MaxMasternodes:       108,
@@ -79,6 +83,7 @@ var (
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        20,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		3200000: {
 			MaxMasternodes:       108,
@@ -98,6 +103,7 @@ var (
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		900000: {
 			MaxMasternodes:       108,
@@ -106,6 +112,7 @@ var (
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        60,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		15000000: {
 			MaxMasternodes:       108,
@@ -125,30 +132,7 @@ var (
 			TimeoutSyncThreshold: 3,
 			TimeoutPeriod:        30,
 			MinePeriod:           2,
-		},
-		7956000: { // 2024.01.17 Devnet Deplyment Issue
-			MaxMasternodes:       108,
-			SwitchRound:          7956000,
-			CertThreshold:        0.4,
-			TimeoutSyncThreshold: 3,
-			TimeoutPeriod:        30,
-			MinePeriod:           2,
-		},
-		7974000: {
-			MaxMasternodes:       108,
-			SwitchRound:          7974000,
-			CertThreshold:        0.667,
-			TimeoutSyncThreshold: 3,
-			TimeoutPeriod:        30,
-			MinePeriod:           2,
-		},
-		13625855: { // 2024.07.29 RPC call and reorg sync issue
-			MaxMasternodes:       108,
-			SwitchRound:          13625855,
-			CertThreshold:        0.4,
-			TimeoutSyncThreshold: 3,
-			TimeoutPeriod:        60,
-			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 	}
 
@@ -160,6 +144,7 @@ var (
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		10: {
 			MaxMasternodes:       18,
@@ -168,6 +153,7 @@ var (
 			TimeoutSyncThreshold: 2,
 			TimeoutPeriod:        4,
 			MinePeriod:           3,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 		900: {
 			MaxMasternodes:       20,
@@ -176,6 +162,7 @@ var (
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
 		},
 	}
 
@@ -365,7 +352,7 @@ var (
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: nil,
+		ConstantinopleBlock: big.NewInt(0),
 		Ethash:              new(EthashConfig),
 		Clique:              nil,
 		XDPoS: &XDPoSConfig{
@@ -488,6 +475,13 @@ type V2Config struct {
 	TimeoutSyncThreshold int     `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
 	TimeoutPeriod        int     `json:"timeoutPeriod"`        // Duration in ms
 	CertThreshold        float64 `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
+
+	ExpTimeoutConfig ExpTimeoutConfig `json:"expTimeoutConfig"`
+}
+
+type ExpTimeoutConfig struct {
+	Base        float64 `json:"base"`        // base in base^exponent
+	MaxExponent uint8   `json:"maxExponent"` // max exponent in base^exponent
 }
 
 func (c *XDPoSConfig) String() string {

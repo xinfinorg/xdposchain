@@ -28,18 +28,14 @@ import (
 // the configured service context.
 func TestContextDatabases(t *testing.T) {
 	// Create a temporary folder and ensure no database is contained within
-	dir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatalf("failed to create temporary data directory: %v", err)
-	}
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	if _, err := os.Stat(filepath.Join(dir, "database")); err == nil {
 		t.Fatalf("non-created database already exists")
 	}
 	// Request the opening/creation of a database and ensure it persists to disk
 	ctx := &ServiceContext{config: &Config{Name: "unit-test", DataDir: dir}}
-	db, err := ctx.OpenDatabase("persistent", 0, 0)
+	db, err := ctx.OpenDatabase("persistent", 0, 0, false)
 	if err != nil {
 		t.Fatalf("failed to open persistent database: %v", err)
 	}
@@ -50,7 +46,7 @@ func TestContextDatabases(t *testing.T) {
 	}
 	// Request th opening/creation of an ephemeral database and ensure it's not persisted
 	ctx = &ServiceContext{config: &Config{DataDir: ""}}
-	db, err = ctx.OpenDatabase("ephemeral", 0, 0)
+	db, err = ctx.OpenDatabase("ephemeral", 0, 0, false)
 	if err != nil {
 		t.Fatalf("failed to open ephemeral database: %v", err)
 	}

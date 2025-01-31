@@ -24,9 +24,12 @@ Usage: go run build/ci.go <command> <command flags/arguments>
 
 Available commands are:
 
+	lint           -- runs certain pre-selected linters
+	check_tidy     -- verifies that everything is 'go mod tidy'-ed
+	check_generate -- verifies that everything is 'go generate'-ed
+
 	install    [ -arch architecture ] [ -cc compiler ] [ packages... ]                          -- builds packages and executables
 	test       [ -coverage ] [ packages... ]                                                    -- runs the tests
-	lint                                                                                        -- runs certain pre-selected linters
 	importkeys                                                                                  -- imports signing keys from env
 	xgo        [ -alltools ] [ options ]                                                        -- cross builds according to options
 
@@ -42,6 +45,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -89,6 +93,10 @@ func main() {
 		doTest(os.Args[2:])
 	case "lint":
 		doLint(os.Args[2:])
+	case "check_tidy":
+		doCheckTidy()
+	case "check_generate":
+		doCheckGenerate()
 	case "xgo":
 		doXgo(os.Args[2:])
 	default:
@@ -246,6 +254,65 @@ func doTest(cmdline []string) {
 	build.MustRun(gotest)
 }
 
+// doCheckTidy assets that the Go modules files are tidied already.
+func doCheckTidy() {
+	targets := []string{"go.mod", "go.sum"}
+
+	hashes, err := build.HashFiles(targets)
+	if err != nil {
+		log.Fatalf("failed to hash go.mod/go.sum: %v", err)
+	}
+	build.MustRun(new(build.GoToolchain).Go("mod", "tidy"))
+
+	tidied, err := build.HashFiles(targets)
+	if err != nil {
+		log.Fatalf("failed to rehash go.mod/go.sum: %v", err)
+	}
+	if updates := build.DiffHashes(hashes, tidied); len(updates) > 0 {
+		log.Fatalf("files changed on running 'go mod tidy': %v", updates)
+	}
+	fmt.Println("No untidy module files detected.")
+}
+
+// doCheckGenerate ensures that re-generating generated files does not cause
+// any mutations in the source file tree.
+func doCheckGenerate() {
+	var (
+		cachedir = flag.String("cachedir", "./build/cache", "directory for caching binaries.")
+	)
+	// Compute the origin hashes of all the files
+	var hashes map[string][32]byte
+
+	var err error
+	hashes, err = build.HashFolder(".", []string{"tests/testdata", "build/cache"})
+	if err != nil {
+		log.Fatal("Error computing hashes", "err", err)
+	}
+	// Run any go generate steps we might be missing
+	var (
+		protocPath      = downloadProtoc(*cachedir)
+		protocGenGoPath = downloadProtocGenGo(*cachedir)
+	)
+	c := new(build.GoToolchain).Go("generate", "./...")
+	pathList := []string{filepath.Join(protocPath, "bin"), protocGenGoPath, os.Getenv("PATH")}
+	c.Env = append(c.Env, "PATH="+strings.Join(pathList, string(os.PathListSeparator)))
+	build.MustRun(c)
+
+	// Check if generate file hashes have changed
+	generated, err := build.HashFolder(".", []string{"tests/testdata", "build/cache"})
+	if err != nil {
+		log.Fatalf("Error re-computing hashes: %v", err)
+	}
+	updates := build.DiffHashes(hashes, generated)
+	for _, file := range updates {
+		log.Printf("File changed: %s", file)
+	}
+	if len(updates) != 0 {
+		log.Fatal("One or more generated files were updated by running 'go generate ./...'")
+	}
+	fmt.Println("No stale files detected.")
+}
+
 // doLint runs golangci-lint on requested packages.
 func doLint(cmdline []string) {
 	var (
@@ -289,6 +356,96 @@ func downloadLinter(cachedir string) string {
 		log.Fatal(err)
 	}
 	return filepath.Join(cachedir, base, "golangci-lint")
+}
+
+// downloadProtocGenGo downloads protoc-gen-go, which is used by protoc
+// in the generate command.  It returns the full path of the directory
+// containing the 'protoc-gen-go' executable.
+func downloadProtocGenGo(cachedir string) string {
+	csdb := build.MustLoadChecksums("build/checksums.txt")
+	version, err := build.Version(csdb, "protoc-gen-go")
+	if err != nil {
+		log.Fatal(err)
+	}
+	baseName := fmt.Sprintf("protoc-gen-go.v%s.%s.%s", version, runtime.GOOS, runtime.GOARCH)
+	archiveName := baseName
+	if runtime.GOOS == "windows" {
+		archiveName += ".zip"
+	} else {
+		archiveName += ".tar.gz"
+	}
+
+	url := fmt.Sprintf("https://github.com/protocolbuffers/protobuf-go/releases/download/v%s/%s", version, archiveName)
+
+	archivePath := path.Join(cachedir, archiveName)
+	if err := csdb.DownloadFile(url, archivePath); err != nil {
+		log.Fatal(err)
+	}
+	extractDest := filepath.Join(cachedir, baseName)
+	if err := build.ExtractArchive(archivePath, extractDest); err != nil {
+		log.Fatal(err)
+	}
+	extractDest, err = filepath.Abs(extractDest)
+	if err != nil {
+		log.Fatal("error resolving absolute path for protoc", "err", err)
+	}
+	return extractDest
+}
+
+// protocArchiveBaseName returns the name of the protoc archive file for
+// the current system, stripped of version and file suffix.
+func protocArchiveBaseName() (string, error) {
+	switch runtime.GOOS + "-" + runtime.GOARCH {
+	case "windows-amd64":
+		return "win64", nil
+	case "windows-386":
+		return "win32", nil
+	case "linux-arm64":
+		return "linux-aarch_64", nil
+	case "linux-386":
+		return "linux-x86_32", nil
+	case "linux-amd64":
+		return "linux-x86_64", nil
+	case "darwin-arm64":
+		return "osx-aarch_64", nil
+	case "darwin-amd64":
+		return "osx-x86_64", nil
+	default:
+		return "", fmt.Errorf("no prebuilt release of protoc available for this system (os: %s, arch: %s)", runtime.GOOS, runtime.GOARCH)
+	}
+}
+
+// downloadProtoc downloads the prebuilt protoc binary used to lint generated
+// files as a CI step.  It returns the full path to the directory containing
+// the protoc executable.
+func downloadProtoc(cachedir string) string {
+	csdb := build.MustLoadChecksums("build/checksums.txt")
+	version, err := build.Version(csdb, "protoc")
+	if err != nil {
+		log.Fatal(err)
+	}
+	baseName, err := protocArchiveBaseName()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fileName := fmt.Sprintf("protoc-%s-%s", version, baseName)
+	archiveFileName := fileName + ".zip"
+	url := fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s", version, archiveFileName)
+	archivePath := filepath.Join(cachedir, archiveFileName)
+
+	if err := csdb.DownloadFile(url, archivePath); err != nil {
+		log.Fatal(err)
+	}
+	extractDest := filepath.Join(cachedir, fileName)
+	if err := build.ExtractArchive(archivePath, extractDest); err != nil {
+		log.Fatal(err)
+	}
+	extractDest, err = filepath.Abs(extractDest)
+	if err != nil {
+		log.Fatal("error resolving absolute path for protoc", "err", err)
+	}
+	return extractDest
 }
 
 // Cross compilation
