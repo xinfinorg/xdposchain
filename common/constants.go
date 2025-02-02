@@ -53,6 +53,8 @@ var LondonBlock = big.NewInt(76321000)   // Target 19th June 2024
 var MergeBlock = big.NewInt(76321000)    // Target 19th June 2024
 var ShanghaiBlock = big.NewInt(76321000) // Target 19th June 2024
 
+var TIPUpgradeReward = big.NewInt(9999999999)
+
 var TIPXDCXTestnet = big.NewInt(38383838)
 var IsTestnet bool = false
 var Enable0xPrefix bool = true

@@ -141,12 +141,16 @@ var (
 		},
 		900: {
 			MaxMasternodes:       20,
+			MaxProtectorNodes:    1,
 			SwitchRound:          900,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
 			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
+			MasternodeReward:     500, // double as Reward
+			ProtectorReward:      400,
+			ObserverReward:       300,
 		},
 	}
 
@@ -454,11 +458,16 @@ type V2 struct {
 
 type V2Config struct {
 	MaxMasternodes       int     `json:"maxMasternodes"`       // v2 max masternodes
+	MaxProtectorNodes    int     `json:"maxProtectorNodes"`    // v2 max ProtectorNodes
 	SwitchRound          uint64  `json:"switchRound"`          // v1 to v2 switch block number
 	MinePeriod           int     `json:"minePeriod"`           // Miner mine period to mine a block
 	TimeoutSyncThreshold int     `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
 	TimeoutPeriod        int     `json:"timeoutPeriod"`        // Duration in ms
 	CertThreshold        float64 `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
+
+	MasternodeReward uint64 `json:"masternodeReward"` // Block reward for master nodes (core validators) - unit Ether
+	ProtectorReward  uint64 `json:"protectorReward"`  // Block reward for protectors - unit Ether
+	ObserverReward   uint64 `json:"observerReward"`   // Block reward for observer - unit Ether
 
 	ExpTimeoutConfig ExpTimeoutConfig `json:"expTimeoutConfig"`
 }
@@ -696,6 +705,10 @@ func (c *ChainConfig) IsTIPXDCXLending(num *big.Int) bool {
 
 func (c *ChainConfig) IsTIPXDCXCancellationFee(num *big.Int) bool {
 	return isForked(common.TIPXDCXCancellationFee, num)
+}
+
+func (c *ChainConfig) IsTIPUpgradeReward(num *big.Int) bool {
+	return isForked(common.TIPUpgradeReward, num)
 }
 
 // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
