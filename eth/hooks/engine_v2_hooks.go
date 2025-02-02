@@ -17,6 +17,16 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/params"
 )
 
+// Declaring an enum type beneficiary of reward
+type beneficiary int
+
+// Enumerating reward beneficiary
+const (
+	masterNodeBeneficiary beneficiary = iota
+	protectorNodeBeneficiary
+	observerNodeBeneficiary
+)
+
 func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConfig *params.ChainConfig) {
 	// Hook scans for bad masternodes and decide to penalty them
 	adaptor.EngineV2.HookPenalty = func(chain consensus.ChainReader, number *big.Int, currentHash common.Hash, candidates []common.Address) ([]common.Address, error) {
@@ -177,7 +187,8 @@ func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 
 		// Get signers/signing tx count
 		totalSigner := new(uint64)
-		signers, err := GetSigningTxCount(adaptor, chain, header, totalSigner)
+		nodesToKeep := map[beneficiary][]common.Address{}
+		signers, err := getSigningTxCount(adaptor, chain, header, totalSigner, nodesToKeep)
 
 		log.Debug("Time Get Signers", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
 		if err != nil {
@@ -214,7 +225,7 @@ func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 }
 
 // get signing transaction sender count
-func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *types.Header, totalSigner *uint64) (map[common.Address]*contracts.RewardLog, error) {
+func getSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *types.Header, totalSigner *uint64, nodesToKeep map[beneficiary][]common.Address) (map[common.Address]*contracts.RewardLog, error) {
 	// header should be a new epoch switch block
 	number := header.Number.Uint64()
 	rewardEpochCount := 2
@@ -229,7 +240,6 @@ func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *type
 
 	data := make(map[common.Hash][]common.Address)
 	epochCount := 0
-	var masternodes []common.Address
 	var startBlockNumber, endBlockNumber uint64
 	for i := number - 1; ; i-- {
 		header = chain.GetHeader(header.ParentHash, i)
@@ -244,7 +254,9 @@ func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *type
 			}
 			if epochCount == rewardEpochCount {
 				startBlockNumber = header.Number.Uint64() + 1
-				masternodes = c.GetMasternodesFromCheckpointHeader(header)
+				if _, ok := nodesToKeep[masterNodeBeneficiary]; !ok {
+					nodesToKeep[masterNodeBeneficiary] = c.GetMasternodesFromCheckpointHeader(header)
+				}
 				break
 			}
 		}
@@ -273,8 +285,8 @@ func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *type
 			// Filter duplicate address.
 			if len(addrs) > 0 {
 				addrSigners := make(map[common.Address]bool)
-				for _, masternode := range masternodes {
-					for _, addr := range addrs {
+				for _, addr := range addrs {
+					for _, masternode := range nodesToKeep[masterNodeBeneficiary] {
 						if addr == masternode {
 							if _, ok := addrSigners[addr]; !ok {
 								addrSigners[addr] = true
