@@ -89,7 +89,10 @@ func (t *CountdownTimer) startTimer(i interface{}, currentRound, highestRound ty
 			currentRound = info.currentRound
 			highestRound = info.highestRound
 			if !timer.Stop() {
-				<-timer.C
+				select {
+				case <-timer.C: // try to drain the channel
+				default:
+				}
 			}
 			timer.Reset(t.durationHelper.GetTimeoutDuration(currentRound, highestRound))
 		}
