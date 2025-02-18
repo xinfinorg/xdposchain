@@ -196,6 +196,7 @@ func CopyConstans(chainID uint64) {
 	BlockNumberGas50x = c.blockNumberGas50x
 	TIPXDCXMinerDisable = c.tipXDCXMinerDisable
 	TIPXDCXReceiverDisable = c.tipXDCXReceiverDisable
+	TIPUpgradeReward = c.tipUpgradeReward
 	Eip1559Block = c.eip1559Block
 	CancunBlock = c.cancunBlock
 
