@@ -37,6 +37,8 @@ var DeprecatedFlags = []cli.Flag{
 	NoUSBFlag,
 	LogBacktraceAtFlag,
 	LogDebugFlag,
+	MiningEnabledFlag,
+	XDCXDataDirFlag,
 }
 
 var (
@@ -72,6 +74,18 @@ var (
 	MetricsEnabledExpensiveFlag = &cli.BoolFlag{
 		Name:     "metrics-expensive",
 		Usage:    "Enable expensive metrics collection and reporting (deprecated)",
+		Category: flags.DeprecatedCategory,
+	}
+	// Deprecated February 2025
+	MiningEnabledFlag = &cli.BoolFlag{
+		Name:     "mine",
+		Usage:    "Enable mining (deprecated)",
+		Category: flags.DeprecatedCategory,
+	}
+	XDCXDataDirFlag = &flags.DirectoryFlag{
+		Name:     "XDCx-datadir",
+		Aliases:  []string{"XDCx.datadir"},
+		Usage:    "Data directory for the XDCX databases (deprecated)",
 		Category: flags.DeprecatedCategory,
 	}
 )

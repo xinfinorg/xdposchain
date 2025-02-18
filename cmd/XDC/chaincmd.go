@@ -30,6 +30,7 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/core"
 	"github.com/XinFinOrg/XDPoSChain/core/state"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
+	xdc_genesis "github.com/XinFinOrg/XDPoSChain/genesis"
 	"github.com/XinFinOrg/XDPoSChain/log"
 	"github.com/urfave/cli/v2"
 )
@@ -51,7 +52,7 @@ The init command initializes a new genesis block and definition for the network.
 This is a destructive action and changes the network in which you will be
 participating.
 
-It expects the genesis file as argument.`,
+It expects the genesis file or the network name [ mainnet | testnet | devnet ] as argument.`,
 	}
 	importCommand = &cli.Command{
 		Action:    importChain,
@@ -153,33 +154,39 @@ Use "ethereum dump 0" to dump the genesis block.`,
 // initGenesis will initialise the given JSON format genesis file and writes it as
 // the zero'd block (i.e. genesis) or will fail hard if it can't succeed.
 func initGenesis(ctx *cli.Context) error {
+	var err error
 	genesis := new(core.Genesis)
-
 	if ctx.Bool(utils.XDCTestnetFlag.Name) {
 		if ctx.Args().Len() > 0 {
 			utils.Fatalf("Flags --apothem and genesis file can't be used at the same time")
 		}
-		err := json.Unmarshal(apothemGenesis, &genesis)
-		if err != nil {
-			utils.Fatalf("invalid genesis json: %v", err)
-		}
+		err = json.Unmarshal(xdc_genesis.TestnetGenesis, &genesis)
 	} else {
 		if ctx.Args().Len() != 1 {
-			utils.Fatalf("need genesis.json file as the only argument")
+			utils.Fatalf("need the genesis.json file or the network name [ mainnet | testnet | devnet ] as the only argument")
 		}
 		genesisPath := ctx.Args().First()
-		if len(genesisPath) == 0 {
-			utils.Fatalf("invalid path to genesis file")
+		if genesisPath == "mainnet" {
+			err = json.Unmarshal(xdc_genesis.MainnetGenesis, &genesis)
+		} else if genesisPath == "testnet" {
+			err = json.Unmarshal(xdc_genesis.TestnetGenesis, &genesis)
+		} else if genesisPath == "devnet" {
+			err = json.Unmarshal(xdc_genesis.DevnetGenesis, &genesis)
+		} else {
+			if len(genesisPath) == 0 {
+				utils.Fatalf("invalid path to genesis file")
+			}
+			var file *os.File
+			file, err = os.Open(genesisPath)
+			if err != nil {
+				utils.Fatalf("Failed to read genesis file: %v", err)
+			}
+			defer file.Close()
+			err = json.NewDecoder(file).Decode(genesis)
 		}
-		file, err := os.Open(genesisPath)
-		if err != nil {
-			utils.Fatalf("Failed to read genesis file: %v", err)
-		}
-		defer file.Close()
-
-		if err := json.NewDecoder(file).Decode(genesis); err != nil {
-			utils.Fatalf("invalid genesis file: %v", err)
-		}
+	}
+	if err != nil {
+		utils.Fatalf("invalid genesis json: %v", err)
 	}
 
 	// Open an initialise both full and light databases
@@ -195,6 +202,7 @@ func initGenesis(ctx *cli.Context) error {
 		if err != nil {
 			utils.Fatalf("Failed to write genesis block: %v", err)
 		}
+		chaindb.Close()
 		log.Info("Successfully wrote genesis state", "database", name, "hash", hash)
 	}
 	return nil
@@ -322,11 +330,11 @@ func importPreimages(ctx *cli.Context) error {
 	stack, _ := makeFullNode(ctx)
 	defer stack.Close()
 
-	diskdb := utils.MakeChainDatabase(ctx, stack, false)
-	defer diskdb.Close()
+	db := utils.MakeChainDatabase(ctx, stack, false)
+	defer db.Close()
 
 	start := time.Now()
-	if err := utils.ImportPreimages(diskdb, ctx.Args().First()); err != nil {
+	if err := utils.ImportPreimages(db, ctx.Args().First()); err != nil {
 		utils.Fatalf("Export error: %v\n", err)
 	}
 	fmt.Printf("Export done in %v\n", time.Since(start))
@@ -341,11 +349,11 @@ func exportPreimages(ctx *cli.Context) error {
 	stack, _ := makeFullNode(ctx)
 	defer stack.Close()
 
-	diskdb := utils.MakeChainDatabase(ctx, stack, true)
-	defer diskdb.Close()
+	db := utils.MakeChainDatabase(ctx, stack, true)
+	defer db.Close()
 
 	start := time.Now()
-	if err := utils.ExportPreimages(diskdb, ctx.Args().First()); err != nil {
+	if err := utils.ExportPreimages(db, ctx.Args().First()); err != nil {
 		utils.Fatalf("Export error: %v\n", err)
 	}
 	fmt.Printf("Export done in %v\n", time.Since(start))

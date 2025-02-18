@@ -100,6 +100,8 @@ const (
 	CHAINID     OpCode = 0x46
 	SELFBALANCE OpCode = 0x47
 	BASEFEE     OpCode = 0x48
+	BLOBHASH    OpCode = 0x49
+	BLOBBASEFEE OpCode = 0x4a
 )
 
 // 0x50 range - 'storage' and execution.
@@ -118,6 +120,7 @@ const (
 	JUMPDEST OpCode = 0x5b
 	TLOAD    OpCode = 0x5c
 	TSTORE   OpCode = 0x5d
+	MCOPY    OpCode = 0x5e
 	PUSH0    OpCode = 0x5f
 )
 
@@ -283,11 +286,11 @@ var opCodeToString = [256]string{
 	CHAINID:     "CHAINID",
 	SELFBALANCE: "SELFBALANCE",
 	BASEFEE:     "BASEFEE",
+	BLOBHASH:    "BLOBHASH",
+	BLOBBASEFEE: "BLOBBASEFEE",
 
 	// 0x50 range - 'storage' and execution.
-	POP: "POP",
-	//DUP:     "DUP",
-	//SWAP:    "SWAP",
+	POP:      "POP",
 	MLOAD:    "MLOAD",
 	MSTORE:   "MSTORE",
 	MSTORE8:  "MSTORE8",
@@ -301,9 +304,10 @@ var opCodeToString = [256]string{
 	JUMPDEST: "JUMPDEST",
 	TLOAD:    "TLOAD",
 	TSTORE:   "TSTORE",
+	MCOPY:    "MCOPY",
 	PUSH0:    "PUSH0",
 
-	// 0x60 range - push.
+	// 0x60 range - pushes.
 	PUSH1:  "PUSH1",
 	PUSH2:  "PUSH2",
 	PUSH3:  "PUSH3",
@@ -337,6 +341,7 @@ var opCodeToString = [256]string{
 	PUSH31: "PUSH31",
 	PUSH32: "PUSH32",
 
+	// 0x80 - dups.
 	DUP1:  "DUP1",
 	DUP2:  "DUP2",
 	DUP3:  "DUP3",
@@ -354,6 +359,7 @@ var opCodeToString = [256]string{
 	DUP15: "DUP15",
 	DUP16: "DUP16",
 
+	// 0x90 - swaps.
 	SWAP1:  "SWAP1",
 	SWAP2:  "SWAP2",
 	SWAP3:  "SWAP3",
@@ -370,19 +376,22 @@ var opCodeToString = [256]string{
 	SWAP14: "SWAP14",
 	SWAP15: "SWAP15",
 	SWAP16: "SWAP16",
-	LOG0:   "LOG0",
-	LOG1:   "LOG1",
-	LOG2:   "LOG2",
-	LOG3:   "LOG3",
-	LOG4:   "LOG4",
 
-	// 0xf0 range.
+	// 0xa0 range - logging ops.
+	LOG0: "LOG0",
+	LOG1: "LOG1",
+	LOG2: "LOG2",
+	LOG3: "LOG3",
+	LOG4: "LOG4",
+
+	// 0xf0 range - closures.
 	CREATE:       "CREATE",
 	CALL:         "CALL",
 	RETURN:       "RETURN",
 	CALLCODE:     "CALLCODE",
 	DELEGATECALL: "DELEGATECALL",
 	CREATE2:      "CREATE2",
+
 	STATICCALL:   "STATICCALL",
 	REVERT:       "REVERT",
 	INVALID:      "INVALID",
@@ -453,6 +462,8 @@ var stringToOp = map[string]OpCode{
 	"GASLIMIT":       GASLIMIT,
 	"SELFBALANCE":    SELFBALANCE,
 	"BASEFEE":        BASEFEE,
+	"BLOBHASH":       BLOBHASH,
+	"BLOBBASEFEE":    BLOBBASEFEE,
 	"POP":            POP,
 	"MLOAD":          MLOAD,
 	"MSTORE":         MSTORE,
@@ -467,6 +478,7 @@ var stringToOp = map[string]OpCode{
 	"JUMPDEST":       JUMPDEST,
 	"TLOAD":          TLOAD,
 	"TSTORE":         TSTORE,
+	"MCOPY":          MCOPY,
 	"PUSH0":          PUSH0,
 	"PUSH1":          PUSH1,
 	"PUSH2":          PUSH2,
