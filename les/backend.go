@@ -19,6 +19,7 @@ package les
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -82,7 +83,7 @@ type LightEthereum struct {
 }
 
 func New(ctx *node.ServiceContext, config *ethconfig.Config) (*LightEthereum, error) {
-	chainDb, err := eth.CreateDB(ctx, config, "lightchaindata")
+	chainDb, err := ctx.OpenDatabase("lightchaindata", config.DatabaseCache, config.DatabaseHandles, "eth/db/chaindata/", false)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +91,18 @@ func New(ctx *node.ServiceContext, config *ethconfig.Config) (*LightEthereum, er
 	if _, isCompat := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !isCompat {
 		return nil, genesisErr
 	}
-	log.Info("Initialised chain configuration", "config", chainConfig)
+
+	networkID := config.NetworkId
+	if networkID == 0 {
+		networkID = chainConfig.ChainId.Uint64()
+	}
+	common.CopyConstans(networkID)
+
+	log.Info(strings.Repeat("-", 153))
+	for _, line := range strings.Split(chainConfig.Description(), "\n") {
+		log.Info(line)
+	}
+	log.Info(strings.Repeat("-", 153))
 
 	peers := newPeerSet()
 	quitSync := make(chan struct{})
@@ -105,7 +117,7 @@ func New(ctx *node.ServiceContext, config *ethconfig.Config) (*LightEthereum, er
 		accountManager:   ctx.AccountManager,
 		engine:           eth.CreateConsensusEngine(ctx, &config.Ethash, chainConfig, chainDb),
 		shutdownChan:     make(chan bool),
-		networkId:        config.NetworkId,
+		networkId:        networkID,
 		bloomRequests:    make(chan chan *bloombits.Retrieval),
 		bloomIndexer:     eth.NewBloomIndexer(chainDb, light.BloomTrieFrequency),
 		chtIndexer:       light.NewChtIndexer(chainDb, true),
@@ -128,7 +140,7 @@ func New(ctx *node.ServiceContext, config *ethconfig.Config) (*LightEthereum, er
 	}
 
 	leth.txPool = light.NewTxPool(leth.chainConfig, leth.blockchain, leth.relay)
-	if leth.protocolManager, err = NewProtocolManager(leth.chainConfig, true, ClientProtocolVersions, config.NetworkId, leth.eventMux, leth.engine, leth.peers, leth.blockchain, nil, chainDb, leth.odr, leth.relay, quitSync, &leth.wg); err != nil {
+	if leth.protocolManager, err = NewProtocolManager(leth.chainConfig, true, ClientProtocolVersions, networkID, leth.eventMux, leth.engine, leth.peers, leth.blockchain, nil, chainDb, leth.odr, leth.relay, quitSync, &leth.wg); err != nil {
 		return nil, err
 	}
 	leth.ApiBackend = &LesApiBackend{leth, nil}

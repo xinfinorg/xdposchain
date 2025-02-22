@@ -32,24 +32,14 @@ var ShowDeprecated = &cli.Command{
 }
 
 var DeprecatedFlags = []cli.Flag{
-	FastSyncFlag,
-	LightModeFlag,
 	NoUSBFlag,
 	LogBacktraceAtFlag,
 	LogDebugFlag,
+	MiningEnabledFlag,
+	XDCXDataDirFlag,
 }
 
 var (
-	FastSyncFlag = &cli.BoolFlag{
-		Name:     "fast",
-		Usage:    "Enable fast syncing through state downloads",
-		Category: flags.DeprecatedCategory,
-	}
-	LightModeFlag = &cli.BoolFlag{
-		Name:     "light",
-		Usage:    "Enable light client mode",
-		Category: flags.DeprecatedCategory,
-	}
 	// Deprecated May 2020, shown in aliased flags section
 	NoUSBFlag = &cli.BoolFlag{
 		Name:     "nousb",
@@ -72,6 +62,18 @@ var (
 	MetricsEnabledExpensiveFlag = &cli.BoolFlag{
 		Name:     "metrics-expensive",
 		Usage:    "Enable expensive metrics collection and reporting (deprecated)",
+		Category: flags.DeprecatedCategory,
+	}
+	// Deprecated February 2025
+	MiningEnabledFlag = &cli.BoolFlag{
+		Name:     "mine",
+		Usage:    "Enable mining (deprecated)",
+		Category: flags.DeprecatedCategory,
+	}
+	XDCXDataDirFlag = &flags.DirectoryFlag{
+		Name:     "XDCx-datadir",
+		Aliases:  []string{"XDCx.datadir"},
+		Usage:    "Data directory for the XDCX databases (deprecated)",
 		Category: flags.DeprecatedCategory,
 	}
 )

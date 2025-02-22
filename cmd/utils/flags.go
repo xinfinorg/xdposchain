@@ -43,7 +43,6 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/core/txpool"
 	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/crypto"
-	"github.com/XinFinOrg/XDPoSChain/crypto/kzg4844"
 	"github.com/XinFinOrg/XDPoSChain/eth/downloader"
 	"github.com/XinFinOrg/XDPoSChain/eth/ethconfig"
 	"github.com/XinFinOrg/XDPoSChain/eth/filters"
@@ -105,19 +104,21 @@ var (
 		Value:    ethconfig.Defaults.NetworkId,
 		Category: flags.EthCategory,
 	}
+	MainnetFlag = &cli.BoolFlag{
+		Name:     "mainnet",
+		Aliases:  []string{"xinfin"},
+		Usage:    "XDC xinfin network",
+		Category: flags.EthCategory,
+	}
 	TestnetFlag = &cli.BoolFlag{
 		Name:     "testnet",
-		Usage:    "Ropsten network: pre-configured proof-of-work test network",
+		Aliases:  []string{"apothem"},
+		Usage:    "XDC apothem network",
 		Category: flags.EthCategory,
 	}
-	XDCTestnetFlag = &cli.BoolFlag{
-		Name:     "apothem",
-		Usage:    "XDC Apothem Network",
-		Category: flags.EthCategory,
-	}
-	RinkebyFlag = &cli.BoolFlag{
-		Name:     "rinkeby",
-		Usage:    "Rinkeby network: pre-configured proof-of-authority test network",
+	DevnetFlag = &cli.BoolFlag{
+		Name:     "devnet",
+		Usage:    "XDC develop network",
 		Category: flags.EthCategory,
 	}
 
@@ -334,11 +335,6 @@ var (
 	}
 
 	// Miner settings
-	MiningEnabledFlag = &cli.BoolFlag{
-		Name:     "mine",
-		Usage:    "Enable mining",
-		Category: flags.MinerCategory,
-	}
 	MinerThreadsFlag = &cli.IntFlag{
 		Name:     "miner-threads",
 		Aliases:  []string{"minerthreads"},
@@ -350,21 +346,21 @@ var (
 		Name:     "miner-gaslimit",
 		Aliases:  []string{"targetgaslimit"},
 		Usage:    "Target gas limit sets the artificial target gas floor for the blocks to mine",
-		Value:    params.XDCGenesisGasLimit,
+		Value:    50000000,
 		Category: flags.MinerCategory,
 	}
 	MinerGasPriceFlag = &flags.BigFlag{
 		Name:     "miner-gasprice",
 		Aliases:  []string{"gasprice"},
 		Usage:    "Minimal gas price to accept for mining a transactions",
-		Value:    ethconfig.Defaults.GasPrice,
+		Value:    big.NewInt(1),
 		Category: flags.MinerCategory,
 	}
 	MinerEtherbaseFlag = &cli.StringFlag{
 		Name:     "miner-etherbase",
 		Aliases:  []string{"etherbase"},
 		Usage:    "Public address for block mining rewards (default = first account created)",
-		Value:    "0",
+		Value:    "0x000000000000000000000000000000000000abcd",
 		Category: flags.MinerCategory,
 	}
 	MinerExtraDataFlag = &cli.StringFlag{
@@ -442,13 +438,14 @@ var (
 		Name:     "http",
 		Aliases:  []string{"rpc"},
 		Usage:    "Enable the HTTP-RPC server",
+		Value:    true,
 		Category: flags.APICategory,
 	}
 	HTTPListenAddrFlag = &cli.StringFlag{
 		Name:     "http-addr",
 		Aliases:  []string{"rpcaddr"},
 		Usage:    "HTTP-RPC server listening interface",
-		Value:    node.DefaultHTTPHost,
+		Value:    "0.0.0.0",
 		Category: flags.APICategory,
 	}
 	HTTPPortFlag = &cli.IntFlag{
@@ -462,21 +459,21 @@ var (
 		Name:     "http-corsdomain",
 		Aliases:  []string{"rpccorsdomain"},
 		Usage:    "Comma separated list of domains from which to accept cross origin requests (browser enforced)",
-		Value:    "",
+		Value:    "*",
 		Category: flags.APICategory,
 	}
 	HTTPVirtualHostsFlag = &cli.StringFlag{
 		Name:     "http-vhosts",
 		Aliases:  []string{"rpcvhosts"},
 		Usage:    "Comma separated list of virtual hostnames from which to accept requests (server enforced). Accepts '*' wildcard.",
-		Value:    strings.Join(node.DefaultConfig.HTTPVirtualHosts, ","),
+		Value:    "*",
 		Category: flags.APICategory,
 	}
 	HTTPApiFlag = &cli.StringFlag{
 		Name:     "http-api",
 		Aliases:  []string{"rpcapi"},
 		Usage:    "API's offered over the HTTP-RPC interface",
-		Value:    "",
+		Value:    "debug,eth,net,personal,txpool,web3,XDPoS",
 		Category: flags.APICategory,
 	}
 	HTTPReadTimeoutFlag = &cli.DurationFlag{
@@ -503,13 +500,14 @@ var (
 	WSEnabledFlag = &cli.BoolFlag{
 		Name:     "ws",
 		Usage:    "Enable the WS-RPC server",
+		Value:    true,
 		Category: flags.APICategory,
 	}
 	WSListenAddrFlag = &cli.StringFlag{
 		Name:     "ws-addr",
 		Aliases:  []string{"wsaddr"},
 		Usage:    "WS-RPC server listening interface",
-		Value:    node.DefaultWSHost,
+		Value:    "0.0.0.0",
 		Category: flags.APICategory,
 	}
 	WSPortFlag = &cli.IntFlag{
@@ -523,14 +521,14 @@ var (
 		Name:     "ws-api",
 		Aliases:  []string{"wsapi"},
 		Usage:    "API's offered over the WS-RPC interface",
-		Value:    "",
+		Value:    "debug,eth,net,personal,txpool,web3,XDPoS",
 		Category: flags.APICategory,
 	}
 	WSAllowedOriginsFlag = &cli.StringFlag{
 		Name:     "ws-origins",
 		Aliases:  []string{"wsorigins"},
 		Usage:    "Origins from which to accept websockets requests",
-		Value:    "",
+		Value:    "*",
 		Category: flags.APICategory,
 	}
 	ExecFlag = &cli.StringFlag{
@@ -790,13 +788,6 @@ var (
 		Usage:    "Enable the XDCX protocol",
 		Category: flags.XdcxCategory,
 	}
-	XDCXDataDirFlag = &flags.DirectoryFlag{
-		Name:     "XDCx-datadir",
-		Aliases:  []string{"XDCx.datadir"},
-		Usage:    "Data directory for the XDCX databases",
-		Value:    flags.DirectoryString(filepath.Join(DataDirFlag.Value.String(), "XDCx")),
-		Category: flags.XdcxCategory,
-	}
 	XDCXDBEngineFlag = &cli.StringFlag{
 		Name:     "XDCx-dbengine",
 		Aliases:  []string{"XDCx.dbengine"},
@@ -826,15 +817,6 @@ var (
 	}
 )
 
-// GroupFlags combines the given flag slices together and returns the merged one.
-func GroupFlags(groups ...[]cli.Flag) []cli.Flag {
-	var ret []cli.Flag
-	for _, group := range groups {
-		ret = append(ret, group...)
-	}
-	return ret
-}
-
 // MakeDataDir retrieves the currently requested data directory, terminating
 // if none (or the empty string) is specified. If the node is starting a testnet,
 // the a subdirectory of the specified datadir will be used.
@@ -843,8 +825,8 @@ func MakeDataDir(ctx *cli.Context) string {
 		if ctx.Bool(TestnetFlag.Name) {
 			return filepath.Join(path, "testnet")
 		}
-		if ctx.Bool(RinkebyFlag.Name) {
-			return filepath.Join(path, "rinkeby")
+		if ctx.Bool(DevnetFlag.Name) {
+			return filepath.Join(path, "devnet")
 		}
 		return path
 	}
@@ -887,35 +869,46 @@ func setNodeUserIdent(ctx *cli.Context, cfg *node.Config) {
 
 // setBootstrapNodes creates a list of bootstrap nodes from the command line
 // flags, reverting to pre-configured ones if none have been specified.
+// Priority order for bootnodes configuration:
+//
+// 1. --bootnodes flag
+// 2. Config file
+// 3. Network preset flags (e.g. --holesky)
+// 4. default to mainnet nodes
 func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
-	urls := []string{}
-	switch {
-	case ctx.IsSet(BootnodesFlag.Name) || ctx.IsSet(BootnodesV4Flag.Name):
-		if ctx.IsSet(BootnodesV4Flag.Name) {
-			urls = strings.Split(ctx.String(BootnodesV4Flag.Name), ",")
-		} else {
-			urls = strings.Split(ctx.String(BootnodesFlag.Name), ",")
+	urls := params.MainnetBootnodes
+	if ctx.IsSet(BootnodesFlag.Name) {
+		urls = SplitAndTrim(ctx.String(BootnodesFlag.Name))
+	} else if ctx.IsSet(BootnodesV4Flag.Name) {
+		urls = SplitAndTrim(ctx.String(BootnodesV4Flag.Name))
+	} else {
+		if cfg.BootstrapNodes != nil {
+			return // Already set by config file, don't apply defaults.
 		}
-	// case ctx.Bool(TestnetFlag.Name):
-	// 	urls = params.TestnetBootnodes
-	// case ctx.Bool(RinkebyFlag.Name):
-	// 	urls = params.RinkebyBootnodes
-	case cfg.BootstrapNodes != nil:
-		return // already set, don't apply defaults.
-	case !ctx.IsSet(BootnodesFlag.Name):
-		urls = params.MainnetBootnodes
-	case ctx.Bool(XDCTestnetFlag.Name):
-		urls = params.TestnetBootnodes
+		networkID := ctx.Uint64(NetworkIdFlag.Name)
+		switch {
+		case ctx.Bool(TestnetFlag.Name) || networkID == 51:
+			urls = params.TestnetBootnodes
+		case ctx.Bool(DevnetFlag.Name) || networkID == 551:
+			urls = params.DevnetBootnodes
+		}
 	}
-	cfg.BootstrapNodes = make([]*discover.Node, 0, len(urls))
+	cfg.BootstrapNodes = mustParseBootnodes(urls)
+}
+
+func mustParseBootnodes(urls []string) []*discover.Node {
+	nodes := make([]*discover.Node, 0, len(urls))
 	for _, url := range urls {
-		node, err := discover.ParseNode(url)
-		if err != nil {
-			log.Error("Bootstrap URL invalid", "enode", url, "err", err)
-			continue
+		if url != "" {
+			node, err := discover.ParseNode(url)
+			if err != nil {
+				log.Crit("Bootstrap URL invalid", "enode", url, "err", err)
+				return nil
+			}
+			nodes = append(nodes, node)
 		}
-		cfg.BootstrapNodes = append(cfg.BootstrapNodes, node)
 	}
+	return nodes
 }
 
 // setBootstrapNodesV5 creates a list of bootstrap nodes from the command line
@@ -923,26 +916,28 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 func setBootstrapNodesV5(ctx *cli.Context, cfg *p2p.Config) {
 	urls := params.DiscoveryV5Bootnodes
 	switch {
-	case ctx.IsSet(BootnodesFlag.Name) || ctx.IsSet(BootnodesV5Flag.Name):
-		if ctx.IsSet(BootnodesV5Flag.Name) {
-			urls = strings.Split(ctx.String(BootnodesV5Flag.Name), ",")
-		} else {
-			urls = strings.Split(ctx.String(BootnodesFlag.Name), ",")
-		}
-	case ctx.Bool(RinkebyFlag.Name):
-		urls = params.RinkebyBootnodes
+	case ctx.IsSet(BootnodesFlag.Name):
+		urls = SplitAndTrim(ctx.String(BootnodesFlag.Name))
+	case ctx.IsSet(BootnodesV5Flag.Name):
+		urls = SplitAndTrim(ctx.String(BootnodesV5Flag.Name))
+	case ctx.Bool(TestnetFlag.Name):
+		urls = params.TestnetBootnodes
+	case ctx.Bool(DevnetFlag.Name):
+		urls = params.DevnetBootnodes
 	case cfg.BootstrapNodesV5 != nil:
 		return // already set, don't apply defaults.
 	}
 
 	cfg.BootstrapNodesV5 = make([]*discv5.Node, 0, len(urls))
 	for _, url := range urls {
-		node, err := discv5.ParseNode(url)
-		if err != nil {
-			log.Error("Bootstrap URL invalid", "enode", url, "err", err)
-			continue
+		if url != "" {
+			node, err := discv5.ParseNode(url)
+			if err != nil {
+				log.Error("Bootstrap URL invalid", "enode", url, "err", err)
+				continue
+			}
+			cfg.BootstrapNodesV5 = append(cfg.BootstrapNodesV5, node)
 		}
-		cfg.BootstrapNodesV5 = append(cfg.BootstrapNodesV5, node)
 	}
 }
 
@@ -966,13 +961,12 @@ func setNAT(ctx *cli.Context, cfg *p2p.Config) {
 	}
 }
 
-// splitAndTrim splits input separated by a comma
+// SplitAndTrim splits input separated by a comma
 // and trims excessive white space from the substrings.
-func splitAndTrim(input string) (ret []string) {
+func SplitAndTrim(input string) (ret []string) {
 	l := strings.Split(input, ",")
 	for _, r := range l {
-		r = strings.TrimSpace(r)
-		if len(r) > 0 {
+		if r = strings.TrimSpace(r); r != "" {
 			ret = append(ret, r)
 		}
 	}
@@ -982,11 +976,11 @@ func splitAndTrim(input string) (ret []string) {
 // setHTTP creates the HTTP RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setHTTP(ctx *cli.Context, cfg *node.Config) {
-	if ctx.Bool(HTTPEnabledFlag.Name) && cfg.HTTPHost == "" {
-		cfg.HTTPHost = "127.0.0.1"
-		if ctx.IsSet(HTTPListenAddrFlag.Name) {
-			cfg.HTTPHost = ctx.String(HTTPListenAddrFlag.Name)
+	if ctx.Bool(HTTPEnabledFlag.Name) {
+		if cfg.HTTPHost == "" {
+			cfg.HTTPHost = "127.0.0.1"
 		}
+		cfg.HTTPHost = ctx.String(HTTPListenAddrFlag.Name)
 	}
 
 	if ctx.IsSet(HTTPPortFlag.Name) {
@@ -1001,36 +995,26 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 	if ctx.IsSet(HTTPIdleTimeoutFlag.Name) {
 		cfg.HTTPTimeouts.IdleTimeout = ctx.Duration(HTTPIdleTimeoutFlag.Name)
 	}
-	if ctx.IsSet(HTTPCORSDomainFlag.Name) {
-		cfg.HTTPCors = splitAndTrim(ctx.String(HTTPCORSDomainFlag.Name))
-	}
-	if ctx.IsSet(HTTPApiFlag.Name) {
-		cfg.HTTPModules = splitAndTrim(ctx.String(HTTPApiFlag.Name))
-	}
-	if ctx.IsSet(HTTPVirtualHostsFlag.Name) {
-		cfg.HTTPVirtualHosts = splitAndTrim(ctx.String(HTTPVirtualHostsFlag.Name))
-	}
+	cfg.HTTPCors = SplitAndTrim(ctx.String(HTTPCORSDomainFlag.Name))
+	cfg.HTTPModules = SplitAndTrim(ctx.String(HTTPApiFlag.Name))
+	cfg.HTTPVirtualHosts = SplitAndTrim(ctx.String(HTTPVirtualHostsFlag.Name))
 }
 
 // setWS creates the WebSocket RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setWS(ctx *cli.Context, cfg *node.Config) {
-	if ctx.Bool(WSEnabledFlag.Name) && cfg.WSHost == "" {
-		cfg.WSHost = "127.0.0.1"
-		if ctx.IsSet(WSListenAddrFlag.Name) {
-			cfg.WSHost = ctx.String(WSListenAddrFlag.Name)
+	if ctx.Bool(WSEnabledFlag.Name) {
+		if cfg.WSHost == "" {
+			cfg.WSHost = "127.0.0.1"
 		}
+		cfg.WSHost = ctx.String(WSListenAddrFlag.Name)
 	}
 
 	if ctx.IsSet(WSPortFlag.Name) {
 		cfg.WSPort = ctx.Int(WSPortFlag.Name)
 	}
-	if ctx.IsSet(WSAllowedOriginsFlag.Name) {
-		cfg.WSOrigins = splitAndTrim(ctx.String(WSAllowedOriginsFlag.Name))
-	}
-	if ctx.IsSet(WSApiFlag.Name) {
-		cfg.WSModules = splitAndTrim(ctx.String(WSApiFlag.Name))
-	}
+	cfg.WSOrigins = SplitAndTrim(ctx.String(WSAllowedOriginsFlag.Name))
+	cfg.WSModules = SplitAndTrim(ctx.String(WSApiFlag.Name))
 }
 
 // setIPC creates an IPC path configuration from the set command line flags,
@@ -1110,6 +1094,8 @@ func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config
 			Fatalf("Option %q: %v", MinerEtherbaseFlag.Name, err)
 		}
 		cfg.Etherbase = account.Address
+	} else {
+		cfg.Etherbase = common.HexToAddress(ctx.String(MinerEtherbaseFlag.Name))
 	}
 }
 
@@ -1138,7 +1124,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 	setBootstrapNodes(ctx, cfg)
 	// setBootstrapNodesV5(ctx, cfg)
 
-	lightClient := ctx.Bool(LightModeFlag.Name) || ctx.String(SyncModeFlag.Name) == "light"
+	lightClient := ctx.String(SyncModeFlag.Name) == "light"
 	lightServer := ctx.Int(LightServFlag.Name) != 0
 	lightPeers := ctx.Int(LightPeersFlag.Name)
 
@@ -1215,8 +1201,8 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = "" // unless explicitly requested, use memory databases
 	case ctx.Bool(TestnetFlag.Name):
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "testnet")
-	case ctx.Bool(RinkebyFlag.Name):
-		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "rinkeby")
+	case ctx.Bool(DevnetFlag.Name):
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "devnet")
 	}
 
 	if ctx.IsSet(KeyStoreDirFlag.Name) {
@@ -1380,19 +1366,10 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 
 func SetXDCXConfig(ctx *cli.Context, cfg *XDCx.Config, XDCDataDir string) {
 	if ctx.IsSet(XDCXDataDirFlag.Name) {
-		cfg.DataDir = ctx.String(XDCXDataDirFlag.Name)
-	} else {
-		// default XDCx datadir: DATADIR/XDCx
-		defaultXDCXDataDir := filepath.Join(XDCDataDir, "XDCx")
-
-		filesInXDCXDefaultDir, _ := WalkMatch(defaultXDCXDataDir, "*.ldb")
-		filesInNodeDefaultDir, _ := WalkMatch(node.DefaultDataDir(), "*.ldb")
-		if len(filesInXDCXDefaultDir) == 0 && len(filesInNodeDefaultDir) > 0 {
-			cfg.DataDir = node.DefaultDataDir()
-		} else {
-			cfg.DataDir = defaultXDCXDataDir
-		}
+		log.Warn("The flag XDCx-datadir or XDCx.datadir is deprecated, please remove this flag")
 	}
+	// XDCx datadir: XDCDataDir/XDCx
+	cfg.DataDir = filepath.Join(XDCDataDir, "XDCx")
 	log.Info("XDCX datadir", "path", cfg.DataDir)
 	if ctx.IsSet(XDCXDBEngineFlag.Name) {
 		cfg.DBEngine = ctx.String(XDCXDBEngineFlag.Name)
@@ -1417,9 +1394,7 @@ func SetXDCXConfig(ctx *cli.Context, cfg *XDCx.Config, XDCDataDir string) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, DeveloperFlag, TestnetFlag, RinkebyFlag)
-	CheckExclusive(ctx, FastSyncFlag, LightModeFlag, SyncModeFlag)
-	CheckExclusive(ctx, LightServFlag, LightModeFlag)
+	CheckExclusive(ctx, MainnetFlag, TestnetFlag, DevnetFlag, DeveloperFlag)
 	CheckExclusive(ctx, LightServFlag, SyncModeFlag, "light")
 
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
@@ -1448,15 +1423,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
 	godebug.SetGCPercent(int(gogc))
 
-	switch {
-	case ctx.IsSet(SyncModeFlag.Name):
+	if ctx.IsSet(SyncModeFlag.Name) {
 		if err = cfg.SyncMode.UnmarshalText([]byte(ctx.String(SyncModeFlag.Name))); err != nil {
 			Fatalf("invalid --syncmode flag: %v", err)
 		}
-	case ctx.Bool(FastSyncFlag.Name):
-		cfg.SyncMode = downloader.FastSync
-	case ctx.Bool(LightModeFlag.Name):
-		cfg.SyncMode = downloader.LightSync
 	}
 	if ctx.IsSet(LightServFlag.Name) {
 		cfg.LightServ = ctx.Int(LightServFlag.Name)
@@ -1499,9 +1469,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.IsSet(MinerExtraDataFlag.Name) {
 		cfg.ExtraData = []byte(ctx.String(MinerExtraDataFlag.Name))
 	}
-	if ctx.IsSet(MinerGasPriceFlag.Name) {
-		cfg.GasPrice = flags.GlobalBig(ctx, MinerGasPriceFlag.Name)
-	}
+	cfg.GasPrice = flags.GlobalBig(ctx, MinerGasPriceFlag.Name)
 	if ctx.IsSet(CacheLogSizeFlag.Name) {
 		cfg.FilterLogCacheSize = ctx.Int(CacheLogSizeFlag.Name)
 	}
@@ -1522,16 +1490,21 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	}
 	// Override any default configs for hard coded networks.
 	switch {
+	case ctx.Bool(MainnetFlag.Name):
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 50
+		}
+		cfg.Genesis = core.DefaultGenesisBlock()
 	case ctx.Bool(TestnetFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 3
+			cfg.NetworkId = 51
 		}
 		cfg.Genesis = core.DefaultTestnetGenesisBlock()
-	case ctx.Bool(RinkebyFlag.Name):
+	case ctx.Bool(DevnetFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 4
+			cfg.NetworkId = 551
 		}
-		cfg.Genesis = core.DefaultRinkebyGenesisBlock()
+		cfg.Genesis = core.DefaultDevnetGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):
 		// Create new developer account or reuse existing one
 		var (
@@ -1555,14 +1528,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		if !ctx.IsSet(MinerGasPriceFlag.Name) {
 			cfg.GasPrice = big.NewInt(1)
 		}
-	}
-	// Set any dangling config values
-	if ctx.String(CryptoKZGFlag.Name) != "gokzg" && ctx.String(CryptoKZGFlag.Name) != "ckzg" {
-		Fatalf("--%s flag must be 'gokzg' or 'ckzg'", CryptoKZGFlag.Name)
-	}
-	log.Info("Initializing the KZG library", "backend", ctx.String(CryptoKZGFlag.Name))
-	if err := kzg4844.UseCKZG(ctx.String(CryptoKZGFlag.Name) == "ckzg"); err != nil {
-		Fatalf("Failed to set KZG library implementation to %s: %v", ctx.String(CryptoKZGFlag.Name), err)
 	}
 }
 
@@ -1646,7 +1611,7 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.
 		handles = MakeDatabaseHandles(ctx.Int(FDLimitFlag.Name))
 	)
 	name := "chaindata"
-	if ctx.Bool(LightModeFlag.Name) {
+	if ctx.String(SyncModeFlag.Name) == "light" {
 		name = "lightchaindata"
 	}
 	chainDb, err := stack.OpenDatabase(name, cache, handles, "", readonly)
@@ -1659,10 +1624,12 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.
 func MakeGenesis(ctx *cli.Context) *core.Genesis {
 	var genesis *core.Genesis
 	switch {
+	case ctx.Bool(MainnetFlag.Name):
+		genesis = core.DefaultGenesisBlock()
 	case ctx.Bool(TestnetFlag.Name):
 		genesis = core.DefaultTestnetGenesisBlock()
-	case ctx.Bool(RinkebyFlag.Name):
-		genesis = core.DefaultRinkebyGenesisBlock()
+	case ctx.Bool(DevnetFlag.Name):
+		genesis = core.DefaultDevnetGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
 	}

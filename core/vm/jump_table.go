@@ -57,6 +57,7 @@ var (
 	mergeInstructionSet            = newMergeInstructionSet()
 	shanghaiInstructionSet         = newShanghaiInstructionSet()
 	eip1559InstructionSet          = newEip1559InstructionSet()
+	cancunInstructionSet           = newCancunInstructionSet()
 )
 
 // JumpTable contains the EVM opcodes supported at a given fork.
@@ -78,6 +79,16 @@ func validate(jt JumpTable) JumpTable {
 		}
 	}
 	return jt
+}
+
+func newCancunInstructionSet() JumpTable {
+	instructionSet := newEip1559InstructionSet()
+	enable4844(&instructionSet) // EIP-4844 (BLOBHASH opcode)
+	enable7516(&instructionSet) // EIP-7516 (BLOBBASEFEE opcode)
+	enable1153(&instructionSet) // EIP-1153 "Transient Storage"
+	enable5656(&instructionSet) // EIP-5656 (MCOPY opcode)
+	enable6780(&instructionSet) // EIP-6780 SELFDESTRUCT only in same transaction
+	return validate(instructionSet)
 }
 
 func newEip1559InstructionSet() JumpTable {

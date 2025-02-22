@@ -38,7 +38,8 @@ var (
 	// headFastBlockKey tracks the latest known incomplete block's hash during fast sync.
 	headFastBlockKey = []byte("LastFast")
 
-	trieSyncKey = []byte("TrieSync")
+	// fastTrieProgressKey tracks the number of trie entries imported during fast sync.
+	fastTrieProgressKey = []byte("TrieSync")
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
 	headerPrefix       = []byte("h") // headerPrefix + num (uint64 big endian) + hash -> header
@@ -80,6 +81,9 @@ const (
 
 	// freezerReceiptTable indicates the name of the freezer receipts table.
 	freezerReceiptTable = "receipts"
+
+	// freezerDifficultyTable indicates the name of the freezer total difficulty table.
+	freezerDifficultyTable = "diffs"
 )
 
 // LegacyTxLookupEntry is the legacy TxLookupEntry definition with some unnecessary
@@ -95,6 +99,11 @@ func encodeBlockNumber(number uint64) []byte {
 	enc := make([]byte, 8)
 	binary.BigEndian.PutUint64(enc, number)
 	return enc
+}
+
+// headerKeyPrefix = headerPrefix + num (uint64 big endian)
+func headerKeyPrefix(number uint64) []byte {
+	return append(headerPrefix, encodeBlockNumber(number)...)
 }
 
 // headerKey = headerPrefix + num (uint64 big endian) + hash

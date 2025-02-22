@@ -17,8 +17,6 @@
 package vm
 
 import (
-	"sync/atomic"
-
 	"github.com/XinFinOrg/XDPoSChain/common"
 	"github.com/XinFinOrg/XDPoSChain/core/types"
 	"github.com/XinFinOrg/XDPoSChain/crypto"
@@ -489,7 +487,7 @@ func opRandom(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]b
 	if interpreter.evm.Context.Random != nil {
 		v = new(uint256.Int).SetBytes((interpreter.evm.Context.Random.Bytes()))
 	} else { // if context random is not set, use emptyCodeHash as default
-		v = new(uint256.Int).SetBytes(emptyCodeHash.Bytes())
+		v = new(uint256.Int).SetBytes(types.EmptyCodeHash.Bytes())
 	}
 	scope.Stack.push(v)
 	return nil, nil
@@ -544,7 +542,7 @@ func opSstore(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]b
 }
 
 func opJump(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	if atomic.LoadInt32(&interpreter.evm.abort) != 0 {
+	if interpreter.evm.abort.Load() {
 		return nil, errStopToken
 	}
 	pos := scope.Stack.pop()
@@ -556,7 +554,7 @@ func opJump(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 }
 
 func opJumpi(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	if atomic.LoadInt32(&interpreter.evm.abort) != 0 {
+	if interpreter.evm.abort.Load() {
 		return nil, errStopToken
 	}
 	pos, cond := scope.Stack.pop(), scope.Stack.pop()
@@ -838,9 +836,25 @@ func opSelfdestruct(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext
 	balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
 	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
 	interpreter.evm.StateDB.SelfDestruct(scope.Contract.Address())
-	if interpreter.evm.Config.Debug {
-		interpreter.evm.Config.Tracer.CaptureEnter(SELFDESTRUCT, scope.Contract.Address(), beneficiary.Bytes20(), []byte{}, 0, balance)
-		interpreter.evm.Config.Tracer.CaptureExit([]byte{}, 0, nil)
+	if tracer := interpreter.evm.Config.Tracer; tracer != nil {
+		tracer.CaptureEnter(SELFDESTRUCT, scope.Contract.Address(), beneficiary.Bytes20(), []byte{}, 0, balance)
+		tracer.CaptureExit([]byte{}, 0, nil)
+	}
+	return nil, errStopToken
+}
+
+func opSelfdestruct6780(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	if interpreter.readOnly {
+		return nil, ErrWriteProtection
+	}
+	beneficiary := scope.Stack.pop()
+	balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
+	interpreter.evm.StateDB.SubBalance(scope.Contract.Address(), balance)
+	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
+	interpreter.evm.StateDB.Selfdestruct6780(scope.Contract.Address())
+	if tracer := interpreter.evm.Config.Tracer; tracer != nil {
+		tracer.CaptureEnter(SELFDESTRUCT, scope.Contract.Address(), beneficiary.Bytes20(), []byte{}, 0, balance)
+		tracer.CaptureExit([]byte{}, 0, nil)
 	}
 	return nil, errStopToken
 }

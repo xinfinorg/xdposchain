@@ -19,6 +19,7 @@ package params
 import (
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/XinFinOrg/XDPoSChain/common"
@@ -130,9 +131,9 @@ var (
 			SwitchRound:          0,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 3,
-			TimeoutPeriod:        30,
+			TimeoutPeriod:        5,
 			MinePeriod:           2,
-			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 2.0, MaxExponent: 5},
 		},
 	}
 
@@ -171,7 +172,6 @@ var (
 		ChainId:        big.NewInt(50),
 		HomesteadBlock: big.NewInt(1),
 		EIP150Block:    big.NewInt(2),
-		EIP150Hash:     common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 		EIP155Block:    big.NewInt(3),
 		EIP158Block:    big.NewInt(3),
 		ByzantiumBlock: big.NewInt(4),
@@ -183,8 +183,8 @@ var (
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("xdc92a289fe95a85c53b8d0d113cbaef0c1ec98ac65"),
 			V2: &V2{
-				SwitchEpoch:   common.TIPV2SwitchBlock.Uint64() / 900,
-				SwitchBlock:   common.TIPV2SwitchBlock,
+				SwitchEpoch:   common.MaintnetConstant.TIPV2SwitchBlock.Uint64() / 900,
+				SwitchBlock:   common.MaintnetConstant.TIPV2SwitchBlock,
 				CurrentConfig: MainnetV2Configs[0],
 				AllConfigs:    MainnetV2Configs,
 			},
@@ -198,7 +198,6 @@ var (
 		DAOForkBlock:        big.NewInt(1920000),
 		DAOForkSupport:      true,
 		EIP150Block:         big.NewInt(2463000),
-		EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
 		EIP155Block:         big.NewInt(2675000),
 		EIP158Block:         big.NewInt(2675000),
 		ByzantiumBlock:      big.NewInt(4370000),
@@ -213,7 +212,6 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(2),
-		EIP150Hash:          common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 		EIP155Block:         big.NewInt(3),
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(4),
@@ -226,8 +224,8 @@ var (
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("xdc746249c61f5832c5eed53172776b460491bdcd5c"),
 			V2: &V2{
-				SwitchEpoch:   common.TIPV2SwitchBlock.Uint64() / 900,
-				SwitchBlock:   common.TIPV2SwitchBlock,
+				SwitchEpoch:   common.TestnetConstant.TIPV2SwitchBlock.Uint64() / 900,
+				SwitchBlock:   common.TestnetConstant.TIPV2SwitchBlock,
 				CurrentConfig: TestnetV2Configs[0],
 				AllConfigs:    TestnetV2Configs,
 			},
@@ -239,7 +237,6 @@ var (
 		ChainId:        big.NewInt(551),
 		HomesteadBlock: big.NewInt(1),
 		EIP150Block:    big.NewInt(2),
-		EIP150Hash:     common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 		EIP155Block:    big.NewInt(3),
 		EIP158Block:    big.NewInt(3),
 		ByzantiumBlock: big.NewInt(4),
@@ -251,34 +248,10 @@ var (
 			Gap:                 450,
 			FoudationWalletAddr: common.HexToAddress("0x746249c61f5832c5eed53172776b460491bdcd5c"),
 			V2: &V2{
-				SwitchEpoch:   common.TIPV2SwitchBlock.Uint64() / 900,
-				SwitchBlock:   common.TIPV2SwitchBlock,
+				SwitchEpoch:   common.DevnetConstant.TIPV2SwitchBlock.Uint64() / 900,
+				SwitchBlock:   common.DevnetConstant.TIPV2SwitchBlock,
 				CurrentConfig: DevnetV2Configs[0],
 				AllConfigs:    DevnetV2Configs,
-			},
-		},
-	}
-
-	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
-	RinkebyChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(4),
-		HomesteadBlock:      big.NewInt(1),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2),
-		EIP150Hash:          common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
-		EIP155Block:         big.NewInt(3),
-		EIP158Block:         big.NewInt(3),
-		ByzantiumBlock:      big.NewInt(1035301),
-		ConstantinopleBlock: nil,
-		XDPoS: &XDPoSConfig{
-			Period: 15,
-			Epoch:  900,
-			V2: &V2{
-				SwitchEpoch:   9999999999 / 900,
-				SwitchBlock:   big.NewInt(9999999999),
-				CurrentConfig: MainnetV2Configs[0],
-				AllConfigs:    MainnetV2Configs,
 			},
 		},
 	}
@@ -294,7 +267,6 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.Hash{},
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
@@ -315,7 +287,6 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.Hash{},
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
@@ -331,7 +302,6 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.Hash{},
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
@@ -348,7 +318,6 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.Hash{},
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
@@ -376,7 +345,6 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.Hash{},
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
@@ -402,9 +370,7 @@ type ChainConfig struct {
 	DAOForkSupport bool     `json:"daoForkSupport,omitempty"` // Whether the nodes supports or opposes the DAO hard-fork
 
 	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
-	EIP150Block *big.Int    `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
-	EIP150Hash  common.Hash `json:"eip150Hash,omitempty"`  // EIP150 HF hash (needed for header only clients as only gas pricing changed)
-
+	EIP150Block *big.Int `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
 	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF block
 	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
 
@@ -418,6 +384,7 @@ type ChainConfig struct {
 	MergeBlock      *big.Int `json:"mergeBlock,omitempty"`
 	ShanghaiBlock   *big.Int `json:"shanghaiBlock,omitempty"`
 	Eip1559Block    *big.Int `json:"eip1559Block,omitempty"`
+	CancunBlock     *big.Int `json:"cancunBlock,omitempty"`
 
 	// Various consensus engines
 	Ethash *EthashConfig `json:"ethash,omitempty"`
@@ -488,6 +455,54 @@ func (c *XDPoSConfig) String() string {
 	return "XDPoS"
 }
 
+func (c *XDPoSConfig) Description(indent int) string {
+	if c == nil {
+		return "XDPoS: <nil>"
+	}
+
+	banner := "XDPoS\n"
+	prefix := strings.Repeat(" ", indent)
+	banner += fmt.Sprintf("%s- Period: %v\n", prefix, c.Period)
+	banner += fmt.Sprintf("%s- Epoch: %v\n", prefix, c.Epoch)
+	banner += fmt.Sprintf("%s- Reward: %v\n", prefix, c.Reward)
+	banner += fmt.Sprintf("%s- RewardCheckpoint: %v\n", prefix, c.RewardCheckpoint)
+	banner += fmt.Sprintf("%s- Gap: %v\n", prefix, c.Gap)
+	banner += fmt.Sprintf("%s- FoudationWalletAddr: %v\n", prefix, c.FoudationWalletAddr.Hex())
+	banner += fmt.Sprintf("%s- SkipV1Validation: %v\n", prefix, c.SkipV1Validation)
+	banner += fmt.Sprintf("%s- %s", prefix, c.V2.Description(indent+2))
+	return banner
+}
+
+func (v2 *V2) Description(indent int) string {
+	if v2 == nil {
+		return "V2: <nil>"
+	}
+
+	banner := "V2:\n"
+	prefix := strings.Repeat(" ", indent)
+	banner += fmt.Sprintf("%s- SwitchEpoch: %v\n", prefix, v2.SwitchEpoch)
+	banner += fmt.Sprintf("%s- SwitchBlock: %v\n", prefix, v2.SwitchBlock)
+	banner += fmt.Sprintf("%s- SkipV2Validation: %v\n", prefix, v2.SkipV2Validation)
+	banner += fmt.Sprintf("%s- %s", prefix, v2.CurrentConfig.Description("CurrentConfig", indent+2))
+	return banner
+}
+
+func (c *V2Config) Description(name string, indent int) string {
+	if c == nil {
+		return name + ": <nil>"
+	}
+
+	banner := name + ":\n"
+	prefix := strings.Repeat(" ", indent)
+	banner += fmt.Sprintf("%s- MaxMasternodes: %v\n", prefix, c.MaxMasternodes)
+	banner += fmt.Sprintf("%s- SwitchRound: %v\n", prefix, c.SwitchRound)
+	banner += fmt.Sprintf("%s- MinePeriod: %v\n", prefix, c.MinePeriod)
+	banner += fmt.Sprintf("%s- TimeoutSyncThreshold: %v\n", prefix, c.TimeoutSyncThreshold)
+	banner += fmt.Sprintf("%s- TimeoutPeriod: %v\n", prefix, c.TimeoutPeriod)
+	banner += fmt.Sprintf("%s- CertThreshold: %v", prefix, c.CertThreshold)
+	return banner
+}
+
 func (c *XDPoSConfig) BlockConsensusVersion(num *big.Int, extraByte []byte, extraCheck bool) string {
 	if c.V2 != nil && c.V2.SwitchBlock != nil && num.Cmp(c.V2.SwitchBlock) > 0 {
 		return ConsensusEngineVersion2
@@ -551,14 +566,14 @@ func (v *V2) ConfigIndex() []uint64 {
 	return v.configIndex
 }
 
-// String implements the fmt.Stringer interface.
-func (c *ChainConfig) String() string {
+// Description returns a human-readable description of ChainConfig.
+func (c *ChainConfig) Description() string {
 	var engine interface{}
 	switch {
 	case c.Ethash != nil:
 		engine = c.Ethash
 	case c.XDPoS != nil:
-		engine = c.XDPoS
+		engine = c.XDPoS.Description(4)
 	default:
 		engine = "unknown"
 	}
@@ -582,24 +597,30 @@ func (c *ChainConfig) String() string {
 	if c.Eip1559Block != nil {
 		eip1559Block = c.Eip1559Block
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Istanbul: %v  BerlinBlock: %v LondonBlock: %v MergeBlock: %v ShanghaiBlock: %v Eip1559Block: %v Engine: %v}",
-		c.ChainId,
-		c.HomesteadBlock,
-		c.DAOForkBlock,
-		c.DAOForkSupport,
-		c.EIP150Block,
-		c.EIP155Block,
-		c.EIP158Block,
-		c.ByzantiumBlock,
-		c.ConstantinopleBlock,
-		common.TIPXDCXCancellationFee,
-		berlinBlock,
-		londonBlock,
-		mergeBlock,
-		shanghaiBlock,
-		eip1559Block,
-		engine,
-	)
+	cancunBlock := common.CancunBlock
+	if c.CancunBlock != nil {
+		cancunBlock = c.CancunBlock
+	}
+
+	var banner = "Chain configuration:\n"
+	banner += fmt.Sprintf("  - ChainID:                     %-8v\n", c.ChainId)
+	banner += fmt.Sprintf("  - Homestead:                   %-8v\n", c.HomesteadBlock)
+	banner += fmt.Sprintf("  - DAO Fork:                    %-8v\n", c.DAOForkBlock)
+	banner += fmt.Sprintf("  - DAO Support:                 %-8v\n", c.DAOForkSupport)
+	banner += fmt.Sprintf("  - Tangerine Whistle (EIP 150): %-8v\n", c.EIP150Block)
+	banner += fmt.Sprintf("  - Spurious Dragon (EIP 155):   %-8v\n", c.EIP155Block)
+	banner += fmt.Sprintf("  - Byzantium:                   %-8v\n", c.ByzantiumBlock)
+	banner += fmt.Sprintf("  - Constantinople:              %-8v\n", c.ConstantinopleBlock)
+	banner += fmt.Sprintf("  - Petersburg:                  %-8v\n", c.PetersburgBlock)
+	banner += fmt.Sprintf("  - Istanbul:                    %-8v\n", c.IstanbulBlock)
+	banner += fmt.Sprintf("  - Berlin:                      %-8v\n", berlinBlock)
+	banner += fmt.Sprintf("  - London:                      %-8v\n", londonBlock)
+	banner += fmt.Sprintf("  - Merge:                       %-8v\n", mergeBlock)
+	banner += fmt.Sprintf("  - Shanghai:                    %-8v\n", shanghaiBlock)
+	banner += fmt.Sprintf("  - Eip1559:                     %-8v\n", eip1559Block)
+	banner += fmt.Sprintf("  - Cancun:                      %-8v\n", cancunBlock)
+	banner += fmt.Sprintf("  - Engine:                      %v", engine)
+	return banner
 }
 
 // IsHomestead returns whether num is either equal to the homestead block or greater.
@@ -667,6 +688,10 @@ func (c *ChainConfig) IsShanghai(num *big.Int) bool {
 
 func (c *ChainConfig) IsEIP1559(num *big.Int) bool {
 	return isForked(common.Eip1559Block, num) || isForked(c.Eip1559Block, num)
+}
+
+func (c *ChainConfig) IsCancun(num *big.Int) bool {
+	return isForked(common.CancunBlock, num) || isForked(c.CancunBlock, num)
 }
 
 func (c *ChainConfig) IsTIP2019(num *big.Int) bool {
@@ -777,6 +802,28 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 	if isForkIncompatible(c.ConstantinopleBlock, newcfg.ConstantinopleBlock, head) {
 		return newCompatError("Constantinople fork block", c.ConstantinopleBlock, newcfg.ConstantinopleBlock)
 	}
+	if isForkIncompatible(c.PetersburgBlock, newcfg.PetersburgBlock, head) {
+		// the only case where we allow Petersburg to be set in the past is if it is equal to Constantinople
+		// mainly to satisfy fork ordering requirements which state that Petersburg fork be set if Constantinople fork is set
+		if isForkIncompatible(c.ConstantinopleBlock, newcfg.PetersburgBlock, head) {
+			return newCompatError("Petersburg fork block", c.PetersburgBlock, newcfg.PetersburgBlock)
+		}
+	}
+	if isForkIncompatible(c.IstanbulBlock, newcfg.IstanbulBlock, head) {
+		return newCompatError("Istanbul fork block", c.IstanbulBlock, newcfg.IstanbulBlock)
+	}
+	if isForkIncompatible(c.BerlinBlock, newcfg.BerlinBlock, head) {
+		return newCompatError("Berlin fork block", c.BerlinBlock, newcfg.BerlinBlock)
+	}
+	if isForkIncompatible(c.LondonBlock, newcfg.LondonBlock, head) {
+		return newCompatError("London fork block", c.LondonBlock, newcfg.LondonBlock)
+	}
+	if isForkIncompatible(c.ShanghaiBlock, newcfg.ShanghaiBlock, head) {
+		return newCompatError("Shanghai fork timestamp", c.ShanghaiBlock, newcfg.ShanghaiBlock)
+	}
+	if isForkIncompatible(c.CancunBlock, newcfg.CancunBlock, head) {
+		return newCompatError("Cancun fork block", c.CancunBlock, newcfg.CancunBlock)
+	}
 	return nil
 }
 
@@ -848,6 +895,7 @@ type Rules struct {
 	IsMerge, IsShanghai                                     bool
 	IsXDCxDisable                                           bool
 	IsEIP1559                                               bool
+	IsCancun                                                bool
 }
 
 func (c *ChainConfig) Rules(num *big.Int) Rules {
@@ -871,5 +919,6 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 		IsShanghai:       c.IsShanghai(num),
 		IsXDCxDisable:    c.IsXDCxDisable(num),
 		IsEIP1559:        c.IsEIP1559(num),
+		IsCancun:         c.IsCancun(num),
 	}
 }

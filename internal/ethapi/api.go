@@ -138,6 +138,11 @@ func (s *PublicEthereumAPI) FeeHistory(ctx context.Context, blockCount hexutil.U
 	return results, nil
 }
 
+// BlobBaseFee returns the base fee for blob gas at the current head.
+func (s *PublicEthereumAPI) BlobBaseFee(ctx context.Context) *hexutil.Big {
+	return (*hexutil.Big)(new(big.Int))
+}
+
 // ProtocolVersion returns the current Ethereum protocol version this node supports
 func (s *PublicEthereumAPI) ProtocolVersion() hexutil.Uint {
 	return hexutil.Uint(s.b.ProtocolVersion())
@@ -248,7 +253,7 @@ func (s *PublicTxPoolAPI) Inspect() map[string]map[string]map[string]string {
 	// Define a formatter to flatten a transaction into a string
 	var format = func(tx *types.Transaction) string {
 		if to := tx.To(); to != nil {
-			return fmt.Sprintf("%s: %v wei + %v gas × %v wei", tx.To().Hex(), tx.Value(), tx.Gas(), tx.GasPrice())
+			return fmt.Sprintf("%s: %v wei + %v gas × %v wei", to, tx.Value(), tx.Gas(), tx.GasPrice())
 		}
 		return fmt.Sprintf("contract creation: %v wei + %v gas × %v wei", tx.Value(), tx.Gas(), tx.GasPrice())
 	}
@@ -2064,7 +2069,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
-		config := vm.Config{Tracer: tracer, Debug: true, NoBaseFee: true}
+		config := vm.Config{Tracer: tracer, NoBaseFee: true}
 		vmenv, _, err := b.GetEVM(ctx, msg, statedb, XDCxState, header, &config)
 		if err != nil {
 			return nil, 0, nil, err
@@ -2289,7 +2294,7 @@ func (s *PublicTransactionPoolAPI) sign(addr common.Address, tx *types.Transacti
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
 func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (common.Hash, error) {
-	if tx.To() != nil && tx.IsSpecialTransaction() {
+	if tx.IsSpecialTransaction() {
 		return common.Hash{}, errors.New("don't allow transaction sent to BlockSigners & RandomizeSMC smart contract via API")
 	}
 
