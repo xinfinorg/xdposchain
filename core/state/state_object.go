@@ -93,6 +93,9 @@ type stateObject struct {
 	// the end of transaction and no longer accessible anymore.
 	deleted bool
 
+	// Flag whether the object was created in the current transaction
+	created bool
+
 	touched bool
 
 	onDirty func(addr common.Address) // Callback method to mark a state object newly dirty
@@ -169,7 +172,7 @@ func (s *stateObject) getTrie(db Database) Trie {
 		var err error
 		s.trie, err = db.OpenStorageTrie(s.addrHash, s.data.Root)
 		if err != nil {
-			s.trie, _ = db.OpenStorageTrie(s.addrHash, common.Hash{})
+			s.trie, _ = db.OpenStorageTrie(s.addrHash, types.EmptyRootHash)
 			s.setError(fmt.Errorf("can't create storage trie: %v", err))
 		}
 	}
