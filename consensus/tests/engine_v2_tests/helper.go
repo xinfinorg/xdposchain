@@ -56,6 +56,8 @@ var (
 	protector2Addr   = crypto.PubkeyToAddress(protector2Key.PublicKey)
 	observer1Key, _  = crypto.HexToECDSA("71a67e127fad4e9016a977b97b0c89921839df052d7adc2f7890346789023789")
 	observer1Addr    = crypto.PubkeyToAddress(observer1Key.PublicKey)
+	observer2Key, _  = crypto.HexToECDSA("789034678902378971a67e127fad4e9016a977b97b0c89921839df052d7adc2f")
+	observer2Addr    = crypto.PubkeyToAddress(observer2Key.PublicKey)
 )
 
 func SignHashByPK(pk *ecdsa.PrivateKey, itemToSign []byte) []byte {
@@ -305,8 +307,8 @@ func getProtectorObserverBackend(t *testing.T, chainConfig *params.ChainConfig) 
 		candidates = append(candidates, common.StringToAddress(addr)) // StringToAddress does not exist
 		caps = append(caps, defalutCap)
 	}
-	candidates = append(candidates, protector1Addr, protector2Addr, observer1Addr)
-	caps = append(caps, defalutCap, defalutCap, big.NewInt(999999)) // 99..9 is a small cap
+	candidates = append(candidates, protector1Addr, protector2Addr, observer1Addr, observer2Addr)
+	caps = append(caps, defalutCap, defalutCap, big.NewInt(999999), big.NewInt(999999)) // 99..9 is a small cap
 
 	acc1Cap, acc2Cap, acc3Cap, voterCap := new(big.Int), new(big.Int), new(big.Int), new(big.Int)
 
@@ -575,7 +577,11 @@ func PrepareXDCTestBlockChainWithPenaltyForV2Engine(t *testing.T, numOfBlocks in
 		}
 		roundNumber := int64(i) - chainConfig.XDPoS.V2.SwitchBlock.Int64()
 		// use signer itself as penalty
-		block := CreateBlock(blockchain, chainConfig, currentBlock, i, roundNumber, blockCoinBase, signer, signFn, signer[:], nil, "")
+		penalty := signer[:]
+		if roundNumber%int64(chainConfig.XDPoS.Epoch) != 0 {
+			penalty = nil
+		}
+		block := CreateBlock(blockchain, chainConfig, currentBlock, i, roundNumber, blockCoinBase, signer, signFn, penalty, nil, "")
 
 		err = blockchain.InsertBlock(block)
 		if err != nil {
@@ -657,7 +663,7 @@ func PrepareXDCTestBlockChainWith128Candidates(t *testing.T, numOfBlocks int, ch
 }
 
 // V2 concensus engine
-func PrepareXDCTestBlockChainWithProtectorObserver(t *testing.T, numOfBlocks int, chainConfig *params.ChainConfig) (*core.BlockChain, *backends.SimulatedBackend, *types.Block, common.Address, func(account accounts.Account, hash []byte) ([]byte, error), *types.Block) {
+func PrepareXDCTestBlockChainWithProtectorObserver(t *testing.T, numOfBlocks int, chainConfig *params.ChainConfig) (*core.BlockChain, *backends.SimulatedBackend, *types.Block, common.Address, func(account accounts.Account, hash []byte) ([]byte, error)) {
 	// Preparation
 	var err error
 	signer, signFn, err := backends.SimulateWalletAddressAndSignFn()
@@ -675,8 +681,6 @@ func PrepareXDCTestBlockChainWithProtectorObserver(t *testing.T, numOfBlocks int
 
 	currentBlock := blockchain.Genesis()
 
-	var currentForkBlock *types.Block
-
 	go func() {
 		for range core.CheckpointCh {
 			checkpointChanMsg := <-core.CheckpointCh
@@ -692,8 +696,16 @@ func PrepareXDCTestBlockChainWithProtectorObserver(t *testing.T, numOfBlocks int
 			blockCoinBase = signer.Hex()
 		}
 		roundNumber := int64(i) - chainConfig.XDPoS.V2.SwitchBlock.Int64()
-		block := CreateBlock(blockchain, chainConfig, currentBlock, i, roundNumber, blockCoinBase, signer, signFn, nil, nil, "532f2c46eb3bc972c9638bafda99f5467d385ecd1074f7c2036b57d60724744e")
+		// use observer2 as penalty and put in checkpoint block
+		penalty := observer2Addr[:]
+		if i != 900 {
+			penalty = nil
+		}
+		block := CreateBlock(blockchain, chainConfig, currentBlock, i, roundNumber, blockCoinBase, signer, signFn, penalty, nil, "f11ec19df702aa6bd9b3b2186edbc66d6b50b06334455a4a2ae8d166f28a14ff")
 
+		if i == 900 {
+			fmt.Println(block.Penalties())
+		}
 		err = blockchain.InsertBlock(block)
 		if err != nil {
 			t.Fatal(err)
@@ -719,7 +731,7 @@ func PrepareXDCTestBlockChainWithProtectorObserver(t *testing.T, numOfBlocks int
 		t.Fatal(err)
 	}
 
-	return blockchain, backend, currentBlock, signer, signFn, currentForkBlock
+	return blockchain, backend, currentBlock, signer, signFn
 }
 
 func CreateBlock(blockchain *core.BlockChain, chainConfig *params.ChainConfig, startingBlock *types.Block, blockNumber int, roundNumber int64, blockCoinBase string, signer common.Address, signFn func(account accounts.Account, hash []byte) ([]byte, error), penalties []byte, signersKey []*ecdsa.PrivateKey, merkleRoot string) *types.Block {
@@ -753,9 +765,6 @@ func CreateBlock(blockchain *core.BlockChain, chainConfig *params.ChainConfig, s
 			masternodesFromV1LastEpoch := decodeMasternodesFromHeaderExtra(lastv1Block.Header())
 			for _, v := range masternodesFromV1LastEpoch {
 				header.Validators = append(header.Validators, v[:]...)
-			}
-			if penalties != nil {
-				header.Penalties = penalties
 			}
 		}
 	} else {
@@ -791,6 +800,9 @@ func CreateBlock(blockchain *core.BlockChain, chainConfig *params.ChainConfig, s
 			}
 			copy(header.Extra[len(header.Extra)-utils.ExtraSeal:], sighash)
 		}
+	}
+	if penalties != nil {
+		header.Penalties = penalties
 	}
 	block, err := createBlockFromHeader(blockchain, header, nil, signer, signFn, chainConfig)
 	if err != nil {

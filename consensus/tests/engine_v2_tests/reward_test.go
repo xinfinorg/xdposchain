@@ -178,7 +178,7 @@ func TestHookRewardAfterUpgrade(t *testing.T) {
 	backup := common.TIPUpgradeReward
 	common.TIPUpgradeReward = big.NewInt(0)
 
-	blockchain, _, _, signer, signFn, _ := PrepareXDCTestBlockChainWithProtectorObserver(t, int(config.XDPoS.Epoch)*3+10, &config)
+	blockchain, _, _, signer, signFn := PrepareXDCTestBlockChainWithProtectorObserver(t, int(config.XDPoS.Epoch)*3+10, &config)
 
 	adaptor := blockchain.Engine().(*XDPoS.XDPoS)
 	hooks.AttachConsensusV2Hooks(adaptor, blockchain, &config)
@@ -204,7 +204,9 @@ func TestHookRewardAfterUpgrade(t *testing.T) {
 	assert.Nil(t, err)
 	tx7, err := signingTxWithKey(header1785, 0, protector2Key)
 	assert.Nil(t, err)
-	adaptor.CacheSigningTxs(header1799.Hash(), []*types.Transaction{tx2, tx3, tx4, tx5, tx6, tx7})
+	tx8, err := signingTxWithKey(header1785, 0, observer2Key)
+	assert.Nil(t, err)
+	adaptor.CacheSigningTxs(header1799.Hash(), []*types.Transaction{tx2, tx3, tx4, tx5, tx6, tx7, tx8})
 
 	statedb, err := blockchain.StateAt(header1799.Root)
 	assert.Nil(t, err)
@@ -254,7 +256,7 @@ func TestHookRewardAfterUpgrade(t *testing.T) {
 	//xdc0D3ab14BBaD3D99F4203bd7a11aCB94882050E7e
 	//xdc71562b71999873DB5b286dF957af199Ec94617F7
 	//xdc5F74529C0338546f82389402a01c31fB52c6f434
-	// and xdc00...01, xdc00...02, ..., protector1 protector2 observer
+	// and xdc00...01, xdc00...02, ..., protector1 protector2 observer1 observer2
 	// so xdc00...01, xdc00...02, ..., protector1 protector2 are protectors
 	// only protector1 and 2 has signingtx.
 
@@ -282,7 +284,7 @@ func TestHookRewardAfterUpgrade(t *testing.T) {
 
 	}
 	resultObserver := reward["rewardsObserver"].(map[common.Address]interface{})
-	// one observer and it signs one tx
+	// observer1 and it signs one tx, observer2 is inside penalty so no reward
 	assert.Equal(t, 1, len(resultObserver))
 	for addr, x := range resultObserver {
 		assert.Equal(t, addr, observer1Addr)

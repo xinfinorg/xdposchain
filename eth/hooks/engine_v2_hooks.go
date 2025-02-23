@@ -196,41 +196,7 @@ func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 		}
 		currentConfig := chain.Config().XDPoS.V2.Config(uint64(round))
 		// Get signers/signing tx count
-		nodesToKeep := make(map[Beneficiary][]common.Address)
-		if chain.Config().IsTIPUpgradeReward(header.Number) {
-			candidates := state.GetCandidates(parentState)
-			var ms []utils.Masternode
-			for _, candidate := range candidates {
-				// ignore "0x0000000000000000000000000000000000000000"
-				if !candidate.IsZero() {
-					v := state.GetCandidateCap(parentState, candidate)
-					ms = append(ms, utils.Masternode{Address: candidate, Stake: v})
-				}
-			}
-			sort.Slice(ms, func(i, j int) bool {
-				return ms[i].Stake.Cmp(ms[j].Stake) >= 0
-			})
-			// find top candidates
-			// find master nodes plus protector nodes. classify them will be in `fn GetSigningTxCount`
-			maxMNP := currentConfig.MaxMasternodes + currentConfig.MaxProtectorNodes
-			protector := []common.Address{}
-			observer := []common.Address{}
-			if maxMNP < len(ms) {
-				for _, ms := range ms[:maxMNP] {
-					protector = append(protector, ms.Address)
-				}
-				for _, ms := range ms[maxMNP:] {
-					observer = append(observer, ms.Address)
-				}
-			} else {
-				for _, ms := range ms {
-					protector = append(protector, ms.Address)
-				}
-			}
-			nodesToKeep[ProtectorNodeBeneficiary] = protector
-			nodesToKeep[ObserverNodeBeneficiary] = observer
-		}
-		signers, err := GetSigningTxCount(adaptor, chain, header, nodesToKeep)
+		signers, err := GetSigningTxCount(adaptor, chain, header, parentState, currentConfig)
 
 		log.Debug("Time Get Signers", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
 		if err != nil {
@@ -338,7 +304,7 @@ func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 }
 
 // get signing transaction sender count
-func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *types.Header, nodesToKeep map[Beneficiary][]common.Address) (map[Beneficiary]map[common.Address]*RewardLog, error) {
+func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *types.Header, parentState *state.StateDB, currentConfig *params.V2Config) (map[Beneficiary]map[common.Address]*RewardLog, error) {
 	// header should be a new epoch switch block
 	number := header.Number.Uint64()
 	rewardEpochCount := 2
@@ -358,44 +324,74 @@ func GetSigningTxCount(c *XDPoS.XDPoS, chain consensus.ChainReader, header *type
 	data := make(map[common.Hash][]common.Address)
 	epochCount := 0
 	var startBlockNumber, endBlockNumber uint64
+
+	nodesToKeep := make(map[Beneficiary][]common.Address)
+
+	h := header
 	for i := number - 1; ; i-- {
-		header = chain.GetHeader(header.ParentHash, i)
-		isEpochSwitch, _, err := c.IsEpochSwitch(header)
+		h = chain.GetHeader(h.ParentHash, i)
+		isEpochSwitch, _, err := c.IsEpochSwitch(h)
 		if err != nil {
 			return nil, err
 		}
 		if isEpochSwitch && i != chain.Config().XDPoS.V2.SwitchBlock.Uint64()+1 {
 			epochCount += 1
 			if epochCount == signEpochCount {
-				endBlockNumber = header.Number.Uint64() - 1
+				endBlockNumber = h.Number.Uint64() - 1
 			}
 			if epochCount == rewardEpochCount {
-				startBlockNumber = header.Number.Uint64() + 1
-				if _, ok := nodesToKeep[MasterNodeBeneficiary]; !ok {
-					nodesToKeep[MasterNodeBeneficiary] = c.GetMasternodesFromCheckpointHeader(header)
-					// remove masternodes from nodesToKeep[Protector]
-					for i := 0; i < len(nodesToKeep[ProtectorNodeBeneficiary]); i++ {
-						for _, masternode := range nodesToKeep[MasterNodeBeneficiary] {
-							if nodesToKeep[ProtectorNodeBeneficiary][i] == masternode {
-								// remove from nodesToKeep[Protector]
-								nodesToKeep[ProtectorNodeBeneficiary] = append(nodesToKeep[ProtectorNodeBeneficiary][:i], nodesToKeep[ProtectorNodeBeneficiary][i+1:]...)
-								i--
-								break
-							}
+				startBlockNumber = h.Number.Uint64() + 1
+				nodesToKeep[MasterNodeBeneficiary] = c.GetMasternodesFromCheckpointHeader(h)
+				// in reward upgrade, add protector and observer nodes
+				if chain.Config().IsTIPUpgradeReward(header.Number) {
+					candidates := state.GetCandidates(parentState)
+					var ms []utils.Masternode
+					for _, candidate := range candidates {
+						// ignore "0x0000000000000000000000000000000000000000"
+						if !candidate.IsZero() {
+							v := state.GetCandidateCap(parentState, candidate)
+							ms = append(ms, utils.Masternode{Address: candidate, Stake: v})
 						}
-
 					}
+					sort.Slice(ms, func(i, j int) bool {
+						return ms[i].Stake.Cmp(ms[j].Stake) >= 0
+					})
+					// find penalty and filter them out
+					penalties := common.ExtractAddressFromBytes(h.Penalties)
+					filterMap := make(map[common.Address]struct{})
+					for _, addr := range penalties {
+						filterMap[addr] = struct{}{}
+					}
+					for _, addr := range nodesToKeep[MasterNodeBeneficiary] {
+						filterMap[addr] = struct{}{}
+					}
+					// find top candidates
+					// maxMNP := currentConfig.MaxMasternodes + currentConfig.MaxProtectorNodes
+					protector := []common.Address{}
+					observer := []common.Address{}
+					for _, node := range ms {
+						if _, ok := filterMap[node.Address]; ok {
+							continue
+						}
+						if len(protector) < currentConfig.MaxProtectorNodes {
+							protector = append(protector, node.Address)
+						} else {
+							observer = append(observer, node.Address)
+						}
+					}
+					nodesToKeep[ProtectorNodeBeneficiary] = protector
+					nodesToKeep[ObserverNodeBeneficiary] = observer
 				}
 				break
 			}
 		}
-		mapBlkHash[i] = header.Hash()
-		signingTxs, ok := c.GetCachedSigningTxs(header.Hash())
+		mapBlkHash[i] = h.Hash()
+		signingTxs, ok := c.GetCachedSigningTxs(h.Hash())
 		if !ok {
-			log.Debug("Failed get from cached", "hash", header.Hash().String(), "number", i)
-			block := chain.GetBlock(header.Hash(), i)
+			log.Debug("Failed get from cached", "hash", h.Hash().String(), "number", i)
+			block := chain.GetBlock(h.Hash(), i)
 			txs := block.Transactions()
-			signingTxs = c.CacheSigningTxs(header.Hash(), txs)
+			signingTxs = c.CacheSigningTxs(h.Hash(), txs)
 		}
 		for _, tx := range signingTxs {
 			blkHash := common.BytesToHash(tx.Data()[len(tx.Data())-32:])

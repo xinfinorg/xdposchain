@@ -141,7 +141,7 @@ var (
 		},
 		900: {
 			MaxMasternodes:       20,
-			MaxProtectorNodes:    1,
+			MaxProtectorNodes:    17,
 			SwitchRound:          900,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 4,
