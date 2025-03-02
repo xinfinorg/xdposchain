@@ -43,7 +43,6 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/core/txpool"
 	"github.com/XinFinOrg/XDPoSChain/core/vm"
 	"github.com/XinFinOrg/XDPoSChain/crypto"
-	"github.com/XinFinOrg/XDPoSChain/crypto/kzg4844"
 	"github.com/XinFinOrg/XDPoSChain/eth/downloader"
 	"github.com/XinFinOrg/XDPoSChain/eth/ethconfig"
 	"github.com/XinFinOrg/XDPoSChain/eth/filters"
@@ -105,19 +104,21 @@ var (
 		Value:    ethconfig.Defaults.NetworkId,
 		Category: flags.EthCategory,
 	}
+	MainnetFlag = &cli.BoolFlag{
+		Name:     "mainnet",
+		Aliases:  []string{"xinfin"},
+		Usage:    "XDC xinfin network",
+		Category: flags.EthCategory,
+	}
 	TestnetFlag = &cli.BoolFlag{
 		Name:     "testnet",
-		Usage:    "Ropsten network: pre-configured proof-of-work test network",
+		Aliases:  []string{"apothem"},
+		Usage:    "XDC apothem network",
 		Category: flags.EthCategory,
 	}
-	XDCTestnetFlag = &cli.BoolFlag{
-		Name:     "apothem",
-		Usage:    "XDC Apothem Network",
-		Category: flags.EthCategory,
-	}
-	RinkebyFlag = &cli.BoolFlag{
-		Name:     "rinkeby",
-		Usage:    "Rinkeby network: pre-configured proof-of-authority test network",
+	DevnetFlag = &cli.BoolFlag{
+		Name:     "devnet",
+		Usage:    "XDC develop network",
 		Category: flags.EthCategory,
 	}
 
@@ -737,10 +738,10 @@ var (
 	}
 
 	// MISC settings
-	RollbackFlag = &cli.StringFlag{
-		Name:     "rollback",
-		Usage:    "Rollback chain at hash",
-		Value:    "",
+	SetHeadFlag = &cli.Uint64Flag{
+		Name:     "set-head",
+		Usage:    "Rollback chain to block number",
+		Value:    0,
 		Category: flags.MiscCategory,
 	}
 	AnnounceTxsFlag = &cli.BoolFlag{
@@ -753,12 +754,6 @@ var (
 		Name:     "store-reward",
 		Usage:    "Store reward to file",
 		Value:    false,
-		Category: flags.MiscCategory,
-	}
-	RewoundFlag = &cli.IntFlag{
-		Name:     "rewound",
-		Usage:    "Rewound blocks",
-		Value:    0,
 		Category: flags.MiscCategory,
 	}
 
@@ -824,8 +819,8 @@ func MakeDataDir(ctx *cli.Context) string {
 		if ctx.Bool(TestnetFlag.Name) {
 			return filepath.Join(path, "testnet")
 		}
-		if ctx.Bool(RinkebyFlag.Name) {
-			return filepath.Join(path, "rinkeby")
+		if ctx.Bool(DevnetFlag.Name) {
+			return filepath.Join(path, "devnet")
 		}
 		return path
 	}
@@ -884,14 +879,11 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		if cfg.BootstrapNodes != nil {
 			return // Already set by config file, don't apply defaults.
 		}
-		networkID := uint64(0)
-		if ctx.IsSet(NetworkIdFlag.Name) {
-			networkID = ctx.Uint64(NetworkIdFlag.Name)
-		}
+		networkID := ctx.Uint64(NetworkIdFlag.Name)
 		switch {
-		case ctx.Bool(XDCTestnetFlag.Name) || networkID == params.TestnetChainConfig.ChainId.Uint64():
+		case ctx.Bool(TestnetFlag.Name) || networkID == 51:
 			urls = params.TestnetBootnodes
-		case networkID == params.DevnetChainConfig.ChainId.Uint64():
+		case ctx.Bool(DevnetFlag.Name) || networkID == 551:
 			urls = params.DevnetBootnodes
 		}
 	}
@@ -922,8 +914,10 @@ func setBootstrapNodesV5(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.String(BootnodesFlag.Name))
 	case ctx.IsSet(BootnodesV5Flag.Name):
 		urls = SplitAndTrim(ctx.String(BootnodesV5Flag.Name))
-	case ctx.Bool(XDCTestnetFlag.Name):
+	case ctx.Bool(TestnetFlag.Name):
 		urls = params.TestnetBootnodes
+	case ctx.Bool(DevnetFlag.Name):
+		urls = params.DevnetBootnodes
 	case cfg.BootstrapNodesV5 != nil:
 		return // already set, don't apply defaults.
 	}
@@ -1095,7 +1089,10 @@ func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config
 		}
 		cfg.Etherbase = account.Address
 	} else {
-		cfg.Etherbase = common.HexToAddress(ctx.String(MinerEtherbaseFlag.Name))
+		if !ctx.IsSet(UnlockedAccountFlag.Name) {
+			cfg.Etherbase = common.HexToAddress(ctx.String(MinerEtherbaseFlag.Name))
+			log.Info("Set etherbase", "address", cfg.Etherbase.Hex())
+		}
 	}
 }
 
@@ -1124,7 +1121,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 	setBootstrapNodes(ctx, cfg)
 	// setBootstrapNodesV5(ctx, cfg)
 
-	lightClient := ctx.Bool(LightModeFlag.Name) || ctx.String(SyncModeFlag.Name) == "light"
+	lightClient := ctx.String(SyncModeFlag.Name) == "light"
 	lightServer := ctx.Int(LightServFlag.Name) != 0
 	lightPeers := ctx.Int(LightPeersFlag.Name)
 
@@ -1201,8 +1198,8 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = "" // unless explicitly requested, use memory databases
 	case ctx.Bool(TestnetFlag.Name):
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "testnet")
-	case ctx.Bool(RinkebyFlag.Name):
-		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "rinkeby")
+	case ctx.Bool(DevnetFlag.Name):
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "devnet")
 	}
 
 	if ctx.IsSet(KeyStoreDirFlag.Name) {
@@ -1394,9 +1391,7 @@ func SetXDCXConfig(ctx *cli.Context, cfg *XDCx.Config, XDCDataDir string) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, DeveloperFlag, TestnetFlag, RinkebyFlag)
-	CheckExclusive(ctx, FastSyncFlag, LightModeFlag, SyncModeFlag)
-	CheckExclusive(ctx, LightServFlag, LightModeFlag)
+	CheckExclusive(ctx, MainnetFlag, TestnetFlag, DevnetFlag, DeveloperFlag)
 	CheckExclusive(ctx, LightServFlag, SyncModeFlag, "light")
 
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
@@ -1425,15 +1420,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
 	godebug.SetGCPercent(int(gogc))
 
-	switch {
-	case ctx.IsSet(SyncModeFlag.Name):
+	if ctx.IsSet(SyncModeFlag.Name) {
 		if err = cfg.SyncMode.UnmarshalText([]byte(ctx.String(SyncModeFlag.Name))); err != nil {
 			Fatalf("invalid --syncmode flag: %v", err)
 		}
-	case ctx.Bool(FastSyncFlag.Name):
-		cfg.SyncMode = downloader.FastSync
-	case ctx.Bool(LightModeFlag.Name):
-		cfg.SyncMode = downloader.LightSync
 	}
 	if ctx.IsSet(LightServFlag.Name) {
 		cfg.LightServ = ctx.Int(LightServFlag.Name)
@@ -1444,10 +1434,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.IsSet(NetworkIdFlag.Name) {
 		cfg.NetworkId = ctx.Uint64(NetworkIdFlag.Name)
 	}
-	if ctx.Bool(XDCTestnetFlag.Name) {
-		cfg.NetworkId = 51
-	}
-	common.CopyConstans(cfg.NetworkId)
 
 	if ctx.IsSet(CacheFlag.Name) || ctx.IsSet(CacheDatabaseFlag.Name) {
 		cfg.DatabaseCache = ctx.Int(CacheFlag.Name) * ctx.Int(CacheDatabaseFlag.Name) / 100
@@ -1499,18 +1485,30 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			os.Mkdir(common.StoreRewardFolder, os.ModePerm)
 		}
 	}
+	if ctx.IsSet(SetHeadFlag.Name) {
+		common.RollbackNumber = ctx.Uint64(SetHeadFlag.Name)
+		if common.RollbackNumber == 0 {
+			Fatalf("the flag --%s must be greater than 0", SetHeadFlag.Name)
+		}
+	}
+
 	// Override any default configs for hard coded networks.
 	switch {
+	case ctx.Bool(MainnetFlag.Name):
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 50
+		}
+		cfg.Genesis = core.DefaultGenesisBlock()
 	case ctx.Bool(TestnetFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 3
+			cfg.NetworkId = 51
 		}
 		cfg.Genesis = core.DefaultTestnetGenesisBlock()
-	case ctx.Bool(RinkebyFlag.Name):
+	case ctx.Bool(DevnetFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 4
+			cfg.NetworkId = 551
 		}
-		cfg.Genesis = core.DefaultRinkebyGenesisBlock()
+		cfg.Genesis = core.DefaultDevnetGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):
 		// Create new developer account or reuse existing one
 		var (
@@ -1534,14 +1532,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		if !ctx.IsSet(MinerGasPriceFlag.Name) {
 			cfg.GasPrice = big.NewInt(1)
 		}
-	}
-	// Set any dangling config values
-	if ctx.String(CryptoKZGFlag.Name) != "gokzg" && ctx.String(CryptoKZGFlag.Name) != "ckzg" {
-		Fatalf("--%s flag must be 'gokzg' or 'ckzg'", CryptoKZGFlag.Name)
-	}
-	log.Info("Initializing the KZG library", "backend", ctx.String(CryptoKZGFlag.Name))
-	if err := kzg4844.UseCKZG(ctx.String(CryptoKZGFlag.Name) == "ckzg"); err != nil {
-		Fatalf("Failed to set KZG library implementation to %s: %v", ctx.String(CryptoKZGFlag.Name), err)
 	}
 }
 
@@ -1625,7 +1615,7 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.
 		handles = MakeDatabaseHandles(ctx.Int(FDLimitFlag.Name))
 	)
 	name := "chaindata"
-	if ctx.Bool(LightModeFlag.Name) {
+	if ctx.String(SyncModeFlag.Name) == "light" {
 		name = "lightchaindata"
 	}
 	chainDb, err := stack.OpenDatabase(name, cache, handles, "", readonly)
@@ -1638,10 +1628,12 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.
 func MakeGenesis(ctx *cli.Context) *core.Genesis {
 	var genesis *core.Genesis
 	switch {
+	case ctx.Bool(MainnetFlag.Name):
+		genesis = core.DefaultGenesisBlock()
 	case ctx.Bool(TestnetFlag.Name):
 		genesis = core.DefaultTestnetGenesisBlock()
-	case ctx.Bool(RinkebyFlag.Name):
-		genesis = core.DefaultRinkebyGenesisBlock()
+	case ctx.Bool(DevnetFlag.Name):
+		genesis = core.DefaultDevnetGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
 	}

@@ -157,7 +157,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, XDCConfig) {
 	}
 
 	// Check testnet is enable.
-	if ctx.Bool(utils.XDCTestnetFlag.Name) {
+	if ctx.Bool(utils.TestnetFlag.Name) {
 		common.IsTestnet = true
 		common.TRC21IssuerSMC = common.TRC21IssuerSMCTestNet
 		cfg.Eth.NetworkId = 51
@@ -168,16 +168,6 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, XDCConfig) {
 
 	if ctx.Bool(utils.EnableXDCPrefixFlag.Name) {
 		common.Enable0xPrefix = false
-	}
-
-	// Rewound
-	if rewound := ctx.Int(utils.RewoundFlag.Name); rewound != 0 {
-		common.Rewound = uint64(rewound)
-	}
-
-	// Check rollback hash exist.
-	if rollbackHash := ctx.String(utils.RollbackFlag.Name); rollbackHash != "" {
-		common.RollbackHash = common.HexToHash(rollbackHash)
 	}
 
 	// Check GasPrice

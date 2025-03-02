@@ -44,8 +44,9 @@ var (
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.XDCXDataDirFlag,
-			utils.LightModeFlag,
-			utils.XDCTestnetFlag,
+			utils.MainnetFlag,
+			utils.TestnetFlag,
+			utils.DevnetFlag,
 		},
 		Description: `
 The init command initializes a new genesis block and definition for the network.
@@ -63,7 +64,7 @@ It expects the genesis file or the network name [ mainnet | testnet | devnet ] a
 			utils.DataDirFlag,
 			utils.XDCXDataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 			utils.GCModeFlag,
 			utils.CacheDatabaseFlag,
 			utils.CacheGCFlag,
@@ -96,7 +97,7 @@ processing will proceed even if an individual RLP-file import failure occurs.`,
 			utils.DataDirFlag,
 			utils.XDCXDataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Description: `
 Requires a first argument of the file to write to.
@@ -113,7 +114,7 @@ if already existing.`,
 			utils.DataDirFlag,
 			utils.XDCXDataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -128,7 +129,7 @@ if already existing.`,
 			utils.DataDirFlag,
 			utils.XDCXDataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Description: `
 The export-preimages command export hash preimages to an RLP encoded stream`,
@@ -142,7 +143,7 @@ The export-preimages command export hash preimages to an RLP encoded stream`,
 			utils.DataDirFlag,
 			utils.XDCXDataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -154,11 +155,23 @@ Use "ethereum dump 0" to dump the genesis block.`,
 // initGenesis will initialise the given JSON format genesis file and writes it as
 // the zero'd block (i.e. genesis) or will fail hard if it can't succeed.
 func initGenesis(ctx *cli.Context) error {
+	utils.CheckExclusive(ctx, utils.MainnetFlag, utils.TestnetFlag, utils.DevnetFlag)
+
 	var err error
 	genesis := new(core.Genesis)
-	if ctx.Bool(utils.XDCTestnetFlag.Name) {
+	if ctx.Bool(utils.MainnetFlag.Name) {
 		if ctx.Args().Len() > 0 {
-			utils.Fatalf("Flags --apothem and genesis file can't be used at the same time")
+			utils.Fatalf("The mainnet flag and genesis file can't be used at the same time")
+		}
+		err = json.Unmarshal(xdc_genesis.TestnetGenesis, &genesis)
+	} else if ctx.Bool(utils.TestnetFlag.Name) {
+		if ctx.Args().Len() > 0 {
+			utils.Fatalf("The testnet flag and genesis file can't be used at the same time")
+		}
+		err = json.Unmarshal(xdc_genesis.TestnetGenesis, &genesis)
+	} else if ctx.Bool(utils.DevnetFlag.Name) {
+		if ctx.Args().Len() > 0 {
+			utils.Fatalf("The devnet flag and genesis file can't be used at the same time")
 		}
 		err = json.Unmarshal(xdc_genesis.TestnetGenesis, &genesis)
 	} else {
@@ -166,9 +179,9 @@ func initGenesis(ctx *cli.Context) error {
 			utils.Fatalf("need the genesis.json file or the network name [ mainnet | testnet | devnet ] as the only argument")
 		}
 		genesisPath := ctx.Args().First()
-		if genesisPath == "mainnet" {
+		if genesisPath == "mainnet" || genesisPath == "xinfin" {
 			err = json.Unmarshal(xdc_genesis.MainnetGenesis, &genesis)
-		} else if genesisPath == "testnet" {
+		} else if genesisPath == "testnet" || genesisPath == "apothem" {
 			err = json.Unmarshal(xdc_genesis.TestnetGenesis, &genesis)
 		} else if genesisPath == "devnet" {
 			err = json.Unmarshal(xdc_genesis.DevnetGenesis, &genesis)
