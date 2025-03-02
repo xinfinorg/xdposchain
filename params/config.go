@@ -118,6 +118,9 @@ var (
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
 			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 2.0, MaxExponent: 5},
+			MasternodeReward:     5000,
+			ProtectorReward:      4000,
+			ObserverReward:       1000,
 		},
 		9999999999: {
 			MaxMasternodes:       15,
@@ -128,6 +131,9 @@ var (
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
 			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 2.0, MaxExponent: 5},
+			MasternodeReward:     5000,
+			ProtectorReward:      4000,
+			ObserverReward:       1000,
 		},
 	}
 
