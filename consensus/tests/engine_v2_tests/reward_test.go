@@ -297,3 +297,61 @@ func TestHookRewardAfterUpgrade(t *testing.T) {
 	}
 	common.TIPUpgradeReward = backup
 }
+
+// RewardHalving computes the reward for Masternode/Protector/Observer based on epoch total reward, supply after halving is enabled, and epoch after halving is enabled
+// The sequence is a geometric sequence in order to make supply be limited
+func RewardHalving(epochRewardSingle *big.Int, epochRewardTotal *big.Int, halvingSupply *big.Int, epochSinceHalving uint64) *big.Int {
+	rt := new(big.Float).SetInt(epochRewardTotal)
+	hs := new(big.Float).SetInt(halvingSupply)
+	// zero cause Quo panic so return early
+	// or epoch reward > halving supply, return early
+	if halvingSupply.BitLen() == 0 || epochRewardTotal.Cmp(halvingSupply) > 0 {
+		return big.NewInt(0)
+	}
+	base := new(big.Float).Quo(rt, hs)
+	// base = 1- reward/supply
+	base.Sub(big.NewFloat(1), base)
+	r := new(big.Float).SetInt(epochRewardSingle)
+	result := new(big.Float).Mul(r, FloatPower(base, epochSinceHalving))
+	resultInt, _ := result.Int(nil)
+	return resultInt
+}
+
+func FloatPower(base *big.Float, exp uint64) *big.Float {
+	result := big.NewFloat(1)
+	for exp > 0 {
+		if exp%2 == 1 {
+			result.Mul(result, base)
+		}
+		base.Mul(base, base)
+		exp >>= 1 // same as: exp = exp / 2
+	}
+	return result
+}
+
+func TestRewardBeZero(t *testing.T) {
+	billion := big.NewInt(1000000000)
+	epochRewardTotal := big.NewInt(16000)
+	epochRewardTotal.Mul(epochRewardTotal, billion)
+	epochReward1 := big.NewInt(10000)
+	epochReward1.Mul(epochReward1, billion)
+	epochReward2 := big.NewInt(4000)
+	epochReward2.Mul(epochReward2, billion)
+	epochReward3 := big.NewInt(2000)
+	epochReward3.Mul(epochReward3, billion)
+	// 45 Billion - 39 Billion XDC (1 XDC = 10^9 wei)
+	halvingSupply := big.NewInt(6000000000)
+	halvingSupply.Mul(halvingSupply, billion)
+	sum := big.NewInt(0)
+	for i := uint64(0); i < 30000000; i++ {
+		r := new(big.Int).Add(RewardHalving(epochReward1, epochRewardTotal, halvingSupply, i), RewardHalving(epochReward2, epochRewardTotal, halvingSupply, i))
+		r.Add(r, RewardHalving(epochReward3, epochRewardTotal, halvingSupply, i))
+		if r.BitLen() == 0 {
+			t.Log("reward be 0 at i=", i) // reward be 0 at i= 11225088, wich is more than 200 years in the future
+			break
+		}
+		sum.Add(sum, r)
+	}
+	t.Log("sum", sum) // sum 5999999999982635022, which is less than total, and never reach totoal
+	assert.True(t, sum.Cmp(halvingSupply) < 0)
+}
