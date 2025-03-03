@@ -17,6 +17,7 @@
 package node
 
 import (
+	"path/filepath"
 	"reflect"
 
 	"github.com/XinFinOrg/XDPoSChain/accounts"
@@ -44,11 +45,27 @@ func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int, nam
 	if ctx.config.DataDir == "" {
 		return rawdb.NewMemoryDatabase(), nil
 	}
-	db, err := rawdb.NewLevelDBDatabase(ctx.config.ResolvePath(name), cache, handles, namespace, readonly)
-	if err != nil {
-		return nil, err
+	return rawdb.NewLevelDBDatabase(ctx.config.ResolvePath(name), cache, handles, namespace, readonly)
+}
+
+// OpenDatabaseWithFreezer opens an existing database with the given name (or
+// creates one if no previous can be found) from within the node's data directory,
+// also attaching a chain freezer to it that moves ancient chain data from the
+// database to immutable append-only files. If the node is an ephemeral one, a
+// memory database is returned.
+func (ctx *ServiceContext) OpenDatabaseWithFreezer(name string, cache int, handles int, freezer string, namespace string, readonly bool) (ethdb.Database, error) {
+	if ctx.config.DataDir == "" {
+		return rawdb.NewMemoryDatabase(), nil
 	}
-	return db, nil
+	root := ctx.config.ResolvePath(name)
+
+	switch {
+	case freezer == "":
+		freezer = filepath.Join(root, "ancient")
+	case !filepath.IsAbs(freezer):
+		freezer = ctx.config.ResolvePath(freezer)
+	}
+	return rawdb.NewLevelDBDatabaseWithFreezer(root, cache, handles, freezer, namespace, readonly)
 }
 
 // ResolvePath resolves a user path into the data directory if that was relative

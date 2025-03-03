@@ -23,4 +23,10 @@ const (
 	// BloomBitsBlocks is the number of blocks a single bloom bit section vector
 	// contains.
 	BloomBitsBlocks uint64 = 4096
+
+	// ImmutabilityThreshold is the number of blocks after which a chain segment is
+	// considered immutable (i.e. soft finality). It is used by the downloader as a
+	// hard limit against deep ancestors, by the blockchain against deep reorgs, by
+	// the freezer as the cutoff treshold and by clique as the snapshot trust limit.
+	ImmutabilityThreshold = 90000
 )
