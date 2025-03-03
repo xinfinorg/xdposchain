@@ -348,7 +348,7 @@ func (tab *Table) lookup(targetID NodeID, refreshIfEmpty bool) []*Node {
 						// Bump the failure counter to detect and evacuate non-bonded entries
 						fails := tab.db.findFails(n.ID) + 1
 						tab.db.updateFindFails(n.ID, fails)
-						tab.log.Trace("Bumping findnode failure counter", "id", n.ID, "failcount", fails)
+						tab.log.Trace("Bumping findnode failure counter", "id", n.ID, "failcount", fails, "err", err)
 
 						if fails >= maxFindnodeFailures {
 							tab.log.Trace("Too many findnode failures, dropping", "id", n.ID, "failcount", fails)
@@ -627,7 +627,11 @@ func (tab *Table) bond(pinged bool, id NodeID, addr *net.UDPAddr, tcpPort uint16
 	age := time.Since(tab.db.bondTime(id))
 	var result error
 	if fails > 0 || age > nodeDBNodeExpiration {
-		tab.log.Trace("Starting bonding ping/pong", "id", id, "known", node != nil, "failcount", fails, "age", age)
+		ip := net.IP{}
+		if node != nil {
+			ip = node.IP
+		}
+		tab.log.Trace("Starting bonding ping/pong", "id", id, "known", node != nil, "failcount", fails, "age", age, "ip", ip.String())
 
 		tab.bondmu.Lock()
 		w := tab.bonding[id]

@@ -24,6 +24,8 @@ import (
 	"net"
 	"sort"
 	"strings"
+
+	"github.com/XinFinOrg/XDPoSChain/log"
 )
 
 var lan4, lan6, special4, special6 Netlist
@@ -188,6 +190,7 @@ func CheckRelayIP(sender, addr net.IP) error {
 		return errLoopback
 	}
 	if IsLAN(addr) && !IsLAN(sender) {
+		log.Info("[CheckRelayIP] errLan", "addr", addr.String(), "sender", sender.String())
 		return errLAN
 	}
 	return nil
