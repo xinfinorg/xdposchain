@@ -637,16 +637,20 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []byte
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
 	for _, n := range closest {
+		log.Info("[findnode] handle", "n", n.IP, "tcp", n.TCP, "udp", n.UDP)
 		if netutil.CheckRelayIP(from.IP, n.IP) == nil {
+			log.Info("[findnode] handle append", "n", n.IP)
 			p.Nodes = append(p.Nodes, nodeToRPC(n))
 		}
 		if len(p.Nodes) == maxNeighbors {
+			log.Info("[findnode] handle send", p.Nodes)
 			t.send(from, neighborsPacket, &p)
 			p.Nodes = p.Nodes[:0]
 			sent = true
 		}
 	}
 	if len(p.Nodes) > 0 || !sent {
+		log.Info("[findnode] handle send last statement", p.Nodes)
 		t.send(from, neighborsPacket, &p)
 	}
 	return nil
