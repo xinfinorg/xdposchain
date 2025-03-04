@@ -93,6 +93,7 @@ var (
 		utils.TxLookupLimitFlag,
 		//utils.LightServFlag,
 		//utils.LightPeersFlag,
+		utils.LightNoPruneFlag,
 		//utils.LightKDFFlag,
 		utils.CacheFlag,
 		utils.CacheDatabaseFlag,

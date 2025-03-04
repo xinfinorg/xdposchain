@@ -27,6 +27,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		TxLookupLimit           uint64 `toml:",omitempty"`
 		LightServ               int    `toml:",omitempty"`
 		LightPeers              int    `toml:",omitempty"`
+		LightNoPrune            bool   `toml:",omitempty"`
 		SkipBcVersionCheck      bool   `toml:"-"`
 		DatabaseHandles         int    `toml:"-"`
 		DatabaseCache           int
@@ -54,6 +55,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.TxLookupLimit = c.TxLookupLimit
 	enc.LightServ = c.LightServ
 	enc.LightPeers = c.LightPeers
+	enc.LightNoPrune = c.LightNoPrune
 	enc.SkipBcVersionCheck = c.SkipBcVersionCheck
 	enc.DatabaseHandles = c.DatabaseHandles
 	enc.DatabaseCache = c.DatabaseCache
@@ -85,6 +87,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		TxLookupLimit           *uint64 `toml:",omitempty"`
 		LightServ               *int    `toml:",omitempty"`
 		LightPeers              *int    `toml:",omitempty"`
+		LightNoPrune            *bool   `toml:",omitempty"`
 		SkipBcVersionCheck      *bool   `toml:"-"`
 		DatabaseHandles         *int    `toml:"-"`
 		DatabaseCache           *int
@@ -128,6 +131,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.LightPeers != nil {
 		c.LightPeers = *dec.LightPeers
+	}
+	if dec.LightNoPrune != nil {
+		c.LightNoPrune = *dec.LightNoPrune
 	}
 	if dec.SkipBcVersionCheck != nil {
 		c.SkipBcVersionCheck = *dec.SkipBcVersionCheck

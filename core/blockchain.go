@@ -1105,7 +1105,7 @@ func (bc *BlockChain) saveData() {
 				recent := bc.GetBlockByNumber(number - offset)
 
 				log.Info("Writing cached state to disk", "block", recent.Number(), "hash", recent.Hash(), "root", recent.Root())
-				if err := triedb.Commit(recent.Root(), true); err != nil {
+				if err := triedb.Commit(recent.Root(), true, nil); err != nil {
 					log.Error("Failed to commit recent state trie", "err", err)
 				}
 				if bc.Config().IsTIPXDCXReceiver(recent.Number()) && bc.chainConfig.XDPoS != nil && recent.NumberU64() > bc.chainConfig.XDPoS.Epoch && engine != nil {
@@ -1113,7 +1113,7 @@ func (bc *BlockChain) saveData() {
 					if tradingService != nil {
 						tradingRoot, _ := tradingService.GetTradingStateRoot(recent, author)
 						if !tradingRoot.IsZero() && tradingTriedb != nil {
-							if err := tradingTriedb.Commit(tradingRoot, true); err != nil {
+							if err := tradingTriedb.Commit(tradingRoot, true, nil); err != nil {
 								log.Error("Failed to commit trading state recent state trie", "err", err)
 							}
 						}
@@ -1121,7 +1121,7 @@ func (bc *BlockChain) saveData() {
 					if lendingService != nil {
 						lendingRoot, _ := lendingService.GetLendingStateRoot(recent, author)
 						if !lendingRoot.IsZero() && lendingTriedb != nil {
-							if err := lendingTriedb.Commit(lendingRoot, true); err != nil {
+							if err := lendingTriedb.Commit(lendingRoot, true, nil); err != nil {
 								log.Error("Failed to commit lending state recent state trie", "err", err)
 							}
 						}
@@ -1684,16 +1684,16 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 
 	// If we're running an archive node, always flush
 	if bc.cacheConfig.Disabled {
-		if err := triedb.Commit(root, false); err != nil {
+		if err := triedb.Commit(root, false, nil); err != nil {
 			return NonStatTy, err
 		}
 		if tradingTrieDb != nil {
-			if err := tradingTrieDb.Commit(tradingRoot, false); err != nil {
+			if err := tradingTrieDb.Commit(tradingRoot, false, nil); err != nil {
 				return NonStatTy, err
 			}
 		}
 		if lendingTrieDb != nil {
-			if err := lendingTrieDb.Commit(lendingRoot, false); err != nil {
+			if err := lendingTrieDb.Commit(lendingRoot, false, nil); err != nil {
 				return NonStatTy, err
 			}
 		}
@@ -1745,7 +1745,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 						log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/triesInMemory)
 					}
 					// Flush an entire trie and restart the counters
-					triedb.Commit(header.Root, true)
+					triedb.Commit(header.Root, true, nil)
 					lastWrite = chosen
 					bc.gcproc = 0
 					if tradingTrieDb != nil && lendingTrieDb != nil {
@@ -1753,8 +1753,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 						author, _ := bc.Engine().Author(b.Header())
 						oldTradingRoot, _ := tradingService.GetTradingStateRoot(b, author)
 						oldLendingRoot, _ := lendingService.GetLendingStateRoot(b, author)
-						tradingTrieDb.Commit(oldTradingRoot, true)
-						lendingTrieDb.Commit(oldLendingRoot, true)
+						tradingTrieDb.Commit(oldTradingRoot, true, nil)
+						lendingTrieDb.Commit(oldLendingRoot, true, nil)
 					}
 				}
 			}

@@ -190,6 +190,11 @@ var (
 		Value:    ethconfig.Defaults.LightPeers,
 		Category: flags.LightCategory,
 	}
+	LightNoPruneFlag = &cli.BoolFlag{
+		Name:     "light-nopruning",
+		Usage:    "Disable ancient light chain data pruning (deprecated)",
+		Category: flags.EthCategory,
+	}
 
 	// Ethash settings
 	EthashCacheDirFlag = &flags.DirectoryFlag{
@@ -1034,6 +1039,13 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 	}
 }
 
+// setLes configures the les server and ultra light client settings from the command line flags.
+func setLes(ctx *cli.Context, cfg *ethconfig.Config) {
+	if ctx.IsSet(LightNoPruneFlag.Name) {
+		cfg.LightNoPrune = ctx.Bool(LightNoPruneFlag.Name)
+	}
+}
+
 func setPrefix(ctx *cli.Context, cfg *node.Config) {
 	CheckExclusive(ctx, Enable0xPrefixFlag, EnableXDCPrefixFlag)
 }
@@ -1415,6 +1427,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setGPO(ctx, &cfg.GPO, ctx.String(SyncModeFlag.Name) == "light")
 	setTxPool(ctx, &cfg.TxPool)
 	setEthash(ctx, cfg)
+	setLes(ctx, cfg)
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
@@ -1634,12 +1647,17 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.
 	var (
 		cache   = ctx.Int(CacheFlag.Name) * ctx.Int(CacheDatabaseFlag.Name) / 100
 		handles = MakeDatabaseHandles(ctx.Int(FDLimitFlag.Name))
+
+		err     error
+		chainDb ethdb.Database
 	)
-	name := "chaindata"
 	if ctx.String(SyncModeFlag.Name) == "light" {
-		name = "lightchaindata"
+		name := "lightchaindata"
+		chainDb, err = stack.OpenDatabase(name, cache, handles, "", readonly)
+	} else {
+		name := "chaindata"
+		chainDb, err = stack.OpenDatabaseWithFreezer(name, cache, handles, ctx.String(AncientFlag.Name), "", readonly)
 	}
-	chainDb, err := stack.OpenDatabaseWithFreezer(name, cache, handles, ctx.String(AncientFlag.Name), "", readonly)
 	if err != nil {
 		Fatalf("Could not open database: %v", err)
 	}
