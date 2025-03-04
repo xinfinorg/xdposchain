@@ -163,6 +163,12 @@ var (
 		Value:    "full",
 		Category: flags.EthCategory,
 	}
+	TxLookupLimitFlag = &cli.Uint64Flag{
+		Name:     "txlookuplimit",
+		Usage:    "Number of recent blocks to maintain transactions index for (default = about one year, 0 = entire chain)",
+		Value:    0,
+		Category: flags.EthCategory,
+	}
 	LightKDFFlag = &cli.BoolFlag{
 		Name:     "lightkdf",
 		Usage:    "Reduce key-derivation RAM & CPU usage at some expense of KDF strength",
@@ -1398,6 +1404,11 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
 	CheckExclusive(ctx, MainnetFlag, TestnetFlag, DevnetFlag, DeveloperFlag)
 	CheckExclusive(ctx, LightServFlag, SyncModeFlag, "light")
+	CheckExclusive(ctx, GCModeFlag, "archive", TxLookupLimitFlag)
+	// todo(rjl493456442) make it available for les server
+	// Ancient tx indices pruning is not available for les server now
+	// since light client relies on the server for transaction status query.
+	CheckExclusive(ctx, LightServFlag, TxLookupLimitFlag)
 
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
 	setEtherbase(ctx, ks, cfg)
@@ -1452,7 +1463,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}
 	cfg.NoPruning = ctx.String(GCModeFlag.Name) == "archive"
-
+	if ctx.IsSet(TxLookupLimitFlag.Name) {
+		cfg.TxLookupLimit = ctx.Uint64(TxLookupLimitFlag.Name)
+	}
 	if ctx.IsSet(CacheFlag.Name) || ctx.IsSet(CacheGCFlag.Name) {
 		cfg.TrieCache = ctx.Int(CacheFlag.Name) * ctx.Int(CacheGCFlag.Name) / 100
 	}
@@ -1649,9 +1662,9 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 }
 
 // MakeChain creates a chain manager from set command line flags.
-func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (chain *core.BlockChain, chainDb ethdb.Database) {
+func MakeChain(ctx *cli.Context, stack *node.Node, readOnly bool) (chain *core.BlockChain, chainDb ethdb.Database) {
 	var err error
-	chainDb = MakeChainDatabase(ctx, stack, readonly)
+	chainDb = MakeChainDatabase(ctx, stack, readOnly)
 
 	config, _, err := core.SetupGenesisBlock(chainDb, MakeGenesis(ctx))
 	if err != nil {
@@ -1686,7 +1699,12 @@ func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (chain *core.B
 		cache.TrieNodeLimit = ctx.Int(CacheFlag.Name) * ctx.Int(CacheGCFlag.Name) / 100
 	}
 	vmcfg := vm.Config{EnablePreimageRecording: ctx.Bool(VMEnableDebugFlag.Name)}
-	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg)
+	var limit *uint64
+	if ctx.IsSet(TxLookupLimitFlag.Name) && !readOnly {
+		l := ctx.Uint64(TxLookupLimitFlag.Name)
+		limit = &l
+	}
+	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg, limit)
 	if err != nil {
 		Fatalf("Can't create BlockChain: %v", err)
 	}

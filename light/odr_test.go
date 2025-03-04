@@ -267,7 +267,7 @@ func testChainOdr(t *testing.T, protocol int, fn odrTestFn) {
 	// Assemble the test environment
 	config := *params.TestChainConfig
 	config.Eip1559Block = big.NewInt(0)
-	blockchain, _ := core.NewBlockChain(sdb, nil, &config, ethash.NewFullFaker(), vm.Config{})
+	blockchain, _ := core.NewBlockChain(sdb, nil, &config, ethash.NewFullFaker(), vm.Config{}, nil)
 	gchain, _ := core.GenerateChain(&config, genesis, ethash.NewFaker(), sdb, 4, testChainGen)
 	if _, err := blockchain.InsertChain(gchain); err != nil {
 		t.Fatal(err)

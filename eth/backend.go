@@ -196,7 +196,7 @@ func New(ctx *node.ServiceContext, config *ethconfig.Config, XDCXServ *XDCx.XDCX
 			return eth.Lending
 		}
 	}
-	eth.blockchain, err = core.NewBlockChainEx(chainDb, XDCXServ.GetLevelDB(), cacheConfig, eth.chainConfig, eth.engine, vmConfig)
+	eth.blockchain, err = core.NewBlockChainEx(chainDb, XDCXServ.GetLevelDB(), cacheConfig, eth.chainConfig, eth.engine, vmConfig, &config.TxLookupLimit)
 	if err != nil {
 		return nil, err
 	}
