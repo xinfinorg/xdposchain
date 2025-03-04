@@ -1471,7 +1471,9 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 			rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), receiptChain[i])
 			rawdb.WriteTxLookupEntriesByBlock(batch, block)
 
-			stats.processed++
+			// Write everything belongs to the blocks into the database. So that
+			// we can ensure all components of body is completed(body, receipts,
+			// tx indexes)
 			if batch.ValueSize() >= ethdb.IdealBatchSize {
 				if err := batch.Write(); err != nil {
 					return 0, err
@@ -1479,7 +1481,11 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 				size += batch.ValueSize()
 				batch.Reset()
 			}
+			stats.processed++
 		}
+		// Write everything belongs to the blocks into the database. So that
+		// we can ensure all components of body is completed(body, receipts,
+		// tx indexes)
 		if batch.ValueSize() > 0 {
 			size += batch.ValueSize()
 			if err := batch.Write(); err != nil {
