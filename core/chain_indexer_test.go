@@ -235,3 +235,7 @@ func (b *testChainIndexBackend) Commit() error {
 	}
 	return nil
 }
+
+func (b *testChainIndexBackend) Prune(threshold uint64) error {
+	return nil
+}

@@ -184,7 +184,7 @@ func (n *cachedNode) obj(hash common.Hash) Node {
 
 // forChilds invokes the callback for  all the tracked children of this Node,
 // both the implicit ones  from inside the Node as well as the explicit ones
-//from outside the Node.
+// from outside the Node.
 func (n *cachedNode) forChilds(onChild func(hash common.Hash)) {
 	for child := range n.children {
 		onChild(child)
@@ -692,7 +692,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 //
 // Note, this method is a non-synchronized mutator. It is unsafe to call this
 // concurrently with other mutators.
-func (db *Database) Commit(node common.Hash, report bool) error {
+func (db *Database) Commit(node common.Hash, report bool, callback func(common.Hash)) error {
 	// Create a database batch to flush persistent data out. It is important that
 	// outside code doesn't see an inconsistent state (referenced data removed from
 	// memory Cache during commit but not yet in persistent storage). This is ensured
@@ -731,7 +731,7 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 	nodes, storage := len(db.dirties), db.dirtiesSize
 
 	uncacher := &cleaner{db}
-	if err := db.commit(node, batch, uncacher); err != nil {
+	if err := db.commit(node, batch, uncacher, callback); err != nil {
 		log.Error("Failed to commit trie from trie database", "err", err)
 		return err
 	}
@@ -770,7 +770,7 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 }
 
 // commit is the private locked version of Commit.
-func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleaner) error {
+func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleaner, callback func(common.Hash)) error {
 	// If the Node does not exist, it's a previously committed Node
 	node, ok := db.dirties[hash]
 	if !ok {
@@ -779,7 +779,7 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	var err error
 	node.forChilds(func(child common.Hash) {
 		if err == nil {
-			err = db.commit(child, batch, uncacher)
+			err = db.commit(child, batch, uncacher, callback)
 		}
 	})
 	if err != nil {
@@ -789,6 +789,9 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 		return err
 	}
 	// If we've reached an optimal batch size, commit and start over
+	if callback != nil {
+		callback(hash)
+	}
 	if batch.ValueSize() >= ethdb.IdealBatchSize {
 		if err := batch.Write(); err != nil {
 			return err

@@ -24,11 +24,14 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		NetworkId               uint64
 		SyncMode                downloader.SyncMode
 		NoPruning               bool
-		LightServ               int  `toml:",omitempty"`
-		LightPeers              int  `toml:",omitempty"`
-		SkipBcVersionCheck      bool `toml:"-"`
-		DatabaseHandles         int  `toml:"-"`
+		TxLookupLimit           uint64 `toml:",omitempty"`
+		LightServ               int    `toml:",omitempty"`
+		LightPeers              int    `toml:",omitempty"`
+		LightNoPrune            bool   `toml:",omitempty"`
+		SkipBcVersionCheck      bool   `toml:"-"`
+		DatabaseHandles         int    `toml:"-"`
 		DatabaseCache           int
+		DatabaseFreezer         string
 		TrieCache               int
 		TrieTimeout             time.Duration
 		FilterLogCacheSize      int
@@ -49,11 +52,14 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.NetworkId = c.NetworkId
 	enc.SyncMode = c.SyncMode
 	enc.NoPruning = c.NoPruning
+	enc.TxLookupLimit = c.TxLookupLimit
 	enc.LightServ = c.LightServ
 	enc.LightPeers = c.LightPeers
+	enc.LightNoPrune = c.LightNoPrune
 	enc.SkipBcVersionCheck = c.SkipBcVersionCheck
 	enc.DatabaseHandles = c.DatabaseHandles
 	enc.DatabaseCache = c.DatabaseCache
+	enc.DatabaseFreezer = c.DatabaseFreezer
 	enc.TrieCache = c.TrieCache
 	enc.TrieTimeout = c.TrieTimeout
 	enc.FilterLogCacheSize = c.FilterLogCacheSize
@@ -78,11 +84,14 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		NetworkId               *uint64
 		SyncMode                *downloader.SyncMode
 		NoPruning               *bool
-		LightServ               *int  `toml:",omitempty"`
-		LightPeers              *int  `toml:",omitempty"`
-		SkipBcVersionCheck      *bool `toml:"-"`
-		DatabaseHandles         *int  `toml:"-"`
+		TxLookupLimit           *uint64 `toml:",omitempty"`
+		LightServ               *int    `toml:",omitempty"`
+		LightPeers              *int    `toml:",omitempty"`
+		LightNoPrune            *bool   `toml:",omitempty"`
+		SkipBcVersionCheck      *bool   `toml:"-"`
+		DatabaseHandles         *int    `toml:"-"`
 		DatabaseCache           *int
+		DatabaseFreezer         *string
 		TrieCache               *int
 		TrieTimeout             *time.Duration
 		FilterLogCacheSize      *int
@@ -114,11 +123,17 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.NoPruning != nil {
 		c.NoPruning = *dec.NoPruning
 	}
+	if dec.TxLookupLimit != nil {
+		c.TxLookupLimit = *dec.TxLookupLimit
+	}
 	if dec.LightServ != nil {
 		c.LightServ = *dec.LightServ
 	}
 	if dec.LightPeers != nil {
 		c.LightPeers = *dec.LightPeers
+	}
+	if dec.LightNoPrune != nil {
+		c.LightNoPrune = *dec.LightNoPrune
 	}
 	if dec.SkipBcVersionCheck != nil {
 		c.SkipBcVersionCheck = *dec.SkipBcVersionCheck
@@ -128,6 +143,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.DatabaseCache != nil {
 		c.DatabaseCache = *dec.DatabaseCache
+	}
+	if dec.DatabaseFreezer != nil {
+		c.DatabaseFreezer = *dec.DatabaseFreezer
 	}
 	if dec.TrieCache != nil {
 		c.TrieCache = *dec.TrieCache

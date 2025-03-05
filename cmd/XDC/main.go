@@ -61,6 +61,7 @@ var (
 		utils.BootnodesV4Flag,
 		utils.BootnodesV5Flag,
 		utils.DataDirFlag,
+		utils.AncientFlag,
 		utils.KeyStoreDirFlag,
 		utils.NoUSBFlag, // deprecated
 		utils.USBFlag,
@@ -89,8 +90,10 @@ var (
 		utils.TxPoolLifetimeFlag,
 		utils.SyncModeFlag,
 		utils.GCModeFlag,
+		utils.TxLookupLimitFlag,
 		//utils.LightServFlag,
 		//utils.LightPeersFlag,
+		utils.LightNoPruneFlag,
 		//utils.LightKDFFlag,
 		utils.CacheFlag,
 		utils.CacheDatabaseFlag,
