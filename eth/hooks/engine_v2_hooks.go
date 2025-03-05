@@ -222,7 +222,10 @@ func AttachConsensusV2Hooks(adaptor *XDPoS.XDPoS, bc *core.BlockChain, chainConf
 			rewardsMap["signersObserver"] = signers[ObserverNodeBeneficiary]
 			// Masternode rewards
 			chainReward := new(big.Int).Mul(new(big.Int).SetUint64(currentConfig.MasternodeReward), new(big.Int).SetUint64(params.Ether))
+			log.Info("[HookReward] get chainreward", "MasternodeReward", currentConfig.MasternodeReward, "Ether", params.Ether, "chainReward", chainReward)
 			chainReward = util.RewardInflation(chain, chainReward, number, common.BlocksPerYear)
+			log.Info("[HookReward] get inflated chainreward", "number", number, "BlocksPerYear", common.BlocksPerYear, "chainReward", chainReward)
+
 			rewardSigners, err = CalculateRewardForSigner(chainReward, signers[MasterNodeBeneficiary])
 			if err != nil {
 				log.Error("[HookReward] Fail to calculate reward for masternode", "error", err)
