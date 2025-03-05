@@ -33,10 +33,9 @@ const (
 )
 
 var (
-	XDCMainnetGenesisHash = common.HexToHash("4a9d748bd78a8d0385b67788c2435dcdb914f98a96250b68863a1f8b7642d6b1") // XDC Mainnet genesis hash to enforce below configs on
-	MainnetGenesisHash    = common.HexToHash("8d13370621558f4ed0da587934473c0404729f28b0ff1d50e5fdd840457a2f17") // Mainnet genesis hash to enforce below configs on
-	TestnetGenesisHash    = common.HexToHash("bdea512b4f12ff1135ec92c00dc047ffb93890c2ea1aa0eefe9b013d80640075") // Testnet genesis hash to enforce below configs on
-	DevnetGenesisHash     = common.HexToHash("ab6fd3cb7d1a489e03250c7d14c2d6d819a6a528d6380b31e8410951964ef423") // Devnet genesis hash to enforce below configs on
+	MainnetGenesisHash = common.HexToHash("0x4a9d748bd78a8d0385b67788c2435dcdb914f98a96250b68863a1f8b7642d6b1") // XDC Mainnet genesis hash to enforce below configs on
+	TestnetGenesisHash = common.HexToHash("0xbdea512b4f12ff1135ec92c00dc047ffb93890c2ea1aa0eefe9b013d80640075") // XDC Testnet genesis hash to enforce below configs on
+	DevnetGenesisHash  = common.HexToHash("0x977c7a1b4ecbc40acc3963c1778666b62a95940a7fba6fec5867f78702835daf") // XDC Devnet genesis hash to enforce below configs on
 )
 
 var (
@@ -134,6 +133,22 @@ var (
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
 			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 2.0, MaxExponent: 5},
+			MasternodeReward:     5000,
+			ProtectorReward:      4000,
+			ObserverReward:       1000,
+		},
+		9999999999: {
+			MaxMasternodes:       15,
+			MaxProtectorNodes:    2,
+			SwitchRound:          9999999999,
+			CertThreshold:        0.667,
+			TimeoutSyncThreshold: 3,
+			TimeoutPeriod:        5,
+			MinePeriod:           2,
+			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 2.0, MaxExponent: 5},
+			MasternodeReward:     5000,
+			ProtectorReward:      4000,
+			ObserverReward:       1000,
 		},
 	}
 
@@ -158,12 +173,16 @@ var (
 		},
 		900: {
 			MaxMasternodes:       20,
+			MaxProtectorNodes:    17,
 			SwitchRound:          900,
 			CertThreshold:        0.667,
 			TimeoutSyncThreshold: 4,
 			TimeoutPeriod:        5,
 			MinePeriod:           2,
 			ExpTimeoutConfig:     ExpTimeoutConfig{Base: 1.0, MaxExponent: 0},
+			MasternodeReward:     500, // double as Reward
+			ProtectorReward:      400,
+			ObserverReward:       300,
 		},
 	}
 
@@ -437,11 +456,16 @@ type V2 struct {
 
 type V2Config struct {
 	MaxMasternodes       int     `json:"maxMasternodes"`       // v2 max masternodes
+	MaxProtectorNodes    int     `json:"maxProtectorNodes"`    // v2 max ProtectorNodes
 	SwitchRound          uint64  `json:"switchRound"`          // v1 to v2 switch block number
 	MinePeriod           int     `json:"minePeriod"`           // Miner mine period to mine a block
 	TimeoutSyncThreshold int     `json:"timeoutSyncThreshold"` // send syncInfo after number of timeout
 	TimeoutPeriod        int     `json:"timeoutPeriod"`        // Duration in ms
 	CertThreshold        float64 `json:"certificateThreshold"` // Necessary number of messages from master nodes to form a certificate
+
+	MasternodeReward uint64 `json:"masternodeReward"` // Block reward for master nodes (core validators) - unit Ether
+	ProtectorReward  uint64 `json:"protectorReward"`  // Block reward for protectors - unit Ether
+	ObserverReward   uint64 `json:"observerReward"`   // Block reward for observer - unit Ether
 
 	ExpTimeoutConfig ExpTimeoutConfig `json:"expTimeoutConfig"`
 }
@@ -737,6 +761,10 @@ func (c *ChainConfig) IsTIPXDCXLending(num *big.Int) bool {
 
 func (c *ChainConfig) IsTIPXDCXCancellationFee(num *big.Int) bool {
 	return isForked(common.TIPXDCXCancellationFee, num)
+}
+
+func (c *ChainConfig) IsTIPUpgradeReward(num *big.Int) bool {
+	return isForked(common.TIPUpgradeReward, num)
 }
 
 // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).

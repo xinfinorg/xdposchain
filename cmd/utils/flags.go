@@ -738,10 +738,10 @@ var (
 	}
 
 	// MISC settings
-	RollbackFlag = &cli.StringFlag{
-		Name:     "rollback",
-		Usage:    "Rollback chain at hash",
-		Value:    "",
+	SetHeadFlag = &cli.Uint64Flag{
+		Name:     "set-head",
+		Usage:    "Rollback chain to block number",
+		Value:    0,
 		Category: flags.MiscCategory,
 	}
 	AnnounceTxsFlag = &cli.BoolFlag{
@@ -754,12 +754,6 @@ var (
 		Name:     "store-reward",
 		Usage:    "Store reward to file",
 		Value:    false,
-		Category: flags.MiscCategory,
-	}
-	RewoundFlag = &cli.IntFlag{
-		Name:     "rewound",
-		Usage:    "Rewound blocks",
-		Value:    0,
 		Category: flags.MiscCategory,
 	}
 
@@ -1095,7 +1089,10 @@ func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config
 		}
 		cfg.Etherbase = account.Address
 	} else {
-		cfg.Etherbase = common.HexToAddress(ctx.String(MinerEtherbaseFlag.Name))
+		if !ctx.IsSet(UnlockedAccountFlag.Name) {
+			cfg.Etherbase = common.HexToAddress(ctx.String(MinerEtherbaseFlag.Name))
+			log.Info("Set etherbase", "address", cfg.Etherbase.Hex())
+		}
 	}
 }
 
@@ -1488,6 +1485,13 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			os.Mkdir(common.StoreRewardFolder, os.ModePerm)
 		}
 	}
+	if ctx.IsSet(SetHeadFlag.Name) {
+		common.RollbackNumber = ctx.Uint64(SetHeadFlag.Name)
+		if common.RollbackNumber == 0 {
+			Fatalf("the flag --%s must be greater than 0", SetHeadFlag.Name)
+		}
+	}
+
 	// Override any default configs for hard coded networks.
 	switch {
 	case ctx.Bool(MainnetFlag.Name):
